@@ -1,0 +1,1257 @@
+---
+title: "Trabajo final de la asignatura Machine Learning: Modelos Predictivos en R"
+author: "Adam Casas"
+date: "06/06/2020"
+output:
+  # pdf_document:
+  #   latex_engine: xelatex # Para UTF-8
+  html_document:
+    df_print: paged
+    highlight: kate
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+##################################################
+#######        Encoded in UTF-8        ###########
+##################################################
+```
+
+# Introducción
+
+Nos encontramos ante un problema de __aprendizaje supervisado__, concretamente un problema de __clasificación__, pues los datos están etiquetados con clases, y las clases son en este caso son de tipo __factor__. En el presente trabajo se pretende construir modelos predictivos capaces de, recibiendo información sobre expresión génica y variables diversas sobre el paciente, *predecir su estadio de braak*, métrica empleada en la evaluación de pacientes con enfermedad de Alzheimer o Parkinson.
+
+
+![Ilustración del daño tisular y síntomas cognitivos en las distintas etapas braak, sacada de Petersen V., Mikkel (2017).](https://www.researchgate.net/profile/Mikkel_Petersen6/publication/319059671/figure/fig11/AS:614352155598865@1523484376829/Illustration-of-the-Braak-staging-in-Parkinsons-disease-According-to-this.png) 
+
+`r # Si quieres que te carge esto al crear el pdf, tienes que descargarte la foto y escribir a ruta local a la imagen`
+
+
+
+<br>
+<br>
+Primero vamos a cargar las librerias de turno.
+
+
+```{r librerias, message=F}
+library(parallel)
+library(doParallel)
+library(caret)
+library(Boruta)
+library(partykit)
+library(pROC)
+library(MLmetrics)
+```
+
+* Con las librerías `parallel` y `doParallel` podemos paralelizar los  procedimientos aqui realizados, lo que aliviará los tiempos de espera en la ejecucion de ciertos comandos, sobre todo en los comandos de la libreria `caret`.
+
+* La librería `caret` será empleada para la generación de los __modelos predictivos__.
+
+* La librería `Boruta` se empleará para la __selección de variables__.
+
+* El paquete `partykit` será empleado para mostrar los __árboles de decisiones en formato gráfico__.
+
+* La librería `pROC` se usará para el análisis por __curvas ROC__.
+
+* La librería `MLmetrics` se usará para testear la presencia de __overfitting en nuestros modelos__.
+
+<br>
+<br>
+
+
+Procedemos a establecer el nº de hilos que usaremos durante esta sesión
+```{r}
+cores <- detectCores()-4 # Dejamos 4 hilos para el SO
+registerDoParallel(cores)
+```
+
+
+<br>
+<br>
+
+Establecemos el espacio de trabajo de la sesión y cargamos los datos
+```{r carga de datos}
+setwd("C:/Users/Adam_/Desktop/Cosas master/Master Bioinformatica/2o Cuatrimestre/Machine Learning/Trabajos Finales ML/Clasificadores/")
+dataset <- readRDS("expr.data.cov")
+
+# Alternativamente, podemos descargarlo desde mi repositorio publico :)
+# dataset2 <- readRDS(gzcon(url("https://github.com/gloknar/Adam-repo/blob/master/covariables?raw=true")))
+
+# Echamos un vistazo a la naturaleza de las variables del dataset. Nótese que solo imprimimos las 15 últimas variables por cuestiones de legibilidad, ya que el resto de variables del dataset son numéricas y la información aportada sería saturante.
+tail(sapply(dataset, class), n= 15L)
+```
+
+
+<br>
+<br>
+
+***
+
+# Preprocesado
+
+
+Primero vamos a comprobar la presencia de valores *NA* mediante el siguiente bloque de código, el cual escanea todo el dataset, e imprime un mensaje por consola si encuentra un valor faltante. En caso contrario (como es aquí), no mostrará ningún mensaje. Si hubiese valores *NA*, se procedería a impugnar el dataset.
+
+```{r, Comprobación NAs en dataset original}
+
+#Definimos una función para encontrar la ubicación de NAs en nuestro dataset:
+localizar_NAs.dataframe <- function(dataset) {
+  for (columna in colnames(dataset)) {
+    for (fila in rownames(dataset)) {
+      if (is.na(dataset[fila,columna]) == TRUE) {
+        cat("Se encontro un valor NA en la fila", fila, "y columna", columna)
+      } 
+    }
+  }
+}
+
+
+# Recorremos todos los valores, desde la columna 1 hasta la última, buscando
+# NAs. En caso de encontrarlos, ejecutamos la función previamente definida, que
+# imprimirá por pantalla valores omitidos que encuentre.
+if(TRUE %in% apply(dataset, 2, is.na.data.frame)) {
+  localizar_NAs.dataframe(dataset)
+}
+
+# Para comprobar los tiempos de diferencia:
+#system.time(localizar_NAs.dataframe(dataset))
+#system.time(apply(dataset, 2, is.na.data.frame))
+```
+
+
+<br>
+<br>
+
+Ahora veremos si las variables numericas estan normalizadas y/o escaladas. Nótese que en este paso no tendremos en cuenta la columna nº70, pues es __la clase braaksc__, la cual es un factor, pero al estar codificada en números, R la identifica como una variable numérica.
+```{r}
+variables_numericas <- as.numeric(which(sapply(dataset,class) == "numeric"))
+variables_numericas <- variables_numericas[variables_numericas!=70]
+```
+
+```{r, echo=F}
+boxplot(dataset[variables_numericas], main = "Distribución original de las variables numéricas", cex.axis=.46, las=3, col="limegreen")
+```
+
+<br>
+<br>
+
+Se observa que si bien los valores de expresión de los genes están centrados, __no están escalados__. Por otro lado, las variables numericas *pmi* y *age* (2 primeras cajas desde la derecha) __no están centradas ni escaladas__. Vamos a centrar y escalar dichas variables para mantener la media en 0 y a su vez evitar que algunas variables tengan más peso que otras en nuestros modelos predictivos por el mero hecho de presentar valores absolutos más grandes que el resto.
+
+Un ejemplo de los __sesgos__ que evitamos con el centrado y escalado de variables numéricas son los genes que codifican para __factores de transcripción__, pues según una comunicación personal del Dr. Javier Corral De la calle:
+
+> "Dichos genes suelen presentar niveles de expresión muy bajos en comparación con el resto, si bien tienen un efecto muy acusado en la regulación transcripcional, y por tanto, en el metabolismo de la célula."
+
+<br>
+
+```{r}
+escalado_y_centrado <- preProcess(dataset[,variables_numericas], method = c("center", "scale"))
+dataset_escalado <- predict(escalado_y_centrado,dataset[,variables_numericas])
+```
+
+```{r, echo=F}
+boxplot(dataset_escalado, main = "Variables numericas centradas y escaladas", cex.axis=.46, las=3)
+```
+
+
+<br>
+<br>
+
+A cotinuación eliminamos las variables numéricas altamente correlacionadas con el metodo `findCorrelation` del paquete `caret`. Para ello necesitamos crear una __matriz de correlaciones__ que contenga exclusivamente las variables predictoras numéricas del dataset.
+
+```{r}
+R <- cor(dataset_escalado)
+caret::findCorrelation(
+  R,
+  cutoff = 0.75,
+  verbose = TRUE,
+  names = TRUE)
+```
+
+En base a los resultados obtenidos, marcamos la columna 17 `ENSG00000105655` para su eliminado, por estar altamente correlacionada con la columna 13 `ENSG00000042062`.
+
+```{r}
+dataset_escalado <- dataset_escalado[,-17]
+```
+
+
+
+<br>
+
+Seguidamente comprobamos en las columnas numéricas si hay variables con una varianza cercana a cero, y en caso afirmativo, eliminamos dichas columnas con el comando `nzv`.
+
+
+```{r, collapse=T}
+nzv(dataset_escalado)
+```
+
+Devuelve 0, por lo que no se encontraron columnas con varianza cercana a 0.
+
+<br>
+<br>
+
+> __Nota antes de continuar con la selección de variables:__ si ploteamos el nº de
+individuos en función de la clase a la que pertenecen, se observa una acusada
+escasez de individuos que tienen diagnosticados los estadios braak 1 y 7, y
+esto puede dar problemas a la hora de entrenar los modelos, pues hay muy pocos
+individuos que representen a dichas clases, por lo que se procede a añadir
+los individuos con estadios braak 1 en el estadio braak 2, e ídem para los
+individuos con estadio braak 7, que pasan a formar parte del estadio braak 6
+
+```{r, echo=F}
+hist(dataset[,"braaksc"], main = "Distribución de individuos en los diversos niveles de la clase braaksc", 
+     xlab= "Estadio braaskc", ylab="Frecuencia")
+```
+
+<br>
+
+```{r}
+# Para individuos de la clase braak stage 1:
+for (individuo in which(dataset$braaksc==1)) {dataset[individuo,"braaksc"] <- 2}
+
+# Para individuos de la clase braak stage 7:
+for (individuo in which(dataset$braaksc==7)) {dataset[individuo,"braaksc"] <- 6}
+```
+
+<br>
+
+```{r, echo=F}
+hist(dataset[,"braaksc"], xlab= "Estadio braaksc", ylab="Frecuencia",
+     main="Clases redistribuidas")
+```
+
+<br>
+
+Una vez realizado este rebalanceo de clases, y teniendo en cuenta que la clase `braaksc` era reconocida (erróneamente) como una variable numérica, vamos a recodificarla como `ordered factor` con los siguientes comandos y comprobar que el cambio ha sido exitoso. 
+
+```{r, collapse=T}
+# Antes del type casting
+class(dataset$braaksc)
+is.ordered(dataset$braaksc)
+
+
+dataset$braaksc <- factor(dataset$braaksc,ordered = TRUE)
+
+levels(dataset$braaksc) <-  c("estadios_1_2", "estadio_3", "estadio_4", "estadio_5","estadios_6_7")
+
+
+# Después del type casting a factor ordenado
+class(dataset$braaksc)
+is.ordered(dataset$braaksc)
+
+
+# Este comando nos confirma el orden de cada estado
+tail(dataset$braaksc, n=0)
+```
+
+<br>
+Así mismo, los atributos `cogdx` y `ceradsc` son también `ordered factors`, a pesar de que son reconocidos como `factors`, por lo que vamos a castearlos a sus naturaleza adecuada. 
+
+Hay que tener cuidado con el atributo `ceradsc`, ya que en el caso de `braaksc` y `cogdx`, valores mayores de factor indican una clínica más severa; mientras que ceradsc está codificado la revés, de manera que valores menores del factor indican una clínica más severa. Para más información sobre la codificación de estos atributos, visite el [RADC Research Resource Sharing Hub](https://www.radc.rush.edu/docs/var/detail.htm?category=Pathology&subcategory=Alzheimer%27s%20disease&variable=ceradsc).
+
+```{r}
+# Antes de castear la variable dependiente "cogdx"
+class(dataset$cogdx)
+is.ordered(dataset$cogdx)
+
+
+dataset$cogdx <- factor(dataset$cogdx,ordered = TRUE)
+
+
+# Después del casteo a factor ordenado
+class(dataset$cogdx)
+is.ordered(dataset$cogdx)
+
+
+# Este comando nos confirma el orden de cada estado
+tail(dataset$cogdx, n=0)
+
+
+###############################################################
+# ídem para ceradsc, pero inviertiendo el orden de los niveles:
+###############################################################
+class(dataset$ceradsc)
+
+is.ordered(dataset$ceradsc)
+
+dataset$ceradsc <- factor(dataset$ceradsc,ordered = TRUE)
+levels(dataset$ceradsc) <-  c(4, 3, 2, 1)
+
+
+class(dataset$ceradsc)
+is.ordered(dataset$ceradsc)
+
+
+tail(dataset$ceradsc, n=0)
+```
+
+
+<br>
+
+Finalmente, procedemos a añadir al dataset los factores que habíamos eliminado en el mismo durante su preprocesado.
+
+```{r}
+# Obtenemos un vector con el nº de columna de los factores en el dataset original
+columnas_factores <- as.numeric (which(sapply(dataset,class)== "factor"))
+columnas_factores <- c(columnas_factores, which(colnames(dataset) %in% c("braaksc", "ceradsc", "cogdx"))) # añadimos factores ordenados
+
+dataset_escalado <- cbind(dataset_escalado,dataset[,columnas_factores])
+
+# Comprobamos que las columnas están bien formateadas
+str(dataset_escalado)
+```
+
+
+
+<br>
+<br>
+
+***
+
+# Selección de variables
+
+Procedemos a la selección de variables. Usaremos el paquete `Boruta` para ello, dada su capacidad de mostrar visualmente la importancia de cada variable del dataset. Por defecto, el comando `Boruta()` usa un __p-valor del 0.01__ para confirmar cuándo una variable es estadísticamente importante o no.
+
+Boruta realiza una búsqueda de tipo Backwards mediante un algoritmo wrapper de Random Forest.
+
+```{r, seleccion variables con Boruta, collapse=T}
+# Establecemos la semilla de aleatoriedad para garantizar la reproducibilidad de
+# esta sesion
+set.seed(1)
+
+# Ahora realizamos la busqueda de las variables importantes
+boruta_output <- Boruta(braaksc ~ . , data=dataset_escalado, doTrace = 1)
+```
+
+
+
+<br>
+
+La selección de variables tardó:
+```{r, echo=F}
+boruta_output$timeTaken
+```
+
+
+
+<br>
+<br>
+
+Y la representación visual de dicha selección podemos verla en el siguiente gráfico: 
+```{r, echo=F}
+plot(boruta_output, cex.axis=.34, las=2, xlab="", main="Importancia de las variables", ylab = "Importancia")  
+```
+
+<br>
+<br>
+
+Acto seguido nos quedamos con las variables significativamente importantes (i.e."Confirmed") y las imprimimos por consola
+```{r}
+boruta_significativas <- names(boruta_output$finalDecision[boruta_output$finalDecision %in% "Confirmed"])  
+
+print(boruta_significativas)   
+```
+
+<br>
+<br>
+
+Posteriormente nos quedamos solo con las variables importantes y la clase, y las agrupamos en un nuevo dataframe llamado *dataset_variables_seleccionadas.*
+```{r}
+variables_seleccionadas_boruta <- which(names(dataset_escalado) %in% boruta_significativas)
+clase <- which(names(dataset_escalado) == "braaksc")
+
+dataset_variables_seleccionadas <- dataset_escalado[,c(variables_seleccionadas_boruta,clase)]
+
+str(dataset_variables_seleccionadas)
+```
+
+
+
+<br>
+<br>
+
+***
+
+# Modelos predictivos
+
+Vamos a hacer 3 modelos: uno hecho con __J48__, otro con una __Red Neuronal__ (Perceptrón Multicapa) y otro con __Regresión Logistica__ (modelo probabilístico). Pero antes, debemos partir el dataset. Lo haremos en un 80% para el `training_set` y un 20% para el `test_set`.
+
+```{r, creacion de sets entrenamiento y test}
+set.seed(1)
+Indice_individuos_entrenamiento <- createDataPartition(dataset_variables_seleccionadas$braaksc,
+                                  p = .80,
+                                  list = FALSE,
+                                  times = 1)
+
+# Comprobamos que ha realizado la división deseada. Como en el comando anterior
+# elegimos el parametro p = 0.80, estamos cogiendo el 80% de los individuos como
+# set de entrenamiento. Nos debería dar en torno a 508 (635*0.8 = 508):
+nrow(Indice_individuos_entrenamiento)
+
+# Creamos y comprobamos el set de entrenamiento:
+training_set <- dataset_variables_seleccionadas[Indice_individuos_entrenamiento,]
+
+cat("El set de entrenamiento tiene", nrow(training_set), "individuos y", ncol(training_set), "variables.")
+
+
+# Creamos y comprobamos el set de testeo:
+test_set <- dataset_variables_seleccionadas[-Indice_individuos_entrenamiento,]
+
+cat("El set de testeo tiene", nrow(test_set), "individuos y", ncol(test_set), "variables.")
+```
+
+
+<br>
+<br>
+
+A continuación establecemos las __opciones de testeo__ que caret usará para la construcción de los __clasificadores J48 y MLP__ (RegLog requiere un tratamiento ligeramente distinto, se verá en su correspondiente apartado). Para ellos crearemos primero un listado de semillas de aleatoriedad que usaremos más adelante para la creación de cada fold y la evaluación del modelo final:
+
+```{r, Semillas de aleatoriedad para J48 y MLP}
+set.seed(1)
+
+
+# Iniciamos una lista vacía que almacenará las semillas de aleatoriedad con las
+# que trabajaremos. Haremos 5 folds * 3 repeticiones = lista con 15 bolsillos +
+# 1 para el modelo final (Lo pone en la documentación de ?trainControl() ).
+# Debemos llenar todos los bolsillos con vectores con 15 numeros cada uno, menos
+# en el último bolsillo de la lista semillas, que debe ser un único número.
+
+semillas_J48_MLP <- vector(mode = "list", length = 15)  
+
+
+# Llenamos la lista/vector con semillas al azar, elegidas entre 1 y 1000. Creamos, por
+# tanto, una lista de listas. Todos los bolsillos de la lista, menos el último,
+# tendrán vectores con 16 números de longitud:
+semillas_J48_MLP <- lapply(semillas_J48_MLP, function(x) sample.int(1000, size= 15+1))
+
+semillas_J48_MLP[[16]] <- sample.int(1000, size= 1)
+
+# Hemos usado lapply porque queremos que nos devuelva una lista/vector
+
+str(semillas_J48_MLP)
+```
+
+
+
+<br>
+
+Con las semillas de aleatoriedad listas, establecemos el control del entrenamiento para nuestros modelos J48 y MLP:
+```{r, Control de entrenamiento para J48 y MLP}
+control_entrenamiento_J48_MLP <- trainControl(method = "repeatedcv",
+                           number=5,
+                           repeats = 3,
+                           seeds = semillas_J48_MLP,
+                           returnResamp = "final",
+                           allowParallel = TRUE,
+                           classProbs = TRUE,
+                           summaryFunction = multiClassSummary, 
+                           verbose = F)
+
+# Nota: summaryFunction = defaultSummary solo permite obtener las métricas
+# Accuracy y Kappa
+
+# summaryFunction = multiClassSummary permite obtener, además, el AUC en
+# problemas multiclase
+```
+
+
+
+<br>
+
+***
+
+## J48 {.tabset .tabset-pills .tabset-fade}
+
+### Modelo con 8 predictores
+
+Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase) e intentando maximizar la métrica `AUC`. Además, por ser un problema multi-clase, prestaremos especia atención a la métrica `Kappa` de nuestros modelos.
+```{r, Modelo J48 con 8 predictores}
+set.seed(1)
+
+# NOTA: Podemos elegir maximizar la Accuracy, el Kappa o el AUC. En este caso
+# elegimos maximizar el AUC
+modelo_J48 <- train(braaksc~.,data=training_set,
+                  method="J48",
+                  metric = "AUC",     # Maximize = TRUE by default
+                  trControl = control_entrenamiento_J48_MLP)
+```
+
+
+
+<br>
+
+Las métricas obtenidas fueron:
+```{r, collapse=T}
+cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_J48$resample$AUC), "\n")
+
+cat("La precisión media de este modelo fue:", mean(modelo_J48$resample$Accuracy), "\n")
+
+cat("El índice Kappa medio de este modelo fue:", mean(modelo_J48$resample$Kappa), "\n")
+```
+
+
+<br>
+
+Y se obtuvieron con la siguiente configuración de parámetros (que son la mejor combinación encontrada por caret):
+```{r}
+modelo_J48$bestTune
+```
+
+
+<br>
+<br>
+
+Procedemos a las __visualizaciones del modelo__, empezando por la __configuración óptima de parámetros__ de J48 para este modelo en concreto:
+
+```{r, echo=F}
+plot(modelo_J48)
+```
+
+
+
+<br>
+
+__Árbol generado__:
+
+```{r, echo=F}
+plot(as.party(modelo_J48$finalModel))
+```
+
+(Aún si ampliásemos la imagen para verla a pantalla completa, podemos imaginar que un árbol de decisiones tan frondoso sería dificil de leer).
+
+
+<br>
+
+Visualizaremos mejor el __árbol__ si lo mostramos __con gráficos simples__, tal que así:
+
+```{r, echo=F}
+modelo_J48$finalModel
+```
+
+
+
+<br>
+
+
+Por último, comprobamos si hay overfitting comparando la precisión media del modelo en el set de entrenamiento y en el de test:
+```{r, collapse=T}
+# Precisión en el set de entrenamiento
+MLmetrics::Accuracy(predict(modelo_J48, training_set[,-10]), training_set[[10]])
+```
+
+
+```{r, collapse=T}
+# Precisión en el set de test
+MLmetrics::Accuracy(predict(modelo_J48, test_set[,-10]), test_set[[10]])
+```
+
+Podemos observar que hay una diferencia importante de rendimiento entre el set de entrenamiento y el de test (~23%), por lo que podemos asegurar que se da overfitting en este modelo.
+
+
+<br>
+<br>
+
+### Modelo con 4 predictores
+
+Puesto que con 8 predictores se genera un árbol bastante lioso, vamos a probar a __volver a entrenar el modelo, pero esta vez con sólo 4 variables predictoras más la clase__. Recordemos que __las 4 variables más importantes son, en orden decreciente__: `ceradsc`, `cogdx`, `age` y `ENSG00000135631`. Con esta simplificación del modelo esperamos mejorar su capacidad para generalizar, además de mejorar sustancialmente la comprensibilidad del mismo.
+
+```{r}
+columnas_J48_2 <- vector()
+
+for (nombre in c("ceradsc", "cogdx", "age", "ENSG00000135631", "braaksc")) {
+  x <- which(colnames(training_set) == nombre)
+  columnas_J48_2 <- c(columnas_J48_2, x)
+}
+
+# Comprobamos que se realizó correctamente el bucle
+colnames(training_set)[columnas_J48_2]
+```
+
+
+<br>
+
+Construimos el modelo:
+
+```{r, Modelo J48 con 4 predictores}
+set.seed(1)
+modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
+                    method="J48",
+                    metric = "AUC",      # Maximize = TRUE by default
+                    trControl = control_entrenamiento_J48_MLP)
+```
+
+
+
+
+<br>
+
+Las métricas obtenidas fueron:
+```{r, collapse=T}
+cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_J48_2$resample$AUC), "\n")
+
+cat("La precisión media de este modelo fue:", mean(modelo_J48_2$resample$Accuracy), "\n")
+
+cat("El índice Kappa medio de este modelo fue:", mean(modelo_J48_2$resample$Kappa), "\n")
+```
+
+
+<br>
+
+Y se obtuvieron con la siguiente configuración de parámetros (que son la mejor combinación encontrada por caret):
+```{r}
+modelo_J48_2$bestTune
+```
+
+
+<br>
+<br>
+
+Procedemos a las __visualizaciones del modelo__, empezando por la __configuración óptima de parámetros__ de J48 para este modelo en concreto:
+
+```{r, echo=F}
+plot(modelo_J48_2)
+```
+
+
+
+<br>
+
+__Árbol generado__:
+
+```{r, echo=F, fig.width=12}
+plot(as.party(modelo_J48_2$finalModel))
+```
+
+
+__Si bien la precisión de este segundo modelo parece ser similar a la de J48 con 8 predictores__ (lo contrastaremos más adelante), también es cierto que este árbol es mucho __más fácil de intepretar__. 
+
+<br>
+
+
+Visualizaremos mejor el __árbol__ si lo mostramos __con gráficos simples__, tal que así:
+```{r, echo=F}
+modelo_J48_2$finalModel
+```
+
+
+<br>
+
+Por último, comprobamos si hay overfitting comparando la precisión media del modelo en el set de entrenamiento y en el de test:
+```{r, collapse=T}
+# Precisión en el set de entrenamiento
+MLmetrics::Accuracy(predict(modelo_J48_2, training_set[,c(6, 7, 8, 9)]), training_set[[10]])
+```
+
+
+```{r, collapse=T}
+# Precisión en el set de test
+MLmetrics::Accuracy(predict(modelo_J48_2, test_set[,c(6, 7, 8, 9)]), test_set[[10]])
+```
+
+La precisión en el set de entrenamiento es mejor que en la de test, pero no demasiado (~9% de diferencia), así que no podemos asegurar con total certeza que haya overfitting.
+
+
+
+<br>
+<br>
+
+## MLP
+
+Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase).
+
+```{r}
+set.seed(1)
+modelo_MLP <- train(braaksc~.,data=training_set,
+                method="mlp",
+                metric = "AUC",      # Maximize = TRUE by default
+                trControl = control_entrenamiento_J48_MLP)
+```
+
+
+<br>
+
+Las métricas obtenidas fueron:
+```{r, collapse=T}
+cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_MLP$resample$AUC), "\n")
+
+cat("La precisión media de este modelo fue:", mean(modelo_MLP$resample$Accuracy), "\n")
+
+cat("El índice Kappa medio de este modelo fue:", mean(modelo_MLP$resample$Kappa), "\n")
+```
+
+
+<br>
+
+Y se obtuvieron con la siguiente configuración de parámetros (que son la mejor combinación encontrada por caret):
+```{r}
+modelo_MLP$bestTune
+```
+
+
+
+<br>
+<br>
+
+La siguiente gráfica muestra visualmente la información del párrafo anterior:
+
+```{r, echo=F}
+plot(modelo_MLP)
+```
+
+
+
+<br>
+
+
+Por último, comprobamos si hay overfitting comparando la precisión media del modelo en el set de entrenamiento y en el de test:
+```{r, collapse=T}
+# Precisión en el set de entrenamiento
+MLmetrics::Accuracy(predict(modelo_MLP, training_set[,-10]), training_set[[10]])
+```
+
+
+```{r, collapse=T}
+# Precisión en el set de test
+MLmetrics::Accuracy(predict(modelo_MLP, test_set[,-10]), test_set[[10]])
+```
+
+La precisión en el set de entrenamiento es ligeramente mejor que en la de test (~17% de diferencia), por lo que puede que haya overfitting, pero no estamos seguros.
+
+
+
+
+<br>
+<br>
+
+## Regresión logística
+
+Al igual que el primer modelo de `J48` y el de `MLP`, esta regresión también se realizará con 8 predictores más la clase. Nótese que RegLog requiere de un nº distinto de semillas de aleatoriedad durante su entrenamiento (27 por bolsillo, en lugar de 16 por bolsillo como sucede con J48 y MLP), por lo que lo plasmaremos en su control de entrenamiento:
+
+
+```{r, Semillas de aleatoriedad para RegLog}
+set.seed(1)
+
+# Usamos el mismo nº de folds que en J48 y MLP, por lo que la longitud de la
+# lista se mantiene en 16
+semillas_RegLog <- vector(mode = "list", length = 15+1)
+
+
+
+# Llenamos la lista/vector con semillas al azar, elegidas entre 1 y 1000. Creamos, por
+# tanto, una lista de listas. Todos los bolsillos de la lista, menos el último,
+# tendrán vectores con 27 números de longitud:
+semillas_RegLog <- lapply(semillas_RegLog, function(x) sample.int(1000, size= 27))
+
+semillas_RegLog[[16]] <- sample.int(1000, size= 1)
+
+
+
+str(semillas_RegLog)
+```
+
+
+
+<br>
+
+Con las semillas de aleatoriedad listas, establecemos el control del entrenamiento para nuestro modelo RegLog:
+```{r, control de entrenamiento para RegLog}
+control_entrenamiento_RegLog <- trainControl(method = "repeatedcv",
+                           number=5,
+                           repeats = 3,
+                           seeds = semillas_RegLog,
+                           returnResamp = "final",
+                           allowParallel = TRUE,
+                           classProbs = TRUE,
+                           summaryFunction = multiClassSummary, 
+                           verbose = F)
+```
+
+<br>
+
+```{r}
+set.seed(1)
+modelo_RegLog <- train(braaksc~.,data=training_set,
+                method="regLogistic",
+                metric = "AUC",      # Maximize = TRUE by default
+                trControl = control_entrenamiento_RegLog)
+```
+
+<br>
+
+Las métricas obtenidas fueron:
+```{r, collapse=T}
+cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_RegLog$resample$AUC), "\n")
+
+cat("La precisión media de este modelo fue:", mean(modelo_RegLog$resample$Accuracy), "\n")
+
+cat("El índice Kappa medio de este modelo fue:", mean(modelo_RegLog$resample$Kappa), "\n")
+```
+
+
+<br>
+
+Y se obtuvieron con la siguiente configuración de parámetros (que son la mejor combinación encontrada por caret):
+```{r}
+modelo_RegLog$bestTune
+```
+
+<br>
+
+La siguiente gráfica muestra visualmente la información del párrafo anterior:
+
+```{r, echo=F}
+plot(modelo_RegLog)
+```
+
+
+<br>
+
+Por último, comprobamos si hay overfitting comparando la precisión media del modelo en el set de entrenamiento y en el de test:
+
+```{r, collapse=T}
+# Precisión en el set de entrenamiento
+MLmetrics::Accuracy(predict(modelo_RegLog, training_set[,-10]), training_set[[10]])
+```
+
+
+```{r, collapse=T}
+# Precisión en el set de test
+MLmetrics::Accuracy(predict(modelo_RegLog, test_set[,-10]), test_set[[10]])
+```
+
+La precisión en el set de entrenamiento es ligeramente mejor que en la de test (~14% de diferencia), por lo que puede que haya overfitting, pero no estamos seguros.
+
+<br>
+<br>
+
+***
+
+# Análisis estadístico del rendimiento de los clasificadores
+
+La __Regresión Logística con 8 predictores parece ser el clasificador que mayor precisión, índice Kappa y AUC__ devuelve de los 4 modelos aquí presentes (téngase en cuenta que por ser un problema multi-clase, lo ideal es prestar especial atención al índice *Kappa*, en lugar de a la métrica de *precisión* o *Accuracy*).
+
+|      Modelo       |   Precisión   |     Kappa     |      AUC      |
+|-------------------|---------------|---------------|---------------|
+|J48 (8 predictores)|   0.4364907   |   0.2350822   |   0.6808367   |
+|J48 (4 predictores)|   0.4659313   |   0.2622392   |   0.7121320   | 
+|       MLP         |   0.4626941   |   0.2726042   |   0.7419602   |
+|    __RegLog__     | __0.5011449__ | __0.316729__  | __0.7655404__ | 
+
+Nota: Obsérvese que tal como anticipamos, las métricas del modelo J48 mejoraron ligeramente al simplificarlo `r emo::ji("smile")`
+
+<br>
+
+No obstante, antes de afirmar nada, procederemos a __realizar un contraste de medias para la métrica *Kappa* de los modelos__ en busca de diferencias estadísticamente significativas. Puesto que durante el entrenamiento de los modelos, estos se evaluaron mediante el método `repeatedcv` con 5 pliegues y 3 repeticiones, cada modelo ha generado (5 pliegues*3 repeticiones + 1 evaluación del modelo final =) 16 repeticiones de las métricas. Con los siguientes comando de R podemos ver __un resumen de las 15 evaluaciones realizadas durante el entrenamiento__ de los modelos, y también podemos __examinarlas individualmente__, pliegue a pliegue, repetición a repetición. Nota: Los valores en la tabla superior correspoden a la evaluación de los modelos finales.
+
+
+<br>
+
+```{r}
+modelos <- list(J48=modelo_J48, J48_2=modelo_J48_2, MLP=modelo_MLP, RegLog=modelo_RegLog)
+datos_muestreo <- resamples(modelos)
+
+# Como se calcularon muchas métricas, nos quedamos con las que nos interesan, que son la precisión, el Kappa y el AUC de nuestros 4 modelos
+datos_muestreo$values  <- datos_muestreo$values[,c(1:4,16:18,30:32,44:46)]
+
+# Resumen de las métricas de interés
+summary(datos_muestreo$values[,-1])
+
+# Adicionalmente, podemos analizar individualmente cada fold
+datos_muestreo$values
+```
+
+<br>
+
+__Antes de realizar el contraste de medias por test t de Student o ANOVA__, primero comprobaremos si se cumplen en las muestras las __condiciones de normalidad y homocedasticidad__. Para la normalidad, usamos el __test de normalidad de Saphiro-Wilk__ por tener un tamaño muestral n = 15 <=> n <= 50. En caso de no cumplirse alguna de las 2 condiciones, recurriremos a un test no paramétrico equivalente al t de Student.
+
+
+```{r, metrica Kappa}
+metricas_kappa <- datos_muestreo$values[,c("J48~Kappa","J48_2~Kappa","MLP~Kappa","RegLog~Kappa")]
+summary(metricas_kappa)
+```
+
+<br>
+
+```{r, echo=F}
+boxplot(metricas_kappa, main = "Boxplot para índice Kappa", col = "aquamarine")
+```
+
+<br>
+
+
+```{r, metrica Accuracy}
+metricas_accuracy <- datos_muestreo$values[,c("J48~Accuracy","J48_2~Accuracy","MLP~Accuracy","RegLog~Accuracy")]
+summary(metricas_accuracy)
+```
+
+
+<br>
+
+```{r, echo=F}
+boxplot(metricas_accuracy, main = "Boxplot para la precisión", cex.axis=.95, col = "aquamarine")
+```
+
+<br>
+
+```{r, metrica AUC}
+metricas_auc <- datos_muestreo$values[,c("J48~AUC","J48_2~AUC","MLP~AUC","RegLog~AUC")]
+summary(metricas_auc)
+```
+
+
+<br>
+
+```{r, echo=F}
+boxplot(metricas_auc, main = "Boxplot para el AUC", col = "aquamarine")
+```
+
+
+<br>
+
+Procedemos al contraste de la normalidad por test de Shapiro-Wilk, cuya hipótesis nula H0 establece que los datos son normales:
+
+```{r, collapse=T}
+for(i in 1:ncol(metricas_kappa)) {
+  print(shapiro.test(metricas_kappa[,i]))
+}
+```
+Si aplicamos la __corrección de Bonferroni__ al alfa, tenemos un __valor crítico de__ 0.05/4 = __0.0125__.
+
+Vemos que las métricas *Kappa* de los modelos __son normales__, ya que todos nuestros p-valores son mayores a 0.0125 y por tanto no podemos rechazar la hipótesis nula. 
+
+
+
+<br>
+
+A continuación hacemos el __contraste para la igualdad de varianzas__ de los índices Kappa. Como son 4 poblaciones __normales e independientes, usaremos el __test de esfericidad de Bartlett__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
+
+```{r, contraste homogeneidad varianzas Kappa}
+# Use Mauchly's test instead!!!
+bartlett.test(list(metricas_kappa$`J48~Kappa`, metricas_kappa$`J48_2~Kappa`, metricas_kappa$`MLP~Kappa`, metricas_kappa$`RegLog~Kappa`))
+```
+
+Puesto que nuestro p-valor es mayor a 0.05, no rechazamos la hipótesis nula. Vemos por tanto que las métricas *Kappa* de los modelos __tienen varianzas iguales__. 
+
+<br>
+
+Ya que los índices Kappa de nuestros clasificadores son normales y tienen varianzas iguales, podemos aplicarles el test t de Student o un ANOVA. Vamos a mostrar primero cómo se haría con un __ANOVA__, y luego mostraremos cómo se haría con múltiples tests t de Student:
+
+```{r, ANOVA Kappa}
+matriz_anova <- as.data.frame(metricas_kappa$`J48~Kappa`)
+matriz_anova <- cbind(matriz_anova, rep("J48", 15))
+colnames(matriz_anova) <- c("Kappa","Modelo")
+
+
+variable_aux <- as.data.frame(metricas_kappa$`J48_2~Kappa`)
+variable_aux <- cbind(variable_aux, rep("J48_2", 15))
+colnames(variable_aux) <- c("Kappa","Modelo")
+
+
+variable_aux2 <- as.data.frame(metricas_kappa$`MLP~Kappa`)
+variable_aux2 <- cbind(variable_aux2, rep("MLP", 15))
+colnames(variable_aux2) <- c("Kappa","Modelo")
+
+
+
+variable_aux3 <- as.data.frame(metricas_kappa$`RegLog~Kappa`)
+variable_aux3 <- cbind(variable_aux3, rep("RegLog", 15))
+colnames(variable_aux3) <- c("Kappa","Modelo")
+
+
+
+matriz_anova <- rbind2(matriz_anova, variable_aux)
+matriz_anova <- rbind2(matriz_anova, variable_aux2)
+matriz_anova <- rbind2(matriz_anova, variable_aux3)
+matriz_anova$Modelo <- as.factor(matriz_anova$Modelo)
+
+str(matriz_anova)
+
+anova_kappa <- aov(Kappa~Modelo, data = matriz_anova)
+summary.aov(anova_kappa)
+```
+
+<br>
+
+El ANOVA detectó __diferencias significativas__ entre los índice Kappa de los diversos clasificadores. Procedemos con el __test de Tukey__ para ahondar en los resultados del ANOVA:
+
+```{r}
+TukeyHSD(anova_kappa)
+```
+
+Hay __diferencias estadísticamente significativas entre__ el rendimiento a nivel de índice Kappa de los clasificadores __J48 (8 predictores) y RegLog__. En cuanto a la comparación __RegLog-J48 (4 predictores)__, presenta un p-valor ajustado cercano al punto crítico, por lo que __aceptamos parcialmente la hipótesis nula__ (es posible que haya diferencias significativas entre dicha pareja de modelos, pero nuestros resultados actuales carecen de la resolución necesaria para afirmarlo con seguridad).
+
+
+<br>
+<br>
+<br>
+
+
+A continuación mostramos el contraste de medias con múltiples tests __t de Student__:
+
+```{r}
+t.test(metricas_kappa$`J48~Kappa`, metricas_kappa$`J48_2~Kappa`, alternative = "two.sided", var.equal = TRUE) # J48 (8 pred.) vs J48 (4 pred.)
+
+t.test(metricas_kappa$`J48~Kappa`, metricas_kappa$`MLP~Kappa`, alternative = "two.sided", var.equal = TRUE) # J48 (8 pred.) vs MLP
+
+t.test(metricas_kappa$`J48~Kappa`, metricas_kappa$`RegLog~Kappa`, alternative = "two.sided", var.equal = TRUE) # J48 (8 pred.) vs RegLog
+
+t.test(metricas_kappa$`J48_2~Kappa`, metricas_kappa$`MLP~Kappa`, alternative = "two.sided", var.equal = TRUE) # J48 (4 pred.) vs MLP
+
+t.test(metricas_kappa$`J48_2~Kappa`, metricas_kappa$`RegLog~Kappa`, alternative = "two.sided", var.equal = TRUE) # J48 (4 pred.) vs RegLog
+
+t.test(metricas_kappa$`MLP~Kappa`, metricas_kappa$`RegLog~Kappa`, alternative = "two.sided", var.equal = TRUE) # MLP vs RegLog
+```
+
+Como hemos realizado múltiples tests, vamos a aplicarles a sus p-valores la __corrección de Benjamini-Hochberg__ ( [Yoav Benjamini & Yosef Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1) ). Se eligió esta corrección y no la de Bonferroni por ser más potente y fiable. Este procedimiento consiste en ordenar los p-valores de los tests de menor a mayor, y rechazar la hipótesis nula de todos los tests cuyo p-valor cumplan la siguiente condición:
+
+$$\text{p-valor}_{test} < \frac{\text{rango del test}}{\text{nº total de tests}} *0.05$$
+
+> Nota: el 0.05 de la fórmula surge de elegir el FDR al 5%.
+
+<br>
+
+<center>
+
+![Resultados de aplicar la corrección de Benjamini-Hochberg.](./FDR-manual.png)
+
+</center>
+
+
+<br>
+
+De estos resultados podemos inferir las siguientes conclusiones:
+
+* La __Regresión Logística__ ofrece un __rendimiento significativamente distinto (=superior) al de J48 con 8 predictores__.
+* No __existen diferencias estadísticamente significativas entre__ el índice Kappa del resto de modelos.
+
+
+<br>
+<br>
+
+## Conocimiento adicional inferido
+
+Antes de avanzar al siguiente punto, pongamos en perspectiva la *precisión* de nuestros modelos. Según el Dr. Ian Witten en su MOOC [Data mining with Weka](https://www.futurelearn.com/courses/data-mining-with-weka), la __precisión mínima posible para cualquier problema de clasificación__ se puede calcular como: 
+
+$$Accuracy_{min}=\frac{\text{major class}}{n}$$ 
+
+siendo *major class* el nº de individuos de la clase más frecuente y *n* el nº de individuos en el dataset (esta es la base del algoritmo [ZeroR](http://datascience.esy.es/wiki/zeror/), por cierto). 
+
+En este caso, la __precisión base del problema__ es $\frac{209}{635}= 0,3291338$ ó $33\%$ (recordemos que la clase mayoritaria es estadio braak 5, con 209 individuos). Si observamos los boxplots de la precisión de los clasificadores, podemos ver que __todos ellos son significativamente mejores__ que dicho valor umbral. No obstante, como se explico anteriormente, el foco de este estudio es el índice Kappa de los distintos modelos, procedimiento el cual ya se ha realizado.
+
+
+<br>
+
+Adicionalmente, con el comando `varImp()` podemos observar la relevancia que le dan los modelos a los predictores, para cada clase. Se observa que entre los diversos modelos hay consenso en:
+
+* A la hora de predecir las __clases 1 y 2__, la variable más importante fue la `edad`.
+* Para la __clase 3__, estas fueron `ceradsc` y la `edad`.
+* Para la __clase 4__, fue `ceradsc` y (en menor medida) `cogdx` y la `edad`.
+* Para la __clase 5__, el predictor más relevante fue `ceradsc`.
+* Para las __clases 6 y 7__, estas fueron `ceradsc` y la `edad`.
+
+
+```{r,echo=F}
+print(varImp(modelo_J48))
+print(varImp(modelo_J48_2))
+print(varImp(modelo_MLP))
+print(varImp(modelo_RegLog))
+```
+<br>
+<br>
+
+***
+
+# Evaluación de los modelos por métrica AUC
+
+Esta evaluación se puede hacer de manera similar a como la hemos realizado con la métrica Kappa, o bien usar el comando `multiclass.roc` del paquete `pROC`. A continuación se demuestra el procedimiento con el susodicho comando:
+<br>
+
+## J48
+
+```{r, message=F}
+prediccion_J48 <- as.numeric(predict(modelo_J48, training_set, type = 'raw'))
+AUC_J48 <- multiclass.roc(training_set$braaksc, prediccion_J48)
+```
+
+
+```{r, collapse=T}
+AUC_J48$auc
+```
+
+Para el modelo de J48 con __8 predictores__, devuelve un __AUC de 0.8367.__
+
+<br>
+
+
+```{r, message=F}
+prediccion_J48_2 <- as.numeric(predict(modelo_J48_2, training_set, type = 'raw'))
+
+AUC_J48_2 <- multiclass.roc(training_set$braaksc, prediccion_J48_2)
+```
+
+
+```{r, collapse=T}
+AUC_J48_2$auc
+```
+
+Para el modelo de J48 con __4 predictores__, devuelve un __AUC de 0.7549.__
+
+
+<br>
+<br>
+
+## MLP
+
+```{r, message=F}
+prediccion_MLP <- as.numeric(predict(modelo_MLP, training_set, type = 'raw'))
+
+AUC_MLP <- multiclass.roc(training_set$braaksc, prediccion_MLP)
+```
+
+```{r, collapse=T}
+AUC_MLP$auc
+```
+
+Para el modelo de MLP con __8 predictores__, devuelve un __AUC de 0.7998.__
+
+<br>
+<br>
+
+## Regresión Logística
+
+```{r, message=F}
+set.seed(1)
+prediccion_RegLog <- as.numeric(predict(modelo_RegLog, training_set, type = 'raw'))
+
+AUC_RegLog <- multiclass.roc(training_set$braaksc, prediccion_RegLog)
+```
+
+```{r, collapse=T}
+AUC_RegLog$auc
+```
+
+Para el modelo de Regresión Logística con __8 predictores__, devuelve un __AUC de 0.7784.__
+
+<br>
+<br>
+
+Con este procedimiento obtenemos la siguiente tabla de valores:
+
+|      Modelo       |   AUC ROC   |
+|-------------------|-------------|
+|J48 (8 predictores)|   0.8367    |
+|J48 (4 predictores)|   0.7549    |
+|       MLP         |   0.7998    |
+|     RegLog        |   0.7784    |
+
+<br>
+
+como el comando `multiclass.roc` no devuelve réplicas, no podemos hacer tests estadísticos para contrastar si existen diferencias entre nuestros clasificadores, si bien a simple vista parece ser que nuestros modelos tienen un rendimiento similar.
+
+<br>
+
+## Contraste de medias para métricas AUC
+
+Por tanto, repetimos el procedimiento, pero esta vez teniendo en cuenta las diversas mediciones realizadas duante el entrenamiento de los modelos, para poder realizar el contraste de medias.
+
+
+<br>
+
+Procedemos al contraste de la normalidad por test de Shapiro-Wilk, cuya hipótesis nula H0 establece que los datos son normales:
+
+```{r, collapse=T}
+apply(metricas_auc, 2, shapiro.test)
+```
+Si aplicamos la __corrección de Bonferroni__ al alfa, tenemos un __valor crítico de__ 0.05/4 = __0.0125__.
+
+Vemos que las métricas *AUC* de los modelos __son normales__, ya que todos nuestros p-valores son mayores a 0.0125 y por tanto no podemos rechazar la hipótesis nula. 
+
+
+```{r}
+metricas_auc
+```
+
+<br>
+
+A continuación hacemos el __contraste para la igualdad de varianzas__ del AUC. Como son 4 poblaciones __normales e independientes, usaremos el __test de esfericidad de Bartlett__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
+
+```{r, contraste homogeneidad varianzas AUC}
+bartlett.test(list(metricas_auc$`J48~AUC`, metricas_auc$`J48_2~AUC`, metricas_auc$`MLP~AUC`, metricas_auc$`RegLog~AUC`))
+```
+
+Puesto que nuestro p-valor es mayor a 0.05, no rechazamos la hipótesis nula. Vemos por tanto que las métricas *AUC* de los modelos __tienen varianzas iguales__. 
+
+<br>
+
+Puesto que en los datos se cumplen las condiciones de normalidad y homocedasticidad, podemos aplicarles la t de Student o un ANOVA. Por comodidad, haremos uso del __ANOVA__ esta vez.
+
+```{r, ANOVA AUC}
+matriz_anova <- as.data.frame(metricas_auc$`J48~AUC`)
+matriz_anova <- cbind(matriz_anova, rep("J48", 15))
+colnames(matriz_anova) <- c("AUC","Modelo")
+
+
+variable_aux <- as.data.frame(metricas_auc$`J48_2~AUC`)
+variable_aux <- cbind(variable_aux, rep("J48_2", 15))
+colnames(variable_aux) <- c("AUC","Modelo")
+
+
+variable_aux2 <- as.data.frame(metricas_auc$`MLP~AUC`)
+variable_aux2 <- cbind(variable_aux2, rep("MLP", 15))
+colnames(variable_aux2) <- c("AUC","Modelo")
+
+
+
+variable_aux3 <- as.data.frame(metricas_auc$`RegLog~AUC`)
+variable_aux3 <- cbind(variable_aux3, rep("RegLog", 15))
+colnames(variable_aux3) <- c("AUC","Modelo")
+
+
+
+matriz_anova <- rbind2(matriz_anova, variable_aux)
+matriz_anova <- rbind2(matriz_anova, variable_aux2)
+matriz_anova <- rbind2(matriz_anova, variable_aux3)
+matriz_anova$Modelo <- as.factor(matriz_anova$Modelo)
+
+str(matriz_anova)
+
+anova_auc <- aov(AUC~Modelo, data = matriz_anova)
+summary.aov(anova_kappa)
+```
+
+<br>
+
+El ANOVA detectó __diferencias significativas__ entre las áreas bajo la curva ROC de los diversos clasificadores. Procedemos con el __test de Tukey__ para ahondar en los resultados del ANOVA:
+
+```{r}
+TukeyHSD(anova_auc)
+```
+
+Hay __diferencias estadísticamente significativas entre__ el rendimiento de __J48 (en sus dos variantes) y RegLog__ y entre __J48 (8 pred.) y MLP__ (y puede que la variante de J48 con 4 pred. también, pero tiene un p-valor ajustado cercano al punto crítico, por lo que no estamos del todo seguros).
+
+
+<br>
+<br>
+
+***
+
+# Últimas palabras
+
+Para finalizar, comentar que quizás __podríamos mejorar más aún nuestros modelos si enfocasemos este problema de clasificación como uno de 3 clases__, agrupando los estadios braak en los niveles "1-2", "3-4" y "5-7". Dicha modificación permitiría mayor flexibilidad a la hora de clasificar el estado de un paciente, ya que __los estadios agrupados presentan histopatologías y síntomas cognitivos similares__ ( [Véase Petersen V., Mikkel (2017)](https://www.researchgate.net/publication/319059671_Tractography_and_Neurosurgical_Targeting_in_Deep_Brain_Stimulation_for_Parkinson's_Disease/) ), por no decir que aumentaríamos significativamente la __precisión base del problema__ del __33%__ actual a un __54,6%__ (ver cálculo debajo).
+
+
+
+```{r calculo de precisión actualizada}
+C <- length (which(dataset$braaksc=="estadio_5"))
+D <- length (which(dataset$braaksc=="estadios_6_7")) 
+# Se recuerda que previamente agrupamos a los individuos del estadio 6 y 7 en el nivel 6
+precision_actualizada <- ((C+D) / nrow(dataset))*100
+print(paste0(precision_actualizada,"%"))
+```
+
+
+
