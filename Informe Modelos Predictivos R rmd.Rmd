@@ -301,8 +301,8 @@ columnas_factores <- c(columnas_factores, which(colnames(dataset) %in% c("braaks
 
 dataset_escalado <- cbind(dataset_escalado,dataset[,columnas_factores])
 
-# Comprobamos que las columnas están bien formateadas
-str(dataset_escalado)
+# Comprobamos que las columnas están bien formateadas. Por legibilidad, solo mostramos las 15 últimas.
+tail(sapply(dataset_escalado, class), n= 15L)
 ```
 
 
@@ -324,7 +324,7 @@ Boruta realiza una búsqueda de tipo Backwards mediante un algoritmo wrapper de 
 set.seed(1)
 
 # Ahora realizamos la busqueda de las variables importantes
-boruta_output <- Boruta(braaksc ~ . , data=dataset_escalado, doTrace = 1)
+boruta_output <- Boruta(braaksc ~ . , data=dataset_escalado, doTrace = 0)
 ```
 
 
