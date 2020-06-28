@@ -46,6 +46,7 @@ library(Boruta)
 library(partykit)
 library(pROC)
 library(MLmetrics)
+library(partykit)
 ```
 
 * Con las librerías `parallel` y `doParallel` podemos paralelizar los  procedimientos aqui realizados, lo que aliviará los tiempos de espera en la ejecucion de ciertos comandos, sobre todo en los comandos de la libreria `caret`.
@@ -444,12 +445,13 @@ Con las semillas de aleatoriedad listas, establecemos el control del entrenamien
 control_entrenamiento_J48_MLP <- trainControl(method = "repeatedcv",
                            number=5,
                            repeats = 3,
-                           seeds = semillas_J48_MLP,
+                           seeds = NULL, #Poner "semillas_J48_MLP" cuando acabe
                            returnResamp = "final",
                            allowParallel = TRUE,
                            classProbs = TRUE,
                            summaryFunction = multiClassSummary, 
-                           verbose = F)
+                           verbose = F,
+                           search = "grid")
 
 # Nota: summaryFunction = defaultSummary solo permite obtener las métricas
 # Accuracy y Kappa
@@ -469,7 +471,7 @@ control_entrenamiento_J48_MLP <- trainControl(method = "repeatedcv",
 ### Modelo con 8 predictores
 
 Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase) e intentando maximizar la métrica `AUC`. Además, por ser un problema multi-clase, prestaremos especia atención a la métrica `Kappa` de nuestros modelos.
-```{r, Modelo J48 con 8 predictores}
+```{r, Modelo J48 con 8 predictores, warning=F}
 set.seed(1)
 
 # NOTA: Podemos elegir maximizar la Accuracy, el Kappa o el AUC. En este caso
@@ -477,15 +479,42 @@ set.seed(1)
 modelo_J48 <- train(braaksc~.,data=training_set,
                   method="J48",
                   metric = "AUC",     # Maximize = TRUE by default
-                  trControl = control_entrenamiento_J48_MLP)
+                  trControl = control_entrenamiento_J48_MLP,
+                  tuneLength = 10)
 ```
 
+<br>
+
+Los mejores hiperparámetros encontrados fueron:
+
+```{r, warning=F}
+modelo_J48$bestTune
+
+
+# Hyperparameter search grid
+ggplot(modelo_J48) + theme(legend.position = "top")
+```
 
 
 <br>
 
-Las métricas obtenidas fueron:
-```{r, collapse=T}
+Ahora construimos el modelo final con los hiperparámetros óptimos (`C`= 0.5 y `M` = 10):
+
+```{r, warning=F}
+
+# modelLookup("J48")
+
+
+J48Grid <-  expand.grid(C = 0.5, M = 10)
+#View(J48Grid)
+
+set.seed(1)
+modelo_J48 <- train(braaksc~.,data=training_set,
+                  method= "J48",
+                  metric = "AUC",     # Maximize = TRUE by default
+                  trControl = control_entrenamiento_J48_MLP,
+                  tuneGrid = J48Grid)
+
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_J48$resample$AUC), "\n")
 
 cat("La precisión media de este modelo fue:", mean(modelo_J48$resample$Accuracy), "\n")
@@ -495,25 +524,8 @@ cat("El índice Kappa medio de este modelo fue:", mean(modelo_J48$resample$Kappa
 
 
 <br>
-
-Y se obtuvieron con la siguiente configuración de parámetros (que son la mejor combinación encontrada por caret):
-```{r}
-modelo_J48$bestTune
-```
-
-
-<br>
 <br>
 
-Procedemos a las __visualizaciones del modelo__, empezando por la __configuración óptima de parámetros__ de J48 para este modelo en concreto:
-
-```{r, echo=F}
-plot(modelo_J48)
-```
-
-
-
-<br>
 
 __Árbol generado__:
 
@@ -538,15 +550,14 @@ modelo_J48$finalModel
 
 
 Por último, comprobamos si hay overfitting comparando la precisión media del modelo en el set de entrenamiento y en el de test:
-```{r, collapse=T}
+```{r}
 # Precisión en el set de entrenamiento
-MLmetrics::Accuracy(predict(modelo_J48, training_set[,-10]), training_set[[10]])
-```
+A <- MLmetrics::Accuracy(predict(modelo_J48, training_set[,-10]), training_set[[10]])
 
-
-```{r, collapse=T}
 # Precisión en el set de test
-MLmetrics::Accuracy(predict(modelo_J48, test_set[,-10]), test_set[[10]])
+B <- MLmetrics::Accuracy(predict(modelo_J48, test_set[,-10]), test_set[[10]])
+
+diff(c(A,B))
 ```
 
 Podemos observar que hay una diferencia importante de rendimiento entre el set de entrenamiento y el de test (~23%), por lo que podemos asegurar que se da overfitting en este modelo.
@@ -574,23 +585,47 @@ colnames(training_set)[columnas_J48_2]
 
 <br>
 
-Construimos el modelo:
+Construimos el modelo y buscamos los mejores hiperparámetros:
 
-```{r, Modelo J48 con 4 predictores}
+```{r, Modelo J48 con 4 predictores, warning=F}
 set.seed(1)
 modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
                     method="J48",
                     metric = "AUC",      # Maximize = TRUE by default
+                    tuneLength = 10,
                     trControl = control_entrenamiento_J48_MLP)
 ```
 
+<br>
 
 
+La mejor configuración de hiperparámetros encontrada fue:
+```{r, warning=F}
+modelo_J48_2$bestTune
+
+# Hyperparameter search grid
+ggplot(modelo_J48_2) + theme(legend.position = "top")
+```
 
 <br>
 
-Las métricas obtenidas fueron:
-```{r, collapse=T}
+Ahora construimos el modelo final con los hiperparámetros óptimos (`C`= 0.33 y `M` = 10):
+
+```{r, warning=F}
+
+# modelLookup("J48")
+
+
+J48_2Grid <-  expand.grid(C = 0.33, M = 10)
+#View(J48Grid)
+
+set.seed(1)
+modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
+                  method= "J48",
+                  metric = "AUC",     # Maximize = TRUE by default
+                  trControl = control_entrenamiento_J48_MLP,
+                  tuneGrid = J48_2Grid)
+
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_J48_2$resample$AUC), "\n")
 
 cat("La precisión media de este modelo fue:", mean(modelo_J48_2$resample$Accuracy), "\n")
@@ -599,25 +634,8 @@ cat("El índice Kappa medio de este modelo fue:", mean(modelo_J48_2$resample$Kap
 ```
 
 
-<br>
-
-Y se obtuvieron con la siguiente configuración de parámetros (que son la mejor combinación encontrada por caret):
-```{r}
-modelo_J48_2$bestTune
-```
-
 
 <br>
-<br>
-
-Procedemos a las __visualizaciones del modelo__, empezando por la __configuración óptima de parámetros__ de J48 para este modelo en concreto:
-
-```{r, echo=F}
-plot(modelo_J48_2)
-```
-
-
-
 <br>
 
 __Árbol generado__:
@@ -641,18 +659,18 @@ modelo_J48_2$finalModel
 <br>
 
 Por último, comprobamos si hay overfitting comparando la precisión media del modelo en el set de entrenamiento y en el de test:
-```{r, collapse=T}
+```{r}
 # Precisión en el set de entrenamiento
-MLmetrics::Accuracy(predict(modelo_J48_2, training_set[,c(6, 7, 8, 9)]), training_set[[10]])
-```
+A <- MLmetrics::Accuracy(predict(modelo_J48_2, training_set[,c(6, 7, 8, 9)]), training_set[[10]])
 
-
-```{r, collapse=T}
 # Precisión en el set de test
-MLmetrics::Accuracy(predict(modelo_J48_2, test_set[,c(6, 7, 8, 9)]), test_set[[10]])
+B <- MLmetrics::Accuracy(predict(modelo_J48_2, test_set[,c(6, 7, 8, 9)]), test_set[[10]])
+
+diff(c(A,B))
 ```
 
-La precisión en el set de entrenamiento es mejor que en la de test, pero no demasiado (~9% de diferencia), así que no podemos asegurar con total certeza que haya overfitting.
+
+La precisión en el set de entrenamiento es mejor que en la de test, pero no demasiado (~18% de diferencia), así que no podemos asegurar con total certeza que haya overfitting.
 
 
 
@@ -663,19 +681,44 @@ La precisión en el set de entrenamiento es mejor que en la de test, pero no dem
 
 Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase).
 
-```{r}
+```{r, warning=F}
 set.seed(1)
 modelo_MLP <- train(braaksc~.,data=training_set,
                 method="mlp",
                 metric = "AUC",      # Maximize = TRUE by default
+                tuneLength = 10,
                 trControl = control_entrenamiento_J48_MLP)
 ```
 
+<br>
+
+La mejor configuración de hiperparámetros encontrada fue:
+```{r}
+modelo_MLP$bestTune
+
+# Hyperparameter search grid
+ggplot(modelo_MLP) + theme(legend.position = "top")
+```
 
 <br>
 
-Las métricas obtenidas fueron:
-```{r, collapse=T}
+Ahora construimos el modelo final con los hiperparámetros óptimos (`Hidden units` = 3):
+
+```{r, warning=F}
+
+# modelLookup("mlp")
+
+
+MLPGrid <-  expand.grid(size = 3)
+#View(MLPGrid)
+
+set.seed(1)
+modelo_MLP <- train(braaksc~.,data=training_set,
+                method="mlp",
+                metric = "AUC",      # Maximize = TRUE by default
+                trControl = control_entrenamiento_J48_MLP,
+                tuneGrid = MLPGrid)
+
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_MLP$resample$AUC), "\n")
 
 cat("La precisión media de este modelo fue:", mean(modelo_MLP$resample$Accuracy), "\n")
@@ -684,42 +727,25 @@ cat("El índice Kappa medio de este modelo fue:", mean(modelo_MLP$resample$Kappa
 ```
 
 
-<br>
-
-Y se obtuvieron con la siguiente configuración de parámetros (que son la mejor combinación encontrada por caret):
-```{r}
-modelo_MLP$bestTune
-```
-
-
 
 <br>
-<br>
-
-La siguiente gráfica muestra visualmente la información del párrafo anterior:
-
-```{r, echo=F}
-plot(modelo_MLP)
-```
-
-
-
 <br>
 
 
 Por último, comprobamos si hay overfitting comparando la precisión media del modelo en el set de entrenamiento y en el de test:
-```{r, collapse=T}
+```{r}
 # Precisión en el set de entrenamiento
-MLmetrics::Accuracy(predict(modelo_MLP, training_set[,-10]), training_set[[10]])
-```
+A <- MLmetrics::Accuracy(predict(modelo_MLP, training_set[,-10]), training_set[[10]])
 
-
-```{r, collapse=T}
 # Precisión en el set de test
-MLmetrics::Accuracy(predict(modelo_MLP, test_set[,-10]), test_set[[10]])
+B <- MLmetrics::Accuracy(predict(modelo_MLP, test_set[,-10]), test_set[[10]])
+
+diff(c(A,B))
 ```
 
-La precisión en el set de entrenamiento es ligeramente mejor que en la de test (~17% de diferencia), por lo que puede que haya overfitting, pero no estamos seguros.
+
+
+La precisión en el set de entrenamiento es ligeramente mejor que en la de test (~15% de diferencia), por lo que puede que haya overfitting, pero no estamos seguros.
 
 
 
@@ -762,28 +788,58 @@ Con las semillas de aleatoriedad listas, establecemos el control del entrenamien
 control_entrenamiento_RegLog <- trainControl(method = "repeatedcv",
                            number=5,
                            repeats = 3,
-                           seeds = semillas_RegLog,
+                           seeds = NULL, # Usar "semillas_RegLog" cuando acabe
                            returnResamp = "final",
                            allowParallel = TRUE,
                            classProbs = TRUE,
                            summaryFunction = multiClassSummary, 
-                           verbose = F)
+                           verbose = F,
+                           search = "grid")
 ```
 
 <br>
 
-```{r}
+```{r, warning=F}
 set.seed(1)
 modelo_RegLog <- train(braaksc~.,data=training_set,
                 method="regLogistic",
                 metric = "AUC",      # Maximize = TRUE by default
+                tuneLength = 10,
                 trControl = control_entrenamiento_RegLog)
 ```
 
+
 <br>
 
-Las métricas obtenidas fueron:
-```{r, collapse=T}
+La mejor configuración de hiperparámetros encontrada fue:
+```{r, warning=F}
+modelo_RegLog$bestTune
+
+# Hyperparameter search grid
+ggplot(modelo_RegLog) + theme(legend.position = "top")
+```
+
+
+<br>
+
+Ahora construimos el modelo final con los hiperparámetros óptimos (`cost`= 0.5, y `loss` = L1 y `epsilon` = 0.01):
+
+```{r, warning=F}
+
+# modelLookup("regLogistic")
+
+
+RegLogGrid <-  expand.grid(cost = 0.5, loss = "L1", epsilon = 0.01)
+#View(RegLogGrid)
+
+set.seed(1)
+modelo_RegLog <- train(braaksc~.,data=training_set,
+                method="regLogistic",
+                metric = "AUC",      # Maximize = TRUE by default
+                trControl = control_entrenamiento_RegLog,
+                tuneGrid = RegLogGrid)
+
+
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_RegLog$resample$AUC), "\n")
 
 cat("La precisión media de este modelo fue:", mean(modelo_RegLog$resample$Accuracy), "\n")
@@ -794,34 +850,19 @@ cat("El índice Kappa medio de este modelo fue:", mean(modelo_RegLog$resample$Ka
 
 <br>
 
-Y se obtuvieron con la siguiente configuración de parámetros (que son la mejor combinación encontrada por caret):
-```{r}
-modelo_RegLog$bestTune
-```
-
-<br>
-
-La siguiente gráfica muestra visualmente la información del párrafo anterior:
-
-```{r, echo=F}
-plot(modelo_RegLog)
-```
-
-
-<br>
-
 Por último, comprobamos si hay overfitting comparando la precisión media del modelo en el set de entrenamiento y en el de test:
 
-```{r, collapse=T}
+```{r}
 # Precisión en el set de entrenamiento
-MLmetrics::Accuracy(predict(modelo_RegLog, training_set[,-10]), training_set[[10]])
-```
+A <- MLmetrics::Accuracy(predict(modelo_RegLog, training_set[,-10]), training_set[[10]])
 
-
-```{r, collapse=T}
 # Precisión en el set de test
-MLmetrics::Accuracy(predict(modelo_RegLog, test_set[,-10]), test_set[[10]])
+B <- MLmetrics::Accuracy(predict(modelo_RegLog, test_set[,-10]), test_set[[10]])
+
+diff(c(A,B))
 ```
+
+
 
 La precisión en el set de entrenamiento es ligeramente mejor que en la de test (~14% de diferencia), por lo que puede que haya overfitting, pero no estamos seguros.
 
@@ -836,10 +877,10 @@ La __Regresión Logística con 8 predictores parece ser el clasificador que mayo
 
 |      Modelo       |   Precisión   |     Kappa     |      AUC      |
 |-------------------|---------------|---------------|---------------|
-|J48 (8 predictores)|   0.4364907   |   0.2350822   |   0.6808367   |
-|J48 (4 predictores)|   0.4659313   |   0.2622392   |   0.7121320   | 
-|       MLP         |   0.4626941   |   0.2726042   |   0.7419602   |
-|    __RegLog__     | __0.5011449__ | __0.316729__  | __0.7655404__ | 
+|J48 (8 predictores)|   0.4565051   |   0.2687958   |   0.7068018   |
+|J48 (4 predictores)|   0.4551964   |   0.2632029   |   0.7161267   | 
+|       MLP         |   0.4625404   |   0.2621256   |   0.7419192   |
+|    __RegLog__     | __0.5068602__ | __0.3217057__ | __0.7693466__ | 
 
 Nota: Obsérvese que tal como anticipamos, las métricas del modelo J48 mejoraron ligeramente al simplificarlo `r emo::ji("smile")`
 
@@ -857,10 +898,10 @@ datos_muestreo <- resamples(modelos)
 # Como se calcularon muchas métricas, nos quedamos con las que nos interesan, que son la precisión, el Kappa y el AUC de nuestros 4 modelos
 datos_muestreo$values  <- datos_muestreo$values[,c(1:4,16:18,30:32,44:46)]
 
-# Resumen de las métricas de interés
-summary(datos_muestreo$values[,-1])
+# Resumen visual de las métricas de interés
+boxplot(datos_muestreo$values[,-1], col = "aquamarine")
 
-# Adicionalmente, podemos analizar individualmente cada fold
+# Adicionalmente, podemos analizar individualmente cada fold con este comando:
 datos_muestreo$values
 ```
 
@@ -1054,12 +1095,29 @@ Adicionalmente, con el comando `varImp()` podemos observar la relevancia que le 
 * Para las __clases 6 y 7__, estas fueron `ceradsc` y la `edad`.
 
 
-```{r,echo=F}
-print(varImp(modelo_J48))
-print(varImp(modelo_J48_2))
-print(varImp(modelo_MLP))
-print(varImp(modelo_RegLog))
+```{r,Relevancia variables J48, echo=F}
+plot(varImp(modelo_J48), main = "Relevancia de variables en J48 (8 pred.)")
 ```
+
+<br>
+
+```{r,Relevancia variables J48_2, echo=F}
+plot(varImp(modelo_J48_2), main = "Relevancia de variables en J48 (4 pred.)")
+```
+
+<br>
+
+```{r,Relevancia variables MLP, echo=F}
+plot(varImp(modelo_MLP), main = "Relevancia de variables en MLP")
+```
+
+<br>
+
+```{r,Relevancia variables RegLog, echo=F}
+plot(varImp(modelo_RegLog), main = "Relevancia de variables en RegLog")
+```
+
+
 <br>
 <br>
 
@@ -1177,10 +1235,33 @@ metricas_auc
 
 <br>
 
-A continuación hacemos el __contraste para la igualdad de varianzas__ del AUC. Como son 4 poblaciones __normales e independientes, usaremos el __test de esfericidad de Bartlett__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
+A continuación hacemos el __contraste para la igualdad de varianzas__ del AUC. Como son 4 poblaciones __normales y dependientes, usaremos el __test de esfericidad de Mauchly__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
 
 ```{r, contraste homogeneidad varianzas AUC}
-bartlett.test(list(metricas_auc$`J48~AUC`, metricas_auc$`J48_2~AUC`, metricas_auc$`MLP~AUC`, metricas_auc$`RegLog~AUC`))
+# por hacer
+# traspuesta_auc <- t(metricas_auc)
+# 
+# traspuesta_auc
+# 
+# traspuesta_2 <- cbind2(traspuesta_auc, c(1,2,3,4))
+# 
+# View(traspuesta_2)
+# 
+# traspuesta_2 <- as.data.frame(traspuesta_2)
+# 
+# colnames(traspuesta_2)[16] <- "modelo"
+# 
+# colnames(traspuesta_2)
+# 
+# mauchly.test(lm(modelo ~ ., data = traspuesta_2, na.action = na.exclude), X = ~1)
+# 
+# lm(modelo ~ ., data = traspuesta_2, na.action = na.exclude)
+# 
+# 
+# ?lm
+# 
+# ?mauchly.test
+
 ```
 
 Puesto que nuestro p-valor es mayor a 0.05, no rechazamos la hipótesis nula. Vemos por tanto que las métricas *AUC* de los modelos __tienen varianzas iguales__. 
