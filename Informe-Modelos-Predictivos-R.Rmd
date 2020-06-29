@@ -426,7 +426,7 @@ str(semillas)
 <br>
 
 Con las semillas de aleatoriedad listas, establecemos el control del entrenamiento para nuestros modelos:
-```{r, Control de entrenamiento para J48 y MLP}
+```{r, Control de entrenamiento para J48-MLP-RegLog}
 control_entrenamiento <- trainControl(method = "repeatedcv",
                            number=5,
                            repeats = 3,
@@ -435,8 +435,9 @@ control_entrenamiento <- trainControl(method = "repeatedcv",
                            allowParallel = TRUE,
                            classProbs = TRUE,
                            summaryFunction = multiClassSummary, 
-                           verbose = T,
-                           search = "grid")
+                           verboseIter = T,
+                           search = "grid",
+                           p = .8)
 
 # Nota: summaryFunction = defaultSummary solo permite obtener las métricas
 # Accuracy y Kappa
