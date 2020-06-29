@@ -301,7 +301,7 @@ Procedemos a la selección de variables. Usaremos el paquete `Boruta` para ello,
 
 Boruta realiza una búsqueda de tipo Backwards mediante un algoritmo wrapper de Random Forest.
 
-```{r, seleccion variables con Boruta, collapse=T}
+```{r, seleccion variables con Boruta, collapse=T, cache=T}
 # Establecemos la semilla de aleatoriedad para garantizar la reproducibilidad de
 # esta sesion
 set.seed(1)
