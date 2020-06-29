@@ -227,13 +227,11 @@ hist(dataset[,"braaksc"], xlab= "Estadio braaksc", ylab="Frecuencia",
 
 <br>
 
-Una vez realizado este rebalanceo de clases, y teniendo en cuenta que la clase `braaksc` era reconocida (erróneamente) como una variable numérica, vamos a recodificarla como `ordered factor` con los siguientes comandos y comprobar que el cambio ha sido exitoso. 
+Una vez realizado este rebalanceo de clases, y teniendo en cuenta que la clase `braaksc` era reconocida (erróneamente) como una variable numérica, vamos a __recodificarla como__ `ordered factor` con los siguientes comandos y comprobar que el cambio ha sido exitoso. 
 
 ```{r, collapse=T}
 # Antes del type casting
-class(dataset$braaksc)
-is.ordered(dataset$braaksc)
-
+tail(dataset$braaksc, n=0)
 
 dataset$braaksc <- factor(dataset$braaksc,ordered = TRUE)
 
@@ -241,11 +239,6 @@ levels(dataset$braaksc) <-  c("estadios_1_2", "estadio_3", "estadio_4", "estadio
 
 
 # Después del type casting a factor ordenado
-class(dataset$braaksc)
-is.ordered(dataset$braaksc)
-
-
-# Este comando nos confirma el orden de cada estado
 tail(dataset$braaksc, n=0)
 ```
 
@@ -256,37 +249,26 @@ Hay que tener cuidado con el atributo `ceradsc`, ya que en el caso de `braaksc` 
 
 ```{r}
 # Antes de castear la variable dependiente "cogdx"
-class(dataset$cogdx)
-is.ordered(dataset$cogdx)
-
+tail(dataset$cogdx, n = 0)
 
 dataset$cogdx <- factor(dataset$cogdx,ordered = TRUE)
 
 
-# Después del casteo a factor ordenado
-class(dataset$cogdx)
-is.ordered(dataset$cogdx)
-
-
-# Este comando nos confirma el orden de cada estado
+# Después del type casting a factor ordenado
 tail(dataset$cogdx, n=0)
 
 
 ###############################################################
 # ídem para ceradsc, pero inviertiendo el orden de los niveles:
 ###############################################################
-class(dataset$ceradsc)
 
-is.ordered(dataset$ceradsc)
+
+tail(dataset$ceradsc, n = 0)
 
 dataset$ceradsc <- factor(dataset$ceradsc,ordered = TRUE)
 levels(dataset$ceradsc) <-  c(4, 3, 2, 1)
 
-
-class(dataset$ceradsc)
-is.ordered(dataset$ceradsc)
-
-
+# Después del type casting a factor ordenado
 tail(dataset$ceradsc, n=0)
 ```
 
@@ -302,8 +284,8 @@ columnas_factores <- c(columnas_factores, which(colnames(dataset) %in% c("braaks
 
 dataset_escalado <- cbind(dataset_escalado,dataset[,columnas_factores])
 
-# Comprobamos que las columnas están bien formateadas. Por legibilidad, solo mostramos las 15 últimas.
-tail(sapply(dataset_escalado, class), n= 15L)
+# Comprobamos que las columnas están bien formateadas. Por legibilidad, solo mostramos las 12 últimas.
+tail(sapply(dataset_escalado, class), n = 12L)
 ```
 
 
@@ -367,7 +349,7 @@ clase <- which(names(dataset_escalado) == "braaksc")
 
 dataset_variables_seleccionadas <- dataset_escalado[,c(variables_seleccionadas_boruta,clase)]
 
-str(dataset_variables_seleccionadas)
+sapply(dataset_variables_seleccionadas, class)
 ```
 
 
@@ -411,7 +393,7 @@ cat("El set de testeo tiene", nrow(test_set), "individuos y", ncol(test_set), "v
 
 A continuación establecemos las __opciones de testeo__ que caret usará para la construcción de los __clasificadores J48 y MLP__ (RegLog requiere un tratamiento ligeramente distinto, se verá en su correspondiente apartado). Para ellos crearemos primero un listado de semillas de aleatoriedad que usaremos más adelante para la creación de cada fold y la evaluación del modelo final:
 
-```{r, Semillas de aleatoriedad para J48 y MLP}
+```{r, Semillas de aleatoriedad para nuestros modelos}
 set.seed(1)
 
 
@@ -421,36 +403,39 @@ set.seed(1)
 # Debemos llenar todos los bolsillos con vectores con 15 numeros cada uno, menos
 # en el último bolsillo de la lista semillas, que debe ser un único número.
 
-semillas_J48_MLP <- vector(mode = "list", length = 15)  
+semillas <- vector(mode = "list", length = 15)  
 
 
-# Llenamos la lista/vector con semillas al azar, elegidas entre 1 y 1000. Creamos, por
-# tanto, una lista de listas. Todos los bolsillos de la lista, menos el último,
-# tendrán vectores con 16 números de longitud:
-semillas_J48_MLP <- lapply(semillas_J48_MLP, function(x) sample.int(1000, size= 15+1))
+# Llenamos la lista/vector con semillas al azar, elegidas entre 1 y 1000.
+# Creamos, por tanto, una lista de listas. Todos los bolsillos de la lista,
+# menos el último, tendrán vectores con 16 números de longitud 
+#
+# (5 folds * 3 repeticiones) + 1 evaluación final = 16
 
-semillas_J48_MLP[[16]] <- sample.int(1000, size= 1)
+semillas <- lapply(semillas, function(x) sample.int(1000, size= 300))
+
+semillas[[16]] <- sample.int(1000, size= 1)
 
 # Hemos usado lapply porque queremos que nos devuelva una lista/vector
 
-str(semillas_J48_MLP)
+str(semillas)
 ```
 
 
 
 <br>
 
-Con las semillas de aleatoriedad listas, establecemos el control del entrenamiento para nuestros modelos J48 y MLP:
+Con las semillas de aleatoriedad listas, establecemos el control del entrenamiento para nuestros modelos:
 ```{r, Control de entrenamiento para J48 y MLP}
-control_entrenamiento_J48_MLP <- trainControl(method = "repeatedcv",
+control_entrenamiento <- trainControl(method = "repeatedcv",
                            number=5,
                            repeats = 3,
-                           seeds = NULL, #Poner "semillas_J48_MLP" cuando acabe
+                           seeds = semillas, #Poner "semillas_J48_MLP" cuando acabe
                            returnResamp = "final",
                            allowParallel = TRUE,
                            classProbs = TRUE,
                            summaryFunction = multiClassSummary, 
-                           verbose = F,
+                           verbose = T,
                            search = "grid")
 
 # Nota: summaryFunction = defaultSummary solo permite obtener las métricas
@@ -471,7 +456,7 @@ control_entrenamiento_J48_MLP <- trainControl(method = "repeatedcv",
 ### Modelo con 8 predictores
 
 Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase) e intentando maximizar la métrica `AUC`. Además, por ser un problema multi-clase, prestaremos especia atención a la métrica `Kappa` de nuestros modelos.
-```{r, Modelo J48 con 8 predictores, warning=F}
+```{r, Modelo J48 con 8 predictores, warning=T}
 set.seed(1)
 
 # NOTA: Podemos elegir maximizar la Accuracy, el Kappa o el AUC. En este caso
@@ -479,8 +464,11 @@ set.seed(1)
 modelo_J48 <- train(braaksc~.,data=training_set,
                   method="J48",
                   metric = "AUC",     # Maximize = TRUE by default
-                  trControl = control_entrenamiento_J48_MLP,
+                  trControl = control_entrenamiento,
                   tuneLength = 10)
+
+# modelo_J48$results
+# modelo_J48
 ```
 
 <br>
@@ -500,7 +488,7 @@ ggplot(modelo_J48) + theme(legend.position = "top")
 
 Ahora construimos el modelo final con los hiperparámetros óptimos (`C`= 0.5 y `M` = 10):
 
-```{r, warning=F}
+```{r, warning=T}
 
 # modelLookup("J48")
 
@@ -512,12 +500,12 @@ set.seed(1)
 modelo_J48 <- train(braaksc~.,data=training_set,
                   method= "J48",
                   metric = "AUC",     # Maximize = TRUE by default
-                  trControl = control_entrenamiento_J48_MLP,
+                  trControl = control_entrenamiento,
                   tuneGrid = J48Grid)
 
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_J48$resample$AUC), "\n")
 
-cat("La precisión media de este modelo fue:", mean(modelo_J48$resample$Accuracy), "\n")
+cat("La precisión media de este modelo fue:", mean(modelo_J48$resample$Accuracy), "% \n")
 
 cat("El índice Kappa medio de este modelo fue:", mean(modelo_J48$resample$Kappa), "\n")
 ```
@@ -557,7 +545,8 @@ A <- MLmetrics::Accuracy(predict(modelo_J48, training_set[,-10]), training_set[[
 # Precisión en el set de test
 B <- MLmetrics::Accuracy(predict(modelo_J48, test_set[,-10]), test_set[[10]])
 
-diff(c(A,B))
+
+print(paste0("La diferencia entre la precisión en el set de entrenamiento (", A, "%) y en la del set de test (", B, "%) es: ", A - B,"%" ))
 ```
 
 Podemos observar que hay una diferencia importante de rendimiento entre el set de entrenamiento y el de test (~23%), por lo que podemos asegurar que se da overfitting en este modelo.
@@ -587,13 +576,16 @@ colnames(training_set)[columnas_J48_2]
 
 Construimos el modelo y buscamos los mejores hiperparámetros:
 
-```{r, Modelo J48 con 4 predictores, warning=F}
+```{r, Modelo J48 con 4 predictores, warning=T}
 set.seed(1)
 modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
                     method="J48",
                     metric = "AUC",      # Maximize = TRUE by default
                     tuneLength = 10,
-                    trControl = control_entrenamiento_J48_MLP)
+                    trControl = control_entrenamiento)
+
+# modelo_J48_2$results
+# modelo_J48_2
 ```
 
 <br>
@@ -611,7 +603,7 @@ ggplot(modelo_J48_2) + theme(legend.position = "top")
 
 Ahora construimos el modelo final con los hiperparámetros óptimos (`C`= 0.33 y `M` = 10):
 
-```{r, warning=F}
+```{r, warning=T}
 
 # modelLookup("J48")
 
@@ -623,12 +615,12 @@ set.seed(1)
 modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
                   method= "J48",
                   metric = "AUC",     # Maximize = TRUE by default
-                  trControl = control_entrenamiento_J48_MLP,
+                  trControl = control_entrenamiento,
                   tuneGrid = J48_2Grid)
 
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_J48_2$resample$AUC), "\n")
 
-cat("La precisión media de este modelo fue:", mean(modelo_J48_2$resample$Accuracy), "\n")
+cat("La precisión media de este modelo fue:", mean(modelo_J48_2$resample$Accuracy), "% \n")
 
 cat("El índice Kappa medio de este modelo fue:", mean(modelo_J48_2$resample$Kappa), "\n")
 ```
@@ -666,7 +658,7 @@ A <- MLmetrics::Accuracy(predict(modelo_J48_2, training_set[,c(6, 7, 8, 9)]), tr
 # Precisión en el set de test
 B <- MLmetrics::Accuracy(predict(modelo_J48_2, test_set[,c(6, 7, 8, 9)]), test_set[[10]])
 
-diff(c(A,B))
+print(paste0("La diferencia entre la precisión en el set de entrenamiento (", A, "%) y en la del set de test (", B, "%) es: ", A - B,"%" ))
 ```
 
 
@@ -681,13 +673,15 @@ La precisión en el set de entrenamiento es mejor que en la de test, pero no dem
 
 Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase).
 
-```{r, warning=F}
+```{r, warning=T}
 set.seed(1)
 modelo_MLP <- train(braaksc~.,data=training_set,
                 method="mlp",
                 metric = "AUC",      # Maximize = TRUE by default
                 tuneLength = 10,
-                trControl = control_entrenamiento_J48_MLP)
+                trControl = control_entrenamiento)
+
+# modelo_MLP$results
 ```
 
 <br>
@@ -704,7 +698,7 @@ ggplot(modelo_MLP) + theme(legend.position = "top")
 
 Ahora construimos el modelo final con los hiperparámetros óptimos (`Hidden units` = 3):
 
-```{r, warning=F}
+```{r, warning=T}
 
 # modelLookup("mlp")
 
@@ -719,9 +713,12 @@ modelo_MLP <- train(braaksc~.,data=training_set,
                 trControl = control_entrenamiento_J48_MLP,
                 tuneGrid = MLPGrid)
 
+# modelo_MLP$results
+
+
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_MLP$resample$AUC), "\n")
 
-cat("La precisión media de este modelo fue:", mean(modelo_MLP$resample$Accuracy), "\n")
+cat("La precisión media de este modelo fue:", mean(modelo_MLP$resample$Accuracy), "% \n")
 
 cat("El índice Kappa medio de este modelo fue:", mean(modelo_MLP$resample$Kappa), "\n")
 ```
@@ -740,7 +737,7 @@ A <- MLmetrics::Accuracy(predict(modelo_MLP, training_set[,-10]), training_set[[
 # Precisión en el set de test
 B <- MLmetrics::Accuracy(predict(modelo_MLP, test_set[,-10]), test_set[[10]])
 
-diff(c(A,B))
+print(paste0("La diferencia entre la precisión en el set de entrenamiento (", A, "%) y en la del set de test (", B, "%) es: ", A - B,"%" ))
 ```
 
 
@@ -755,64 +752,27 @@ La precisión en el set de entrenamiento es ligeramente mejor que en la de test 
 
 ## Regresión logística
 
-Al igual que el primer modelo de `J48` y el de `MLP`, esta regresión también se realizará con 8 predictores más la clase. Nótese que RegLog requiere de un nº distinto de semillas de aleatoriedad durante su entrenamiento (27 por bolsillo, en lugar de 16 por bolsillo como sucede con J48 y MLP), por lo que lo plasmaremos en su control de entrenamiento:
-
-
-```{r, Semillas de aleatoriedad para RegLog}
-set.seed(1)
-
-# Usamos el mismo nº de folds que en J48 y MLP, por lo que la longitud de la
-# lista se mantiene en 16
-semillas_RegLog <- vector(mode = "list", length = 15+1)
-
-
-
-# Llenamos la lista/vector con semillas al azar, elegidas entre 1 y 1000. Creamos, por
-# tanto, una lista de listas. Todos los bolsillos de la lista, menos el último,
-# tendrán vectores con 27 números de longitud:
-semillas_RegLog <- lapply(semillas_RegLog, function(x) sample.int(1000, size= 27))
-
-semillas_RegLog[[16]] <- sample.int(1000, size= 1)
-
-
-
-str(semillas_RegLog)
-```
-
-
+Al igual que el primer modelo de `J48` y el de `MLP`, esta regresión también se realizará con 8 predictores más la clase. Nótese que RegLog requiere de 300 semillas de aleatoriedad durante su entrenamiento.
 
 <br>
 
-Con las semillas de aleatoriedad listas, establecemos el control del entrenamiento para nuestro modelo RegLog:
-```{r, control de entrenamiento para RegLog}
-control_entrenamiento_RegLog <- trainControl(method = "repeatedcv",
-                           number=5,
-                           repeats = 3,
-                           seeds = NULL, # Usar "semillas_RegLog" cuando acabe
-                           returnResamp = "final",
-                           allowParallel = TRUE,
-                           classProbs = TRUE,
-                           summaryFunction = multiClassSummary, 
-                           verbose = F,
-                           search = "grid")
-```
-
-<br>
-
-```{r, warning=F}
+```{r, warning=T}
 set.seed(1)
 modelo_RegLog <- train(braaksc~.,data=training_set,
                 method="regLogistic",
                 metric = "AUC",      # Maximize = TRUE by default
                 tuneLength = 10,
-                trControl = control_entrenamiento_RegLog)
+                trControl = control_entrenamiento)
+
+# modelo_RegLog$results
+# modelo_RegLog
 ```
 
 
 <br>
 
 La mejor configuración de hiperparámetros encontrada fue:
-```{r, warning=F}
+```{r, warning=T}
 modelo_RegLog$bestTune
 
 # Hyperparameter search grid
@@ -824,7 +784,7 @@ ggplot(modelo_RegLog) + theme(legend.position = "top")
 
 Ahora construimos el modelo final con los hiperparámetros óptimos (`cost`= 0.5, y `loss` = L1 y `epsilon` = 0.01):
 
-```{r, warning=F}
+```{r, warning=T}
 
 # modelLookup("regLogistic")
 
@@ -836,13 +796,15 @@ set.seed(1)
 modelo_RegLog <- train(braaksc~.,data=training_set,
                 method="regLogistic",
                 metric = "AUC",      # Maximize = TRUE by default
-                trControl = control_entrenamiento_RegLog,
+                trControl = control_entrenamiento,
                 tuneGrid = RegLogGrid)
+
+# modelo_RegLog$results
 
 
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_RegLog$resample$AUC), "\n")
 
-cat("La precisión media de este modelo fue:", mean(modelo_RegLog$resample$Accuracy), "\n")
+cat("La precisión media de este modelo fue:", mean(modelo_RegLog$resample$Accuracy), "% \n")
 
 cat("El índice Kappa medio de este modelo fue:", mean(modelo_RegLog$resample$Kappa), "\n")
 ```
@@ -859,7 +821,7 @@ A <- MLmetrics::Accuracy(predict(modelo_RegLog, training_set[,-10]), training_se
 # Precisión en el set de test
 B <- MLmetrics::Accuracy(predict(modelo_RegLog, test_set[,-10]), test_set[[10]])
 
-diff(c(A,B))
+print(paste0("La diferencia entre la precisión en el set de entrenamiento (", A, "%) y en la del set de test (", B, "%) es: ", A - B,"%" ))
 ```
 
 
@@ -899,7 +861,7 @@ datos_muestreo <- resamples(modelos)
 datos_muestreo$values  <- datos_muestreo$values[,c(1:4,16:18,30:32,44:46)]
 
 # Resumen visual de las métricas de interés
-boxplot(datos_muestreo$values[,-1], col = "aquamarine")
+boxplot(datos_muestreo$values[,-1], col = "aquamarine", las= 2, cex.axis = 0.8)
 
 # Adicionalmente, podemos analizar individualmente cada fold con este comando:
 datos_muestreo$values
@@ -912,7 +874,6 @@ __Antes de realizar el contraste de medias por test t de Student o ANOVA__, prim
 
 ```{r, metrica Kappa}
 metricas_kappa <- datos_muestreo$values[,c("J48~Kappa","J48_2~Kappa","MLP~Kappa","RegLog~Kappa")]
-summary(metricas_kappa)
 ```
 
 <br>
@@ -926,7 +887,6 @@ boxplot(metricas_kappa, main = "Boxplot para índice Kappa", col = "aquamarine")
 
 ```{r, metrica Accuracy}
 metricas_accuracy <- datos_muestreo$values[,c("J48~Accuracy","J48_2~Accuracy","MLP~Accuracy","RegLog~Accuracy")]
-summary(metricas_accuracy)
 ```
 
 
@@ -940,7 +900,6 @@ boxplot(metricas_accuracy, main = "Boxplot para la precisión", cex.axis=.95, co
 
 ```{r, metrica AUC}
 metricas_auc <- datos_muestreo$values[,c("J48~AUC","J48_2~AUC","MLP~AUC","RegLog~AUC")]
-summary(metricas_auc)
 ```
 
 
