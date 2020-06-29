@@ -978,11 +978,11 @@ summary.aov(anova_kappa)
 
 
 # Anova diferente
-library("ez")
-?ezANOVA
+# library("ez")
+# ?ezANOVA
 # anova.12398 <-ezANOVA(data = matriz_anova_kappa, detailed = T, wid = y, dv = V1, within = V2)
-matriz_anova_kappa <- cbind2(matriz_anova_kappa, c(1:61))
-anova_kappa2 <- ezANOVA(Kappa~Modelo, data = matriz_anova_kappa, wid= y, )
+# matriz_anova_kappa <- cbind2(matriz_anova_kappa, c(1:61))
+# anova_kappa2 <- ezANOVA(Kappa~Modelo, data = matriz_anova_kappa, wid= y, )
 ```
 
 
@@ -1272,7 +1272,7 @@ matriz_anova$Modelo <- as.factor(matriz_anova$Modelo)
 str(matriz_anova)
 
 anova_auc <- aov(AUC~Modelo, data = matriz_anova)
-summary.aov(anova_kappa)
+summary.aov(anova_auc)
 ```
 
 <br>
