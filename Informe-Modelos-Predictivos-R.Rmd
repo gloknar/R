@@ -391,7 +391,7 @@ cat("El set de testeo tiene", nrow(test_set), "individuos y", ncol(test_set), "v
 <br>
 <br>
 
-A continuación establecemos las __opciones de testeo__ que caret usará para la construcción de los __clasificadores J48 y MLP__ (RegLog requiere un tratamiento ligeramente distinto, se verá en su correspondiente apartado). Para ellos crearemos primero un listado de semillas de aleatoriedad que usaremos más adelante para la creación de cada fold y la evaluación del modelo final:
+A continuación establecemos las __opciones de testeo__ que caret usará para la construcción de los __clasificadores J48, MLP y RegLog__ (RegLog requiere un tratamiento ligeramente distinto, se verá en su correspondiente apartado). Para ellos crearemos primero un listado de semillas de aleatoriedad que usaremos más adelante para la creación de cada fold y la evaluación del modelo final:
 
 ```{r, Semillas de aleatoriedad para nuestros modelos}
 set.seed(1)
@@ -710,7 +710,7 @@ set.seed(1)
 modelo_MLP <- train(braaksc~.,data=training_set,
                 method="mlp",
                 metric = "AUC",      # Maximize = TRUE by default
-                trControl = control_entrenamiento_J48_MLP,
+                trControl = control_entrenamiento,
                 tuneGrid = MLPGrid)
 
 # modelo_MLP$results
@@ -752,7 +752,7 @@ La precisión en el set de entrenamiento es ligeramente mejor que en la de test 
 
 ## Regresión logística
 
-Al igual que el primer modelo de `J48` y el de `MLP`, esta regresión también se realizará con 8 predictores más la clase. Nótese que RegLog requiere de 300 semillas de aleatoriedad durante su entrenamiento.
+Al igual que el primer modelo de `J48` y el de `MLP`, esta regresión también se realizará con 8 predictores más la clase. Nótese que RegLog requiere de 300 semillas de aleatoriedad durante su entrenamiento (gradilla de búsqueda de 10 valores * 3 hiperparámetros).
 
 <br>
 
@@ -837,12 +837,12 @@ La precisión en el set de entrenamiento es ligeramente mejor que en la de test 
 
 La __Regresión Logística con 8 predictores parece ser el clasificador que mayor precisión, índice Kappa y AUC__ devuelve de los 4 modelos aquí presentes (téngase en cuenta que por ser un problema multi-clase, lo ideal es prestar especial atención al índice *Kappa*, en lugar de a la métrica de *precisión* o *Accuracy*).
 
-|      Modelo       |   Precisión   |     Kappa     |      AUC      |
-|-------------------|---------------|---------------|---------------|
-|J48 (8 predictores)|   0.4565051   |   0.2687958   |   0.7068018   |
-|J48 (4 predictores)|   0.4551964   |   0.2632029   |   0.7161267   | 
-|       MLP         |   0.4625404   |   0.2621256   |   0.7419192   |
-|    __RegLog__     | __0.5068602__ | __0.3217057__ | __0.7693466__ | 
+|      Modelo       |   Precisión    |     Kappa     |      AUC      |
+|-------------------|----------------|---------------|---------------|
+|J48 (8 predictores)|   0.4554014%   |   0.2650073   |   0.7059865   |
+|J48 (4 predictores)|   0.4692049%   |   0.2851677   |   0.7230482   | 
+|       MLP         |   0.4580562%   |   0.2595578   |   0.7484993   |
+|    __RegLog__     | __0.5017857%__ | __0.3161772__ | __0.7655036__ | 
 
 Nota: Obsérvese que tal como anticipamos, las métricas del modelo J48 mejoraron ligeramente al simplificarlo `r emo::ji("smile")`
 
@@ -860,11 +860,14 @@ datos_muestreo <- resamples(modelos)
 # Como se calcularon muchas métricas, nos quedamos con las que nos interesan, que son la precisión, el Kappa y el AUC de nuestros 4 modelos
 datos_muestreo$values  <- datos_muestreo$values[,c(1:4,16:18,30:32,44:46)]
 
-# Resumen visual de las métricas de interés
-boxplot(datos_muestreo$values[,-1], col = "aquamarine", las= 2, cex.axis = 0.8)
-
 # Adicionalmente, podemos analizar individualmente cada fold con este comando:
 datos_muestreo$values
+```
+
+```{r, echo=F, fig.height= 5}
+# Resumen visual de las métricas de interés
+boxplot(datos_muestreo$values[,-1], col = "aquamarine", las= 2, cex.axis=0.62)
+
 ```
 
 <br>
