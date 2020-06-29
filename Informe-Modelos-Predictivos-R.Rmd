@@ -456,7 +456,7 @@ control_entrenamiento <- trainControl(method = "repeatedcv",
 ### Modelo con 8 predictores
 
 Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase) e intentando maximizar la métrica `AUC`. Además, por ser un problema multi-clase, prestaremos especia atención a la métrica `Kappa` de nuestros modelos.
-```{r, Modelo J48 con 8 predictores, warning=T}
+```{r, Modelo J48 con 8 predictores, warning=T, cache=T}
 set.seed(1)
 
 # NOTA: Podemos elegir maximizar la Accuracy, el Kappa o el AUC. En este caso
@@ -576,7 +576,7 @@ colnames(training_set)[columnas_J48_2]
 
 Construimos el modelo y buscamos los mejores hiperparámetros:
 
-```{r, Modelo J48 con 4 predictores, warning=T}
+```{r, Modelo J48 con 4 predictores, warning=T, cache=T}
 set.seed(1)
 modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
                     method="J48",
@@ -617,7 +617,9 @@ modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
                   metric = "AUC",     # Maximize = TRUE by default
                   trControl = control_entrenamiento,
                   tuneGrid = J48_2Grid)
+```
 
+```{r}
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_J48_2$resample$AUC), "\n")
 
 cat("La precisión media de este modelo fue:", mean(modelo_J48_2$resample$Accuracy), "% \n")
@@ -673,7 +675,7 @@ La precisión en el set de entrenamiento es mejor que en la de test, pero no dem
 
 Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase).
 
-```{r, warning=T}
+```{r, warning=T, cache=T}
 set.seed(1)
 modelo_MLP <- train(braaksc~.,data=training_set,
                 method="mlp",
@@ -714,8 +716,9 @@ modelo_MLP <- train(braaksc~.,data=training_set,
                 tuneGrid = MLPGrid)
 
 # modelo_MLP$results
+```
 
-
+```{r}
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_MLP$resample$AUC), "\n")
 
 cat("La precisión media de este modelo fue:", mean(modelo_MLP$resample$Accuracy), "% \n")
@@ -756,7 +759,7 @@ Al igual que el primer modelo de `J48` y el de `MLP`, esta regresión también s
 
 <br>
 
-```{r, warning=T}
+```{r, warning=T, cache=T}
 set.seed(1)
 modelo_RegLog <- train(braaksc~.,data=training_set,
                 method="regLogistic",
@@ -772,7 +775,7 @@ modelo_RegLog <- train(braaksc~.,data=training_set,
 <br>
 
 La mejor configuración de hiperparámetros encontrada fue:
-```{r, warning=T}
+```{r, warning=F}
 modelo_RegLog$bestTune
 
 # Hyperparameter search grid
@@ -800,8 +803,9 @@ modelo_RegLog <- train(braaksc~.,data=training_set,
                 tuneGrid = RegLogGrid)
 
 # modelo_RegLog$results
+```
 
-
+```{r}
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_RegLog$resample$AUC), "\n")
 
 cat("La precisión media de este modelo fue:", mean(modelo_RegLog$resample$Accuracy), "% \n")
@@ -864,11 +868,6 @@ datos_muestreo$values  <- datos_muestreo$values[,c(1:4,16:18,30:32,44:46)]
 datos_muestreo$values
 ```
 
-```{r, echo=F, fig.height= 5}
-# Resumen visual de las métricas de interés
-boxplot(datos_muestreo$values[,-1], col = "aquamarine", las= 2, cex.axis=0.62)
-
-```
 
 <br>
 
@@ -930,7 +929,7 @@ Vemos que las métricas *Kappa* de los modelos __son normales__, ya que todos nu
 
 <br>
 
-A continuación hacemos el __contraste para la igualdad de varianzas__ de los índices Kappa. Como son 4 poblaciones __normales e independientes, usaremos el __test de esfericidad de Bartlett__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
+A continuación hacemos el __contraste para la igualdad de varianzas__ de los índices Kappa. Como son 4 poblaciones __normales y dependientes, usaremos el __test de esfericidad de Mauchly__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
 
 ```{r, contraste homogeneidad varianzas Kappa}
 # Use Mauchly's test instead!!!
@@ -944,9 +943,10 @@ Puesto que nuestro p-valor es mayor a 0.05, no rechazamos la hipótesis nula. Ve
 Ya que los índices Kappa de nuestros clasificadores son normales y tienen varianzas iguales, podemos aplicarles el test t de Student o un ANOVA. Vamos a mostrar primero cómo se haría con un __ANOVA__, y luego mostraremos cómo se haría con múltiples tests t de Student:
 
 ```{r, ANOVA Kappa}
-matriz_anova <- as.data.frame(metricas_kappa$`J48~Kappa`)
-matriz_anova <- cbind(matriz_anova, rep("J48", 15))
-colnames(matriz_anova) <- c("Kappa","Modelo")
+
+matriz_anova_kappa <- as.data.frame(metricas_kappa$`J48~Kappa`)
+matriz_anova_kappa <- cbind(matriz_anova_kappa, rep("J48", 15))
+colnames(matriz_anova_kappa) <- c("Kappa","Modelo")
 
 
 variable_aux <- as.data.frame(metricas_kappa$`J48_2~Kappa`)
@@ -966,16 +966,25 @@ colnames(variable_aux3) <- c("Kappa","Modelo")
 
 
 
-matriz_anova <- rbind2(matriz_anova, variable_aux)
-matriz_anova <- rbind2(matriz_anova, variable_aux2)
-matriz_anova <- rbind2(matriz_anova, variable_aux3)
-matriz_anova$Modelo <- as.factor(matriz_anova$Modelo)
+matriz_anova_kappa <- rbind2(matriz_anova_kappa, variable_aux)
+matriz_anova_kappa <- rbind2(matriz_anova_kappa, variable_aux2)
+matriz_anova_kappa <- rbind2(matriz_anova_kappa, variable_aux3)
+matriz_anova_kappa$Modelo <- as.factor(matriz_anova_kappa$Modelo)
 
-str(matriz_anova)
+str(matriz_anova_kappa)
 
-anova_kappa <- aov(Kappa~Modelo, data = matriz_anova)
+anova_kappa <- aov(Kappa~Modelo, data = matriz_anova_kappa)
 summary.aov(anova_kappa)
+
+
+# Anova diferente
+library("ez")
+?ezANOVA
+# anova.12398 <-ezANOVA(data = matriz_anova_kappa, detailed = T, wid = y, dv = V1, within = V2)
+matriz_anova_kappa <- cbind2(matriz_anova_kappa, c(1:61))
+anova_kappa2 <- ezANOVA(Kappa~Modelo, data = matriz_anova_kappa, wid= y, )
 ```
+
 
 <br>
 
