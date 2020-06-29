@@ -456,7 +456,7 @@ control_entrenamiento <- trainControl(method = "repeatedcv",
 ### Modelo con 8 predictores
 
 Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase) e intentando maximizar la métrica `AUC`. Además, por ser un problema multi-clase, prestaremos especia atención a la métrica `Kappa` de nuestros modelos.
-```{r, Modelo J48 con 8 predictores, warning=T, cache=T}
+```{r, Modelo J48 con 8 predictores, cache=T}
 set.seed(1)
 
 # NOTA: Podemos elegir maximizar la Accuracy, el Kappa o el AUC. En este caso
@@ -488,7 +488,7 @@ ggplot(modelo_J48) + theme(legend.position = "top")
 
 Ahora construimos el modelo final con los hiperparámetros óptimos (`C`= 0.5 y `M` = 10):
 
-```{r, warning=T}
+```{r}
 
 # modelLookup("J48")
 
@@ -576,7 +576,7 @@ colnames(training_set)[columnas_J48_2]
 
 Construimos el modelo y buscamos los mejores hiperparámetros:
 
-```{r, Modelo J48 con 4 predictores, warning=T, cache=T}
+```{r, Modelo J48 con 4 predictores, cache=T}
 set.seed(1)
 modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
                     method="J48",
@@ -603,7 +603,7 @@ ggplot(modelo_J48_2) + theme(legend.position = "top")
 
 Ahora construimos el modelo final con los hiperparámetros óptimos (`C`= 0.33 y `M` = 10):
 
-```{r, warning=T}
+```{r}
 
 # modelLookup("J48")
 
@@ -675,7 +675,7 @@ La precisión en el set de entrenamiento es mejor que en la de test, pero no dem
 
 Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase).
 
-```{r, warning=T, cache=T}
+```{r, cache=T}
 set.seed(1)
 modelo_MLP <- train(braaksc~.,data=training_set,
                 method="mlp",
@@ -689,7 +689,7 @@ modelo_MLP <- train(braaksc~.,data=training_set,
 <br>
 
 La mejor configuración de hiperparámetros encontrada fue:
-```{r}
+```{r, warning=F}
 modelo_MLP$bestTune
 
 # Hyperparameter search grid
@@ -700,7 +700,7 @@ ggplot(modelo_MLP) + theme(legend.position = "top")
 
 Ahora construimos el modelo final con los hiperparámetros óptimos (`Hidden units` = 3):
 
-```{r, warning=T}
+```{r}
 
 # modelLookup("mlp")
 
@@ -759,7 +759,7 @@ Al igual que el primer modelo de `J48` y el de `MLP`, esta regresión también s
 
 <br>
 
-```{r, warning=T, cache=T}
+```{r, cache=T}
 set.seed(1)
 modelo_RegLog <- train(braaksc~.,data=training_set,
                 method="regLogistic",
@@ -787,7 +787,7 @@ ggplot(modelo_RegLog) + theme(legend.position = "top")
 
 Ahora construimos el modelo final con los hiperparámetros óptimos (`cost`= 0.5, y `loss` = L1 y `epsilon` = 0.01):
 
-```{r, warning=T}
+```{r}
 
 # modelLookup("regLogistic")
 
@@ -929,7 +929,7 @@ Vemos que las métricas *Kappa* de los modelos __son normales__, ya que todos nu
 
 <br>
 
-A continuación hacemos el __contraste para la igualdad de varianzas__ de los índices Kappa. Como son 4 poblaciones __normales y dependientes, usaremos el __test de esfericidad de Mauchly__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
+A continuación hacemos el __contraste para la igualdad de varianzas__ de los índices Kappa. Como son 4 poblaciones __normales y dependientes__, usaremos el __test de esfericidad de Mauchly__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
 
 ```{r, contraste homogeneidad varianzas Kappa}
 # Use Mauchly's test instead!!!
@@ -1206,7 +1206,7 @@ metricas_auc
 
 <br>
 
-A continuación hacemos el __contraste para la igualdad de varianzas__ del AUC. Como son 4 poblaciones __normales y dependientes, usaremos el __test de esfericidad de Mauchly__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
+A continuación hacemos el __contraste para la igualdad de varianzas__ del AUC. Como son 4 poblaciones __normales y dependientes__, usaremos el __test de esfericidad de Mauchly__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
 
 ```{r, contraste homogeneidad varianzas AUC}
 # por hacer
