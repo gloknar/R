@@ -879,7 +879,6 @@ __Antes de realizar el contraste de medias por test t de Student o ANOVA__, prim
 metricas_kappa <- datos_muestreo$values[,c("J48~Kappa","J48_2~Kappa","MLP~Kappa","RegLog~Kappa")]
 ```
 
-<br>
 
 ```{r, echo=F}
 boxplot(metricas_kappa, main = "Boxplot para índice Kappa", col = "aquamarine")
@@ -893,11 +892,11 @@ metricas_accuracy <- datos_muestreo$values[,c("J48~Accuracy","J48_2~Accuracy","M
 ```
 
 
-<br>
-
 ```{r, echo=F}
 boxplot(metricas_accuracy, main = "Boxplot para la precisión", cex.axis=.95, col = "aquamarine")
 ```
+
+
 
 <br>
 
@@ -905,8 +904,6 @@ boxplot(metricas_accuracy, main = "Boxplot para la precisión", cex.axis=.95, co
 metricas_auc <- datos_muestreo$values[,c("J48~AUC","J48_2~AUC","MLP~AUC","RegLog~AUC")]
 ```
 
-
-<br>
 
 ```{r, echo=F}
 boxplot(metricas_auc, main = "Boxplot para el AUC", col = "aquamarine")
