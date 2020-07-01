@@ -550,7 +550,7 @@ B <- MLmetrics::Accuracy(predict(modelo_J48, test_set[,-10]), test_set[[10]])
 print(paste0("La diferencia entre la precisión en el set de entrenamiento (", A, "%) y en la del set de test (", B, "%) es: ", A - B,"%" ))
 ```
 
-Podemos observar que hay una diferencia importante de rendimiento entre el set de entrenamiento y el de test (~23%), por lo que podemos asegurar que se da overfitting en este modelo.
+Podemos observar que hay una diferencia importante de rendimiento entre el set de entrenamiento y el de test (~22%), por lo que podemos asegurar que se da overfitting en este modelo.
 
 
 <br>
@@ -746,7 +746,7 @@ print(paste0("La diferencia entre la precisión en el set de entrenamiento (", A
 
 
 
-La precisión en el set de entrenamiento es ligeramente mejor que en la de test (~15% de diferencia), por lo que puede que haya overfitting, pero no estamos seguros.
+La precisión en el set de entrenamiento es ligeramente mejor que en la de test (~11% de diferencia), por lo que puede que haya overfitting, pero no estamos seguros.
 
 
 
@@ -831,7 +831,7 @@ print(paste0("La diferencia entre la precisión en el set de entrenamiento (", A
 
 
 
-La precisión en el set de entrenamiento es ligeramente mejor que en la de test (~14% de diferencia), por lo que puede que haya overfitting, pero no estamos seguros.
+La precisión en el set de entrenamiento es ligeramente mejor que en la de test (~11% de diferencia), por lo que puede que haya overfitting, pero no estamos seguros.
 
 <br>
 <br>
