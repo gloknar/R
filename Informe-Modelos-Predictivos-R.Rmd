@@ -1015,7 +1015,7 @@ $$\text{p-valor}_{test} < \frac{\text{rango del test}}{\text{nº total de tests}
 
 De estos resultados podemos inferir las siguientes conclusiones:
 
-* La __Regresión Logística__ ofrece un __rendimiento significativamente distinto (=superior) al de J48 con 8 predictores__.
+* La __Regresión Logística__ ofrece un __rendimiento significativamente distinto (=superior) al de MLP__ y posiblemente al de J48 con 8 predictores también (pero este test presenta un p-valor cercano al punto de corte, por lo que rechazamos parcialmente la hipótesis nula).
 * No __existen diferencias estadísticamente significativas entre__ el índice Kappa del resto de modelos.
 
 
