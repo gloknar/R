@@ -927,10 +927,9 @@ Vemos que las métricas *Kappa* de los modelos __son normales__, ya que todos nu
 
 <br>
 
-A continuación hacemos el __contraste para la igualdad de varianzas__ de los índices Kappa. Como son 4 poblaciones __normales y dependientes__, usaremos el __test de esfericidad de Mauchly__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
+A continuación hacemos el __contraste para la igualdad de varianzas__ de los índices Kappa. Como son 4 poblaciones __normales e independientes__, usaremos el __test de esfericidad de Bartlett__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
 
 ```{r, contraste homogeneidad varianzas Kappa}
-# Use Mauchly's test instead!!!
 bartlett.test(list(metricas_kappa$`J48~Kappa`, metricas_kappa$`J48_2~Kappa`, metricas_kappa$`MLP~Kappa`, metricas_kappa$`RegLog~Kappa`))
 ```
 
@@ -941,7 +940,6 @@ Puesto que nuestro p-valor es mayor a 0.05, no rechazamos la hipótesis nula. Ve
 Ya que los índices Kappa de nuestros clasificadores son normales y tienen varianzas iguales, podemos aplicarles el test t de Student o un ANOVA. Vamos a mostrar primero cómo se haría con un __ANOVA__, y luego mostraremos cómo se haría con múltiples tests t de Student:
 
 ```{r, ANOVA Kappa}
-
 matriz_anova_kappa <- as.data.frame(metricas_kappa$`J48~Kappa`)
 matriz_anova_kappa <- cbind(matriz_anova_kappa, rep("J48", 15))
 colnames(matriz_anova_kappa) <- c("Kappa","Modelo")
@@ -973,14 +971,6 @@ str(matriz_anova_kappa)
 
 anova_kappa <- aov(Kappa~Modelo, data = matriz_anova_kappa)
 summary.aov(anova_kappa)
-
-
-# Anova diferente
-# library("ez")
-# ?ezANOVA
-# anova.12398 <-ezANOVA(data = matriz_anova_kappa, detailed = T, wid = y, dv = V1, within = V2)
-# matriz_anova_kappa <- cbind2(matriz_anova_kappa, c(1:61))
-# anova_kappa2 <- ezANOVA(Kappa~Modelo, data = matriz_anova_kappa, wid= y, )
 ```
 
 
@@ -992,7 +982,7 @@ El ANOVA detectó __diferencias significativas__ entre los índice Kappa de los 
 TukeyHSD(anova_kappa)
 ```
 
-Hay __diferencias estadísticamente significativas entre__ el rendimiento a nivel de índice Kappa de los clasificadores __J48 (8 predictores) y RegLog__. En cuanto a la comparación __RegLog-J48 (4 predictores)__, presenta un p-valor ajustado cercano al punto crítico, por lo que __aceptamos parcialmente la hipótesis nula__ (es posible que haya diferencias significativas entre dicha pareja de modelos, pero nuestros resultados actuales carecen de la resolución necesaria para afirmarlo con seguridad).
+Hay __diferencias estadísticamente significativas entre__ el rendimiento a nivel de índice Kappa de los clasificadores __MLP y RegLog__. En cuanto a la comparación __RegLog vs J48 (8 predictores)__, presenta un p-valor ajustado cercano al punto crítico, pero superior al mismo, por lo que __aceptamos parcialmente la hipótesis nula__ (es posible que haya diferencias significativas entre dicha pareja de modelos, pero nuestros resultados actuales carecen de la resolución necesaria para afirmarlo con seguridad).
 
 
 <br>
@@ -1000,7 +990,7 @@ Hay __diferencias estadísticamente significativas entre__ el rendimiento a nive
 <br>
 
 
-A continuación mostramos el contraste de medias con múltiples tests __t de Student__:
+A continuación mostramos cómo se realiza el contraste de medias con múltiples tests __t de Student__:
 
 ```{r}
 t.test(metricas_kappa$`J48~Kappa`, metricas_kappa$`J48_2~Kappa`, alternative = "two.sided", var.equal = TRUE) # J48 (8 pred.) vs J48 (4 pred.)
@@ -1204,33 +1194,10 @@ metricas_auc
 
 <br>
 
-A continuación hacemos el __contraste para la igualdad de varianzas__ del AUC. Como son 4 poblaciones __normales y dependientes__, usaremos el __test de esfericidad de Mauchly__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
+A continuación hacemos el __contraste para la igualdad de varianzas__ del AUC. Como son 4 poblaciones __normales e independientes__, usaremos el __test de esfericidad de Bartlett__, cuya hipótesis nula H0 establece que se cumple la condición de homocedasticidad en las muestras.
 
 ```{r, contraste homogeneidad varianzas AUC}
-# por hacer
-# traspuesta_auc <- t(metricas_auc)
-# 
-# traspuesta_auc
-# 
-# traspuesta_2 <- cbind2(traspuesta_auc, c(1,2,3,4))
-# 
-# View(traspuesta_2)
-# 
-# traspuesta_2 <- as.data.frame(traspuesta_2)
-# 
-# colnames(traspuesta_2)[16] <- "modelo"
-# 
-# colnames(traspuesta_2)
-# 
-# mauchly.test(lm(modelo ~ ., data = traspuesta_2, na.action = na.exclude), X = ~1)
-# 
-# lm(modelo ~ ., data = traspuesta_2, na.action = na.exclude)
-# 
-# 
-# ?lm
-# 
-# ?mauchly.test
-
+bartlett.test(list(metricas_auc$`J48~AUC`, metricas_auc$`J48_2~AUC`, metricas_auc$`MLP~AUC`, metricas_auc$`RegLog~AUC`))
 ```
 
 Puesto que nuestro p-valor es mayor a 0.05, no rechazamos la hipótesis nula. Vemos por tanto que las métricas *AUC* de los modelos __tienen varianzas iguales__. 
@@ -1281,7 +1248,7 @@ El ANOVA detectó __diferencias significativas__ entre las áreas bajo la curva 
 TukeyHSD(anova_auc)
 ```
 
-Hay __diferencias estadísticamente significativas entre__ el rendimiento de __J48 (en sus dos variantes) y RegLog__ y entre __J48 (8 pred.) y MLP__ (y puede que la variante de J48 con 4 pred. también, pero tiene un p-valor ajustado cercano al punto crítico, por lo que no estamos del todo seguros).
+Hay __diferencias estadísticamente significativas entre__ el rendimiento de __RegLog y J48 (en sus dos variantes)__ y entre __J48 (8 pred.) y MLP__ (pero curiosamente, la misma comparación entre MLP y J48 con 4 predictores da un p-valor ajustado superior al punto crítico).
 
 
 <br>
