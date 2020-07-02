@@ -469,10 +469,6 @@ modelo_J48 <- train(braaksc~.,data=training_set,
                   metric = "AUC",     # Maximize = TRUE by default
                   trControl = control_entrenamiento,
                   tuneLength = 10)
-
-# Se puede obtener información detallada sobre el modelo con los siguientes comandos:
-# modelo_J48$results
-# modelo_J48
 ```
 
 <br>
@@ -493,20 +489,22 @@ ggplot(modelo_J48) + theme(legend.position = "top")
 Ahora construimos el modelo final con los hiperparámetros óptimos (`C`= 0.5 y `M` = 10):
 
 ```{r}
-
-# modelLookup("J48")
-
+set.seed(1)
 
 J48Grid <-  expand.grid(C = 0.5, M = 10)
-#View(J48Grid)
 
-set.seed(1)
 modelo_J48 <- train(braaksc~.,data=training_set,
                   method= "J48",
                   metric = "AUC",     # Maximize = TRUE by default
                   trControl = control_entrenamiento,
                   tuneGrid = J48Grid)
 
+# Se puede obtener información detallada sobre el modelo con los siguientes comandos:
+# modelo_J48$results
+# modelo_J48
+```
+
+```{r}
 cat("El área media bajo la curva ROC de este modelo fue:", mean(modelo_J48$resample$AUC), "\n")
 
 cat("La precisión media de este modelo fue:", mean(modelo_J48$resample$Accuracy), "% \n")
@@ -587,10 +585,6 @@ modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
                     metric = "AUC",      # Maximize = TRUE by default
                     tuneLength = 10,
                     trControl = control_entrenamiento)
-
-# Se puede obtener información detallada sobre el modelo con los siguientes comandos:
-# modelo_J48_2$results
-# modelo_J48_2
 ```
 
 <br>
@@ -609,19 +603,19 @@ ggplot(modelo_J48_2) + theme(legend.position = "top")
 Ahora construimos el modelo final con los hiperparámetros óptimos (`C`= 0.33 y `M` = 10):
 
 ```{r}
-
-# modelLookup("J48")
-
+set.seed(1)
 
 J48_2Grid <-  expand.grid(C = 0.33, M = 10)
-#View(J48Grid)
 
-set.seed(1)
 modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
                   method= "J48",
                   metric = "AUC",     # Maximize = TRUE by default
                   trControl = control_entrenamiento,
                   tuneGrid = J48_2Grid)
+
+# Se puede obtener información detallada sobre el modelo con los siguientes comandos:
+# modelo_J48_2$results
+# modelo_J48_2
 ```
 
 ```{r}
@@ -687,8 +681,6 @@ modelo_MLP <- train(braaksc~.,data=training_set,
                 metric = "AUC",      # Maximize = TRUE by default
                 tuneLength = 10,
                 trControl = control_entrenamiento)
-
-# modelo_MLP$results
 ```
 
 <br>
@@ -706,14 +698,10 @@ ggplot(modelo_MLP) + theme(legend.position = "top")
 Ahora construimos el modelo final con los hiperparámetros óptimos (`Hidden units` = 3):
 
 ```{r}
-
-# modelLookup("mlp")
-
+set.seed(1)
 
 MLPGrid <-  expand.grid(size = 3)
-#View(MLPGrid)
 
-set.seed(1)
 modelo_MLP <- train(braaksc~.,data=training_set,
                 method="mlp",
                 metric = "AUC",      # Maximize = TRUE by default
@@ -773,10 +761,6 @@ modelo_RegLog <- train(braaksc~.,data=training_set,
                 metric = "AUC",      # Maximize = TRUE by default
                 tuneLength = 10,
                 trControl = control_entrenamiento)
-
-# Se puede obtener información detallada sobre el modelo con los siguientes comandos:
-# modelo_RegLog$results
-# modelo_RegLog
 ```
 
 
@@ -796,21 +780,20 @@ ggplot(modelo_RegLog) + theme(legend.position = "top")
 Ahora construimos el modelo final con los hiperparámetros óptimos (`cost`= 0.5, y `loss` = L1 y `epsilon` = 0.01):
 
 ```{r}
-
-# modelLookup("regLogistic")
-
+set.seed(1)
 
 RegLogGrid <-  expand.grid(cost = 0.5, loss = "L1", epsilon = 0.01)
-#View(RegLogGrid)
 
-set.seed(1)
+
 modelo_RegLog <- train(braaksc~.,data=training_set,
                 method="regLogistic",
                 metric = "AUC",      # Maximize = TRUE by default
                 trControl = control_entrenamiento,
                 tuneGrid = RegLogGrid)
 
+# Se puede obtener información detallada sobre el modelo con los siguientes comandos:
 # modelo_RegLog$results
+# modelo_RegLog
 ```
 
 ```{r}
