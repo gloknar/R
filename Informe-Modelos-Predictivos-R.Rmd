@@ -248,21 +248,19 @@ Así mismo, los atributos `cogdx` y `ceradsc` son también `ordered factors`, a 
 Hay que tener cuidado con el atributo `ceradsc`, ya que en el caso de `braaksc` y `cogdx`, valores mayores de factor indican una clínica más severa; mientras que ceradsc está codificado la revés, de manera que valores menores del factor indican una clínica más severa. Para más información sobre la codificación de estos atributos, visite el [RADC Research Resource Sharing Hub](https://www.radc.rush.edu/docs/var/detail.htm?category=Pathology&subcategory=Alzheimer%27s%20disease&variable=ceradsc).
 
 ```{r}
-# Antes de castear la variable dependiente "cogdx"
+# Antes del type casting de la variable dependiente "cogdx" a factor ordenado
 tail(dataset$cogdx, n = 0)
 
 dataset$cogdx <- factor(dataset$cogdx,ordered = TRUE)
 
 
-# Después del type casting a factor ordenado
+# Después del type casting
 tail(dataset$cogdx, n=0)
 
 
-###############################################################
+
+
 # ídem para ceradsc, pero inviertiendo el orden de los niveles:
-###############################################################
-
-
 tail(dataset$ceradsc, n = 0)
 
 dataset$ceradsc <- factor(dataset$ceradsc,ordered = TRUE)
@@ -297,9 +295,11 @@ tail(sapply(dataset_escalado, class), n = 12L)
 
 # Selección de variables
 
-Procedemos a la selección de variables. Usaremos el paquete `Boruta` para ello, dada su capacidad de mostrar visualmente la importancia de cada variable del dataset. Por defecto, el comando `Boruta()` usa un __p-valor del 0.01__ para confirmar cuándo una variable es estadísticamente importante o no.
+Procedemos a la selección de variables. Usaremos el paquete `Boruta` para ello, dada su capacidad de mostrar visualmente la importancia de cada variable del dataset. 
 
-Boruta realiza una búsqueda de tipo Backwards mediante un algoritmo wrapper de Random Forest.
+
+`Boruta` realiza una búsqueda de tipo *Backwards* mediante un algoritmo wrapper de `Random Forest`, y por defecto, usa un __p-valor del 0.01__ para confirmar cuándo una variable es estadísticamente importante o no.
+
 
 ```{r, seleccion variables con Boruta, collapse=T, cache=T}
 # Establecemos la semilla de aleatoriedad para garantizar la reproducibilidad de
@@ -439,11 +439,9 @@ control_entrenamiento <- trainControl(method = "repeatedcv",
                            search = "grid",
                            p = .8)
 
-# Nota: summaryFunction = defaultSummary solo permite obtener las métricas
-# Accuracy y Kappa
-
-# summaryFunction = multiClassSummary permite obtener, además, el AUC en
-# problemas multiclase
+# Nota: La opción "summaryFunction = defaultSummary" solo permite obtener las
+# métricas Accuracy y Kappa. Por otro lado,  "summaryFunction = multiClassSummary" 
+# permite obtener el AUC (además del índice Kappa y la precisión) en problemas multiclase.
 ```
 
 
@@ -457,17 +455,18 @@ control_entrenamiento <- trainControl(method = "repeatedcv",
 ### Modelo con 8 predictores
 
 Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase) e intentando maximizar la métrica `AUC`. Además, por ser un problema multi-clase, prestaremos especia atención a la métrica `Kappa` de nuestros modelos.
+
+Nótese que el comando `train` nos permite seleccionar la métrica que queremos maximizar (o minimizar). Para todos nuestros clasificadores, maximizaremos la métrica AUC, ya que la usaremos posteriormente para evaluar el rendimiento de nuestros clasificadores.
 ```{r, Modelo J48 con 8 predictores, cache=T}
 set.seed(1)
 
-# NOTA: Podemos elegir maximizar la Accuracy, el Kappa o el AUC. En este caso
-# elegimos maximizar el AUC
 modelo_J48 <- train(braaksc~.,data=training_set,
                   method="J48",
                   metric = "AUC",     # Maximize = TRUE by default
                   trControl = control_entrenamiento,
                   tuneLength = 10)
 
+# Se puede obtener información detallada sobre el modelo con los siguientes comandos:
 # modelo_J48$results
 # modelo_J48
 ```
@@ -480,7 +479,7 @@ Los mejores hiperparámetros encontrados fueron:
 modelo_J48$bestTune
 
 
-# Hyperparameter search grid
+# Cuadrícula de búsqueda de hiperparámetros óptimos de J48 (8 predictores)
 ggplot(modelo_J48) + theme(legend.position = "top")
 ```
 
@@ -585,6 +584,7 @@ modelo_J48_2 <- train(braaksc~.,data=training_set[,columnas_J48_2],
                     tuneLength = 10,
                     trControl = control_entrenamiento)
 
+# Se puede obtener información detallada sobre el modelo con los siguientes comandos:
 # modelo_J48_2$results
 # modelo_J48_2
 ```
@@ -596,7 +596,7 @@ La mejor configuración de hiperparámetros encontrada fue:
 ```{r, warning=F}
 modelo_J48_2$bestTune
 
-# Hyperparameter search grid
+# Cuadrícula de búsqueda de hiperparámetros óptimos de J48 (4 predictores)
 ggplot(modelo_J48_2) + theme(legend.position = "top")
 ```
 
@@ -693,7 +693,7 @@ La mejor configuración de hiperparámetros encontrada fue:
 ```{r, warning=F}
 modelo_MLP$bestTune
 
-# Hyperparameter search grid
+# Cuadrícula de búsqueda de hiperparámetros óptimos de MLP
 ggplot(modelo_MLP) + theme(legend.position = "top")
 ```
 
@@ -716,7 +716,9 @@ modelo_MLP <- train(braaksc~.,data=training_set,
                 trControl = control_entrenamiento,
                 tuneGrid = MLPGrid)
 
+# Se puede obtener información detallada sobre el modelo con los siguientes comandos:
 # modelo_MLP$results
+# modelo_MLP
 ```
 
 ```{r}
@@ -768,6 +770,7 @@ modelo_RegLog <- train(braaksc~.,data=training_set,
                 tuneLength = 10,
                 trControl = control_entrenamiento)
 
+# Se puede obtener información detallada sobre el modelo con los siguientes comandos:
 # modelo_RegLog$results
 # modelo_RegLog
 ```
@@ -779,7 +782,7 @@ La mejor configuración de hiperparámetros encontrada fue:
 ```{r, warning=F}
 modelo_RegLog$bestTune
 
-# Hyperparameter search grid
+# Cuadrícula de búsqueda de hiperparámetros óptimos de RegLog
 ggplot(modelo_RegLog) + theme(legend.position = "top")
 ```
 
