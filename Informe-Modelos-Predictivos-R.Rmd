@@ -454,7 +454,31 @@ control_entrenamiento <- trainControl(method = "repeatedcv",
 
 ### Modelo con 8 predictores
 
-Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase) e intentando maximizar la métrica `AUC`. Además, por ser un problema multi-clase, prestaremos especia atención a la métrica `Kappa` de nuestros modelos.
+Entrenamos el modelo con las variables seleccionadas por `Boruta` (8 variables predictoras + la clase) e intentando maximizar la métrica `AUC`. Además, por ser un problema multi-clase, prestaremos especia atención a la métrica `Kappa` de nuestros modelos. 
+
+El índice __Kappa de Cohen__ mide la __tasa de acuerdo__ entre las distintas evaluaciones realizadas por el clasificador de interés durante su entrenamiento, siendo un valor de 1 una tasa de acuerdo del 100%, y 0 una tasa del 0%. La figura a continuación detalla su interpretación:
+
+<center>
+
+![Guía de interpretación índice kappa](./Interpretacion-coeficiente-kappa.jpg)
+
+</center>
+
+<br>
+
+
+
+Así mismo, el __AUC o Area Under the Curve__ mide los distintos puntos de corte que podemos usar en nuestro modelo para clasificar las diversas clases del problema, y mide por tanto la tasa de verdaderos positivos vs falsos positivos detectados por el clasificador. La siguiente imagen trata de apoyar la explicación aquí aportada:
+
+<center>
+
+![Valores AUC y su significado](./Interpretacion-Curva-ROC.png)
+
+</center>
+
+<br>
+
+
 
 Nótese que el comando `train` nos permite seleccionar la métrica que queremos maximizar (o minimizar). Para todos nuestros clasificadores, maximizaremos la métrica AUC, ya que la usaremos posteriormente para evaluar el rendimiento de nuestros clasificadores.
 ```{r, Modelo J48 con 8 predictores, cache=T}
