@@ -472,7 +472,7 @@ Así mismo, el __AUC o Area Under the Curve__ mide los distintos puntos de corte
 
 <center>
 
-![Valores AUC y su significado](./Interpretacion-Curva-ROC.png)
+![](./Interpretacion-Curva-ROC.png)
 
 </center>
 
