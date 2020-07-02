@@ -99,29 +99,9 @@ tail(sapply(dataset, class), n= 15L)
 Primero vamos a comprobar la presencia de valores *NA* mediante el siguiente bloque de código, el cual escanea todo el dataset, e imprime un mensaje por consola si encuentra un valor faltante. En caso contrario (como es aquí), no mostrará ningún mensaje. Si hubiese valores *NA*, se procedería a impugnar el dataset.
 
 ```{r, Comprobación NAs en dataset original}
-
-#Definimos una función para encontrar la ubicación de NAs en nuestro dataset:
-localizar_NAs.dataframe <- function(dataset) {
-  for (columna in colnames(dataset)) {
-    for (fila in rownames(dataset)) {
-      if (is.na(dataset[fila,columna]) == TRUE) {
-        cat("Se encontro un valor NA en la fila", fila, "y columna", columna)
-      } 
-    }
-  }
-}
-
-
-# Recorremos todos los valores, desde la columna 1 hasta la última, buscando
-# NAs. En caso de encontrarlos, ejecutamos la función previamente definida, que
-# imprimirá por pantalla valores omitidos que encuentre.
 if(TRUE %in% apply(dataset, 2, is.na.data.frame)) {
-  localizar_NAs.dataframe(dataset)
+  which(is.na(dataset) , arr.ind = T)
 }
-
-# Para comprobar los tiempos de diferencia:
-#system.time(localizar_NAs.dataframe(dataset))
-#system.time(apply(dataset, 2, is.na.data.frame))
 ```
 
 
@@ -135,7 +115,7 @@ variables_numericas <- variables_numericas[variables_numericas!=70]
 ```
 
 ```{r, echo=F}
-boxplot(dataset[variables_numericas], main = "Distribución original de las variables numéricas", cex.axis=.46, las=3, col="limegreen")
+boxplot(dataset[variables_numericas], main = "Distribución original de las variables numéricas", cex.axis=.46, las=3, col="cyan")
 ```
 
 <br>
@@ -155,7 +135,7 @@ dataset_escalado <- predict(escalado_y_centrado,dataset[,variables_numericas])
 ```
 
 ```{r, echo=F}
-boxplot(dataset_escalado, main = "Variables numericas centradas y escaladas", cex.axis=.46, las=3)
+boxplot(dataset_escalado, main = "Variables numericas centradas y escaladas", cex.axis=.46, las=3, col = "cyan")
 ```
 
 
@@ -205,7 +185,7 @@ individuos con estadio braak 7, que pasan a formar parte del estadio braak 6
 
 ```{r, echo=F}
 hist(dataset[,"braaksc"], main = "Distribución de individuos en los diversos niveles de la clase braaksc", 
-     xlab= "Estadio braaskc", ylab="Frecuencia")
+     xlab= "Estadio braaskc", ylab="Frecuencia", col = "cyan")
 ```
 
 <br>
@@ -222,7 +202,7 @@ for (individuo in which(dataset$braaksc==7)) {dataset[individuo,"braaksc"] <- 6}
 
 ```{r, echo=F}
 hist(dataset[,"braaksc"], xlab= "Estadio braaksc", ylab="Frecuencia",
-     main="Clases redistribuidas")
+     main="Clases redistribuidas", col = "cyan")
 ```
 
 <br>
