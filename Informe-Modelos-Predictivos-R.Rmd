@@ -410,7 +410,7 @@ Con las semillas de aleatoriedad listas, establecemos el control del entrenamien
 control_entrenamiento <- trainControl(method = "repeatedcv",
                            number=5,
                            repeats = 3,
-                           seeds = semillas, #Poner "semillas_J48_MLP" cuando acabe
+                           seeds = semillas,
                            returnResamp = "final",
                            allowParallel = TRUE,
                            classProbs = TRUE,
