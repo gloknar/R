@@ -1,0 +1,171 @@
+---
+title: "Curvas de aprendizaje"
+author: <div class="LI-profile-badge"  data-version="v1" data-size="medium" data-locale="es_ES" data-type="horizontal" data-theme="dark" data-vanity="adamcasasm"><a class="LI-simple-link" href='https://es.linkedin.com/in/adamcasasm/es-es?trk=profile-badge'>Adam Casas</a></div> (Click para ir a mi perfil de LinkedIn)
+date: "06/06/2020"
+output:
+  # pdf_document:
+  #   latex_engine: xelatex # Para UTF-8
+  html_document:
+    df_print: paged
+    highlight: kate
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+##################################################
+#######        Encoded in UTF-8        ###########
+##################################################
+```
+
+
+
+# Introducción
+
+
+Vamos a ver cómo hacer una curva de aprendizaje sobre el dataset de iris. La lógica detrás de esto es entrenar un modelo con datasets cada vez más grandes, y ver en qué punto converge la precisión del mismo (medida en índice Kappa)
+
+
+```{r librerias, message=F}
+library(doParallel)
+library(caret)
+library(Boruta)
+library(ggplot2)
+```
+
+
+```{r parallel backend}
+registerDoParallel(cores = 12) # Recuerda dejar hilos libres para tu SO
+```
+
+
+<br>
+<br>
+
+Ahora establecemos el espacio de trabajo de la sesión y cargamos los datos:
+```{r carga de datos}
+setwd("C:/Users/Adam_/Desktop/Cosas master/Master Bioinformatica/2o Cuatrimestre/Machine Learning/RPubs/Curva de aprendizaje/")
+```
+
+
+
+
+
+
+
+Ahora dividimos el dataset en distintas porciones y lo entrenamos
+
+```{r}
+control_entrenamiento <- trainControl(method = "boot632",
+                                      number = 101,
+                                      seeds = NULL,
+                                      returnResamp = "final",
+                                      allowParallel = TRUE,
+                                      classProbs = TRUE,
+                                      summaryFunction = defaultSummary, 
+                                      verboseIter = F,
+                                      search = "grid",
+                                      p = 1)
+```           
+
+
+
+```{r C5.0}
+set.seed(1)
+dataset <- datasets::iris
+predicciones <- c()
+individuos <- c()
+
+
+    
+for (i in seq(0.10, 1, 0.1)) {
+  Indice_individuos_entrenamiento <- createDataPartition(dataset$Species,
+                                                         p = i,
+                                                         list = FALSE,
+                                                         times = 1)
+  
+  # Creamos y comprobamos el set de entrenamiento:
+  training_set <- dataset[Indice_individuos_entrenamiento,]
+  cat("El set de entrenamiento tiene", nrow(training_set), "individuos y", ncol(training_set), "variables.")
+  
+  # Creamos y comprobamos el set de test:
+  test_set <- dataset[-Indice_individuos_entrenamiento,]
+  cat("El set de test tiene", nrow(test_set), "individuos y", ncol(test_set), "variables.")
+  
+  
+  
+  
+  modelo_C50 <- train(Species~.,data=training_set,
+                    method="C5.0",
+                    metric = "Kappa",     # Maximize = TRUE by default
+                    trControl = control_entrenamiento,
+                    tuneLength = 5)
+  
+  cat("El índice Kappa medio de este modelo en el training set fue:", mean(modelo_C50$resample$Kappa), "\n")
+
+  i <- i*10
+  predicciones[i] <- mean(modelo_C50$resample$Kappa)
+  individuos[i] <-  nrow(training_set)
+
+}
+
+dataframe <- data.frame(predicciones, individuos)
+
+plot(x= dataframe$individuos, y = dataframe$predicciones)
+ggplot(data = dataframe, aes(x= individuos, y = predicciones)) + geom_smooth() + ggtitle("Curva de aprendizaje de C5.0 en el dataset Iris")
+```
+
+
+```{r 10}
+set.seed(1)
+dataset <- datasets::iris
+predicciones <- c()
+individuos <- c()
+
+
+    
+for (i in seq(0.10, 1, 0.1)) {
+  Indice_individuos_entrenamiento <- createDataPartition(dataset$Species,
+                                                         p = i,
+                                                         list = FALSE,
+                                                         times = 1)
+  
+  # Creamos y comprobamos el set de entrenamiento:
+  training_set <- dataset[Indice_individuos_entrenamiento,]
+  cat("El set de entrenamiento tiene", nrow(training_set), "individuos y", ncol(training_set), "variables.")
+  
+  # Creamos y comprobamos el set de test:
+  test_set <- dataset[-Indice_individuos_entrenamiento,]
+  cat("El set de test tiene", nrow(test_set), "individuos y", ncol(test_set), "variables.")
+  
+  
+  
+  
+  modelo_C50 <- train(Species~.,data=training_set,
+                    method="avNNet",
+                    metric = "Kappa",     # Maximize = TRUE by default
+                    trControl = control_entrenamiento,
+                    tuneLength = 5)
+  
+  cat("El índice Kappa medio de este modelo en el training set fue:", mean(modelo_C50$resample$Kappa), "\n")
+
+  i <- i*10
+  predicciones[i] <- mean(modelo_C50$resample$Kappa)
+  individuos[i] <-  nrow(training_set)
+
+}
+
+dataframe <- data.frame(predicciones, individuos)
+
+plot(x= dataframe$individuos, y = dataframe$predicciones)
+ggplot(data = dataframe, aes(x= individuos, y = predicciones)) + geom_smooth() + ggtitle("Curva de aprendizaje de avNNet en el dataset Iris")
+
+```
+
+
+
+ 
