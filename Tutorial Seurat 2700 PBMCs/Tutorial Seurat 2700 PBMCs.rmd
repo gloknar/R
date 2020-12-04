@@ -43,7 +43,7 @@ En este tutorial se trabajará el control de calidad o QC, filtrado de datos, c�
 
 Para comenzar el tutorial, primero necesitamos descargar las lecturas crudas de la plataforma NextSeq 500, las cuales están disponibles en mi repositorio de GitHub, y ubicarlas en la misma carpeta que este script.
 
-Empezamos cargando las librerías a emplear y leyendo los datos crudos. El comando `Read10X` lee el output del pipeline "cellranger" de 10X Genomics y devuelve una matriz de conteo de Identificadores Moleculares Únicos (o UMI en inglés). Los valores en esta matriz representan el nº de moléculas para cada característica ( _i.e._ gen; fila) que son detectados en cada celda (columna).
+Empezamos cargando las librerías a emplear y leyendo los datos crudos. El comando `Read10X` lee el output del pipeline "Cell Ranger" de 10X Genomics y devuelve una matriz de conteo de Identificadores Moleculares Únicos (o UMI en inglés). Los valores en esta matriz representan el nº de moléculas para cada característica ( _i.e._ gen; fila) que son detectados en cada celda (columna).
 
 A continuación usamos la matriz de conteos para crear un objeto de tipo Seurat. Este objeto sirve a modo de contenedor tanto para los datos (la matriz de conteos, por ejemplo) como para los análisis (resultados del PCA o un clustering) de un dataset de célula única.
 
