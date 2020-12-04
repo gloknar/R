@@ -1,7 +1,7 @@
 ---
 title: "Tutorial Seurat V3 2700 PBMCs"
 author: "Adam Casas"
-date: "4/12/2020"
+date: 'Compilado: `r format(Sys.Date(), "%B %d, %Y")`'
 output: 
   html_document:
     df_print: paged
@@ -13,12 +13,16 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  tidy = TRUE)
 ```
 
 # Introducción a Seurat V3
 
-Seurat es un paquete de R diseñado para trabajar con datos de single-cell RNA-seq (o secuenciación de ARN de célula única, en español). Con este paquete podrás realizar control de calidad, exploración y análisis de los ya mencionados datos. Seurat permite al usuario identificar e interpretar fuentes de heterogeneidad en mediciones de transcriptómica de célula única, e integrar diversos tipos de datos de célula única.
+`Seurat` es un paquete de R diseñado para trabajar con datos de single-cell RNA-seq (o secuenciación de ARN de célula única, en español). Con este paquete podrás realizar control de calidad, exploración y análisis de los ya mencionados datos. `Seurat` permite al usuario identificar e interpretar fuentes de heterogeneidad en mediciones de transcriptómica de célula única, e integrar diversos tipos de datos de célula única.
 
 Si usas este paquete en tus investigaciones, sus desarrolladores recomiendan citar las siguientes fuentes:
 
@@ -27,27 +31,29 @@ Si usas este paquete en tus investigaciones, sus desarrolladores recomiendan cit
 * [Stuart\*, Butler*, _et al._, Cell 2019](https://www.cell.com/cell/fulltext/S0092-8674(19)30559-8)
 
 
-Seurat hace especial énfasis en las visualizaciones sencillas, interpretables y agradables a la vista, y han sido diseñadas para su fácil manejo tanto para investigadores computacionales como experimentales ( _i.e._ investigadores _in-silico_ e _in-vitro_).
+`Seurat` hace especial énfasis en las visualizaciones sencillas, interpretables y agradables a la vista, y han sido diseñadas para su fácil manejo tanto para investigadores computacionales como experimentales ( _i.e._ investigadores _in-silico_ e _in-vitro_).
 
 Este paquete ha sido desarrollado y es actualmente mantenido por Andrew Butler, Paul Hoffman, Tim Stuart, Christoph Hafemeister, y Shiwei Zheng, todos ellos investigadores del [laboratorio Satija](https://satijalab.org/), en colaboración con otros tantos contribuyentes tales como Jeff Farrell y Karthik Shekhar, por mencionar algunos.
 
+<br>
 
-Para introducirnos en el workflow de Seurat, analizaremos el dataset de 2700 células mononucleares de sangre periférica (PBMCs en inglés), publicado por [10x Genomics](https://www.10xgenomics.com/). En este dataset se secuenciaron mediante técnicas de célula única 2700 células en la plataforma NextSeq 500 de Illumina.
+# Workflow en Seurat para el análisis de single-cell RNA-seq
+
+Para introducirnos en el workflow de `Seurat`, analizaremos el dataset de 2700 células mononucleares de sangre periférica (PBMCs en inglés), publicado por [10x Genomics](https://www.10xgenomics.com/). En este dataset se secuenciaron mediante técnicas de single-cell RNA-seq 2700 células en la plataforma NextSeq 500 de Illumina.
 
 > Nota: Las PBMCs corresponden a linfocitos y monocitos.
 
 En este tutorial se trabajará el control de calidad o QC, filtrado de datos, cálculo de genes con elevada varianza, reducción de dimensionalidad, clustering basado en grafos e identificación de marcadores de clusters.
 
+<br>
 
-# Setup the Seurat object
+## Creamos el objeto Seurat "pbmc"
 
-Para comenzar el tutorial, primero necesitamos descargar las lecturas crudas de la plataforma NextSeq 500, las cuales están disponibles en mi repositorio de GitHub, y ubicarlas en la misma carpeta que este script.
+Para comenzar el tutorial, primero necesitamos descargar las lecturas crudas de la plataforma NextSeq 500, las cuales están disponibles en mi repositorio de [GitHub](https://github.com/gloknar/R-Utilities/tree/master/Tutorial%20Seurat%202700%20PBMCs) en forma de archivo comprimido, y ubicarlas en la misma carpeta que este script.
 
-Empezamos cargando las librerías a emplear y leyendo los datos crudos. El comando `Read10X` lee el output del pipeline "Cell Ranger" de 10X Genomics y devuelve una matriz de conteo de Identificadores Moleculares Únicos (o UMI en inglés). Los valores en esta matriz representan el nº de moléculas para cada característica ( _i.e._ gen; fila) que son detectados en cada celda (columna).
+Empezamos cargando las librerías a emplear y leyendo los datos crudos. El comando `Read10X` lee el output del pipeline ["Cell Ranger"](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/what-is-cell-ranger) de 10X Genomics y devuelve una matriz de conteo de Identificadores Moleculares Únicos (o UMI en inglés). Los valores en esta matriz representan el nº de moléculas para cada característica ( _i.e._ gen; fila) que son detectados en cada célula (columna).
 
-A continuación usamos la matriz de conteos para crear un objeto de tipo Seurat. Este objeto sirve a modo de contenedor tanto para los datos (la matriz de conteos, por ejemplo) como para los análisis (resultados del PCA o un clustering) de un dataset de célula única.
-
-We next use the count matrix to create a Seurat object. The object serves as a container that contains both data (like the count matrix) and analysis (like PCA, or clustering results) for a single-cell dataset. For a technical discussion of the Seurat object structure, check out our GitHub Wiki. For example, the count matrix is stored in pbmc[["RNA"]]@counts.
+A continuación usamos la matriz de conteos para crear un objeto de tipo `Seurat`. Este objeto sirve a modo de contenedor tanto para los datos (la matriz de conteos, por ejemplo) como para los análisis (resultados del PCA o un clustering) de un dataset de célula única. Para una descripción técnica de la estructura de los objetos de tipo `Seurat`, consulta la [Wiki](https://github.com/satijalab/seurat/wiki) que han habilitado los desarrolladores en GitHub.
 
 
 ```{r}
@@ -55,13 +61,55 @@ We next use the count matrix to create a Seurat object. The object serves as a c
 library(dplyr)
 library(Seurat)
 library(patchwork)
+library(curl)
 
-# Carpeta de trabajo:
+
+# La carpeta de trabajo será la ubicación de este script
 setwd("./")
 
 
+# Descargamos y descomprimimos las lecturas crudas:
+url_lecturas <- "https://github.com/gloknar/R-Utilities/raw/master/Tutorial%20Seurat%202700%20PBMCs/pbmc3k_filtered_gene_bc_matrices.tar.gz"
+curl_download(url_lecturas, destfile = "pbmc3k_filtered_gene_bc_matrices.tar.gz")
+untar("pbmc3k_filtered_gene_bc_matrices.tar.gz", exdir = "./")
+
+
+# Cargamos la matriz de conteos de nuestras 2700 PBMCs
+datos.pbmc <- Read10X(data.dir = "./filtered_gene_bc_matrices/hg19/")
+
+
+# Inicializamos el objeto Seurat con los datos crudos (no normalizados)
+pbmc <- CreateSeuratObject(counts = datos.pbmc, project = "2700PBMCs", min.cells = 3, min.features = 200)
+pbmc
 ```
 
+
+<details>
+  <summary>**¿Qué apariencia tienen los datos en la matriz de conteo?**</summary>
+<br>
+
+La previamente mencionada matriz de conteos de UMIs se guardó en el objeto `datos.pbmc`. Recordemos que cada fila de esta matriz corresponde a un gen, y cada columna corresponde al nº de transcritos detectados en cada célula, de manera que la primera columna corresponde a los transcritos detectados en la célula nº1, la segunda columna corresponde a los transcritos de la célula nº2, y así.
+
+```{r}
+# Veamos la expresión de 4 genes concretos en las primeras 30 células
+datos.pbmc[c("SERPINC1", "CD3D", "TCL1A", "MS4A1"), 1:30]
+```
+Los puntos (".") de la matriz representan ceros (no se detectaron transcritos de ARNm de ese gen, en esa célula). Así, vemos que en la primera célula sólo se detectaron 4 moléculas de ARNm del gen CD3D, mientras que en la 9ª célula se encontraron transcritos de CD3D, TCL1A y MS4A1.
+
+Dado que la mayoría de valores en una matriz de scRNA-seq suelen ser 0, Seurat usa una "sparse-matrix" o matriz dispersa siempre que sea posible (como es en este caso). Ello disminuye la cantidad de memoria usada y acelera el procesado de los datos.
+
+```{r}
+matriz_normal <- object.size(as.matrix(datos.pbmc))
+matriz_normal
+
+matriz_dispersa <- object.size(datos.pbmc)
+
+cat("Al guardar los datos en formato matriz dispersa en vez de matriz normal, conseguimos reducir el tamaño de los datos en un factor de:", matriz_normal[1]/matriz_dispersa[1])
+```
+</details>
+
+<br>
+<br>
 
 ```{r, eval=F}
 # Prueba tutorial 2700 PBMCs Seurat
