@@ -17,7 +17,8 @@ knitr::opts_chunk$set(
   echo = TRUE,
   message = FALSE,
   warning = FALSE,
-  tidy = TRUE)
+  tidy = TRUE
+)
 ```
 
 # Introducción a Seurat V3
@@ -79,7 +80,12 @@ datos.pbmc <- Read10X(data.dir = "./filtered_gene_bc_matrices/hg19/")
 
 
 # Inicializamos el objeto Seurat con los datos crudos (no normalizados)
-pbmc <- CreateSeuratObject(counts = datos.pbmc, project = "2700PBMCs", min.cells = 3, min.features = 200)
+pbmc <- CreateSeuratObject(
+  counts = datos.pbmc, 
+  project = "2700-PBMCs", 
+  min.cells = 3, 
+  min.features = 200)
+
 pbmc
 ```
 
@@ -104,48 +110,100 @@ matriz_normal
 
 matriz_dispersa <- object.size(datos.pbmc)
 
-cat("Al guardar los datos en formato matriz dispersa en vez de matriz normal, conseguimos reducir el tamaño de los datos en un factor de:", matriz_normal[1]/matriz_dispersa[1])
+cat("Al guardar los datos en formato matriz dispersa en vez de matriz normal, conseguimos reducir el tamaño de los datos en un factor de", matriz_normal[1]/matriz_dispersa[1])
 ```
 </details>
 
 <br>
 <br>
 
-```{r, eval=F}
-# Prueba tutorial 2700 PBMCs Seurat
-# Fuente: https://satijalab.org/seurat/v3.1/pbmc3k_tutorial.html
 
 
-library(dplyr)
-library(Seurat)
-library(patchwork)
-setwd("C:/Users/Adam_/Desktop/Seurat/")
-
-# Load the PBMC dataset
-pbmc.data <- Read10X(data.dir = "./filtered_gene_bc_matrices/hg19/")
-# Initialize the Seurat object with the raw (non-normalized data).
-pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
-pbmc
+## Workflow de preprocesado estándar
 
 
+Los pasos mostrados a continuación abarcan el workflow estándar para el preprocesado de datos de scRNA-seq. Estos incluyen la selección y filtrado de células en función del control de calidad, normalizado y escalado de datos y la detección de transcritos con gran varianza.
+
+<font size="5">Control de calidad y selección de células para posteriores análisis</font>
+
+Seurat te permite explorar fácilmente las métricas del control de calidad y filtrar células según el criterio establecido por el usuario. Algunas de las métricas de calidad más usadas por la comunidad son:
+
+* Nº de genes expresados en cada célula
+
+  * Células mal secuenciadas o gotículas vacías suelen expresar muy pocos genes
+  
+  * Doublets y multiplets (gotículas con más de una célula) suele expresar un nº anormalmente alto de genes
+
+* Nº total de transcritos detectados en una célula (lo cual está muy correlacionado con nº de genes expresados)
+
+* Porcentaje de transcritos que mapean en el genoma mitocondrial
+  
+  * Las células mal secuenciadas y las moribundas suelen mostrar muchos transcritos provenientes de genes mitocondriales
+  
+  * Para calcular las métricas de calidad mitocondriales, se emplea el comando `PercentageFeatureSet`, el cual calcula el porcentaje de transcritos provenientes de un set de genes (en este caso, genes mitocondriales)
+  
+  * Los genes cuyo nombre comienzan por "MT-" son genes mitocondriales
 
 
 
+> Nota: Durante el aislamiento de células individuales (antes de ser secuenciadas), estas son embebidas en gotículas de aceite de manera que, idealmente, en cada gotícula se halle una única célula (ver imagen inferior, sacada de Bach _et al._, [2017](https://www.nature.com/articles/s41467-017-02001-5)).
 
-#####################PREPROCESSING WORKFLOW##################################################
+<center>
 
-# The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+![](./imagenes/aislamiento-celulas.png)
+
+</center>
+
+
+
+```{r}
+# Los operadores [[ ]] permiten añadir la columna "percent.mt" a los metadatos del objeto Seurat, guardados en el bolsillo @meta.data (pbmc@meta.data).
 pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+```
 
 
 
-# Visualize QC metrics as a violin plot
+<details>
+  <summary>**¿Dónde se almacenan las métricas del control de calidad en Seurat?**</summary>
+  
+* El nº de genes expresados (`nFeature_RNA`) y moléculas de ARNm detectadas (`nCount_RNA`) se calculan automáticamente al llamar a la función `CreateSeuratObject`
+
+  * En concreto, se almacenan en los metadatos del objeto Seurat
+
+  
+```{r}
+# Mostramos las métricas del control de calidad de las 5 primeras células
+head(pbmc@meta.data, 5)
+```
+
+
+</details>
+
+
+<br>
+
+
+En el ejemplo a continuación, visualizamos las métricas de calidad y las empleamos para filtrar las células
+
+* Vamos a descartar las células que expresen más de 2500 genes y las que expresen menos de 200
+
+* También filtraremos las células cuyos transcritos mitocondriales supongan >=5% del total de transcritos presentes en ellas
+
+
+
+```{r}
+# Visualizamos las métricas de calidad en un gráfico de violín
 VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+```
+
+```{r}
+pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+
+VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+```
 
 
-
-
-
+```{r, eval=F}
 # FeatureScatter is typically used to visualize feature-feature relationships, but can be used
 # for anything calculated by the object, i.e. columns in object metadata, PC scores etc.
 
@@ -347,3 +405,7 @@ DimPlot(pbmc, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
 saveRDS(pbmc, file = "./2700pbmc_final.rds")
 ```
 
+
+# Bibliografía
+
+Bach, K., S. Pensa, M. Grzelak, J. Hadfield, D. J. Adams, J. C. Marioni, and W. T. Khaled. 2017. “Differentiation dynamics of mammary epithelial cells revealed by single-cell RNA sequencing.” Nat Commun 8 (1): 2128.
