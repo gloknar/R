@@ -251,7 +251,7 @@ grafico_genes_variable <- VariableFeaturePlot(pbmc)
 LabelPoints(grafico_genes_variable, points = top10, repel = TRUE)
 ```
 
-> Nota: Fíjate en que el gráfico generado se asemeja, en diseño y concepto, a los [gráficos MA](https://genomicsclass.github.io/book/pages/figure/rnaseq_gene_level-unnamed-chunk-42-1.png) empleados en transcriptómica.
+> Nota: Fíjate en que el gráfico generado se asemeja, en diseño y concepto, a los [gráficos MA](https://www.researchgate.net/figure/MA-plot-MA-plot-for-differential-expression-analysis-in-four-RNA-seq-samples-with-two_fig2_230780119) empleados en transcriptómica.
 
 e
 
