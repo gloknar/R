@@ -251,7 +251,7 @@ grafico_genes_variable <- VariableFeaturePlot(pbmc)
 LabelPoints(grafico_genes_variable, points = top10, repel = TRUE)
 ```
 
-
+> Nota: Fíjate en que el gráfico generado se asemeja, en diseño y concepto, a los [gráficos MA](https://genomicsclass.github.io/book/pages/figure/rnaseq_gene_level-unnamed-chunk-42-1.png) empleados en transcriptómica.
 
 e
 
