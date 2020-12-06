@@ -21,6 +21,8 @@ knitr::opts_chunk$set(
 )
 ```
 
+Adaptado de la guía publicada por el laboratorio [Satija](https://satijalab.org/seurat/v3.2/pbmc3k_tutorial.html).
+
 # Introducción a Seurat V3
 
 `Seurat` es un paquete de R diseñado para trabajar con datos de single-cell RNA-seq (o secuenciación de ARN de célula única, en español). Con este paquete podrás realizar control de calidad, exploración y análisis de los ya mencionados datos. `Seurat` permite al usuario identificar e interpretar fuentes de heterogeneidad en mediciones de transcriptómica de célula única, e integrar diversos tipos de datos de célula única.
@@ -36,7 +38,10 @@ Si usas este paquete en tus investigaciones, sus desarrolladores recomiendan cit
 
 Este paquete ha sido desarrollado y es actualmente mantenido por Andrew Butler, Paul Hoffman, Tim Stuart, Christoph Hafemeister, y Shiwei Zheng, todos ellos investigadores del [laboratorio Satija](https://satijalab.org/), en colaboración con otros tantos contribuyentes tales como Jeff Farrell y Karthik Shekhar, por mencionar algunos.
 
+***
+
 <br>
+
 
 # Workflow en Seurat para el análisis de single-cell RNA-seq
 
@@ -45,6 +50,8 @@ Para introducirnos en el workflow de `Seurat`, analizaremos el dataset de 2700 c
 > Nota: Las PBMCs corresponden a linfocitos y monocitos.
 
 En este tutorial se trabajará el control de calidad o QC, filtrado de datos, cálculo de genes con elevada varianza, reducción de dimensionalidad, clustering basado en grafos e identificación de marcadores de clusters.
+
+***
 
 <br>
 
@@ -114,9 +121,9 @@ cat("Al guardar los datos en formato matriz dispersa en vez de matriz normal, co
 ```
 </details>
 
-<br>
-<br>
+***
 
+<br>
 
 
 ## Workflow de preprocesado estándar
@@ -194,47 +201,37 @@ En el ejemplo a continuación, visualizamos las métricas de calidad y las emple
 ```{r}
 # Visualizamos las métricas de calidad en un gráfico de violín
 VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
-```
 
-```{r}
+# Filtramos las células según los criterios de calidad previamente mencionados
 pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
 
+# Visualizamos las células retenidas por el filtrado
 VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 ```
 
+***
+
+## Normalización de datos
+
+Tras filtrar las células indeseadas de nuestro conjunto de datos, el siguiente paso es normalizar los niveles de expresión génica mediante el comando `NormalizeData`. `NormalizeData` usa por defecto un factor de escala de 10<sup>4</sup> y el método `LogNormalize`, el cual normaliza los niveles de expresión génica de cada célula de la siguiente manera: Para un gen concreto, divide su nº de transcritos entre el nº total de transcritos presentes en esa célula, luego se multiplica por el factor de escala especificado, y al resultado de esa multiplicación (llamémoslo "x") se le aplica la transformación $ln(1+x)$ (se usa ln(1+x) en lugar de ln(x) para evitar perder precisión cuando x es un número flotante cercano a 0).
+
+```{r}
+pbmc <- NormalizeData(pbmc)
+```
+
+
+Los niveles de expresión génica normalizados de nuestras células se almacenan en `pbmc[["RNA"]]@data` (también puedes escribirlo como `pbmc@assays$RNA@data`).
+
+
+```{r}
+# Nº de transcritos tras el normalizado, se muestran las 3 primeras células
+pbmc[["RNA"]]@data[968:974,1:3]
+```
+
+
+
 
 ```{r, eval=F}
-# FeatureScatter is typically used to visualize feature-feature relationships, but can be used
-# for anything calculated by the object, i.e. columns in object metadata, PC scores etc.
-
-plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
-plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
-plot1 + plot2
-
-pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
-
-
-
-
-
-
-
-
-
-#####################NORMALIZING THE DATA##################################################
-
-pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
-
-pbmc <- NormalizeData(pbmc)
-
-
-
-
-
-
-
-
-
 
 #####################FEATURE SELECTION##################################################
 
