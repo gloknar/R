@@ -253,22 +253,32 @@ LabelPoints(grafico_genes_variable, points = top10, repel = TRUE)
 
 > Nota: Fíjate en que el gráfico generado se asemeja, en diseño y concepto, a los [gráficos MA](https://www.researchgate.net/figure/MA-plot-MA-plot-for-differential-expression-analysis-in-four-RNA-seq-samples-with-two_fig2_230780119) empleados en transcriptómica.
 
-e
+***
 
-```{r, eval=F}
-#####################SCALING THE DATA##################################################
+<br>
 
+
+## Escalado de datos
+
+Después aplicamos una transformación linear (escalado) que es un paso común de preprocesado previo a la aplicación de técnicas de reducción de dimensionalidad (también llamado extracción de características en ML) como PCA. 
+
+Next, we apply a linear transformation ('scaling') that is a standard pre-processing step prior to dimensional reduction techniques like PCA. The ScaleData function:
+
+* Shifts the expression of each gene, so that the mean expression across cells is 0
+
+* Scales the expression of each gene, so that the variance across cells is 1
+
+  * This step gives equal weight in downstream analyses, so that highly-expressed genes do not dominate
+  
+* The results of this are stored in `pbmc[["RNA"]]@scale.data`
+
+```{r}
 all.genes <- rownames(pbmc)
 pbmc <- ScaleData(pbmc, features = all.genes)
+```
 
 
-
-
-
-
-
-
-
+```{r, eval=F}
 #####################PERFORM LINEAR DIMENSIONAL REDUCTION (PCA)##################################################
 
 pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
