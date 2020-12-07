@@ -1,5 +1,5 @@
 ---
-title: "Tutorial Seurat V3 2700 PBMCs"
+title: "Tutorial Seurat V3 2.700 PBMCs"
 author: "Adam Casas"
 date: 'Compilado: `r format(Sys.Date(), "%B %d, %Y")`'
 output: 
@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-Adaptado de la guía publicada por el laboratorio [Satija](https://satijalab.org/seurat/v3.2/pbmc3k_tutorial.html).
+Adaptado de la guía gratuita publicada por [10X Genomics](https://www.dropbox.com/s/38h5zccv0b7l9pr/pbmc3k_tutorial.Rmd?dl=1).
 
 # Introducción a Seurat V3
 
@@ -82,7 +82,7 @@ curl_download(url_lecturas, destfile = "pbmc3k_filtered_gene_bc_matrices.tar.gz"
 untar("pbmc3k_filtered_gene_bc_matrices.tar.gz", exdir = "./")
 
 
-# Cargamos la matriz de conteos de nuestras 2700 PBMCs
+# Cargamos la matriz de conteos de nuestras 2.700 PBMCs
 datos.pbmc <- Read10X(data.dir = "./filtered_gene_bc_matrices/hg19/")
 
 
@@ -126,12 +126,11 @@ cat("Al guardar los datos en formato matriz dispersa en vez de matriz normal, co
 <br>
 
 
-## Workflow de preprocesado estándar
+## Control de calidad y selección de células para posteriores análisis
 
 
 Los pasos mostrados a continuación abarcan el workflow estándar para el preprocesado de datos de scRNA-seq. Estos incluyen la selección y filtrado de células en función del control de calidad, normalizado y escalado de datos y la detección de transcritos con gran varianza.
 
-<font size="5">Control de calidad y selección de células para posteriores análisis</font>
 
 Seurat te permite explorar fácilmente las métricas del control de calidad y filtrar células según el criterio establecido por el usuario. Algunas de las métricas de calidad más usadas por la comunidad son:
 
