@@ -308,22 +308,43 @@ DimHeatmap(pbmc, dims = 1:6, cells = 500)
 ```
 
 
+***
+
+<br>
+
+
+## Determinar la dimensionalidad del dataset
+
+Una vez realizado el PCA, y sabiendo que cada componente principal explica una faceta distinta de las poblaciones celulares estudiadas, nos puede surgir la siguiente pregunta: ¿con cuántas componentes principales debería quedarme? ¿10, 20, 50?
+
+Existen varias maneras o criterios a seguir a la hora de elegir el nº adecuado de dimensiones que estudiar. No obstante, en este tutorial nos centraremos en el método implementado por 10X Genomics en  [Macosko _et al._, 2015](https://www.cell.com/fulltext/S0092-8674(15)00549-8). En dicha publicación aplican exitosamente un test de remuestreo inspirado en la técnica JackStraw ([Chung y Storey, 2015](https://academic.oup.com/bioinformatics/article/31/4/545/2748186)).
+
+Dicho test consiste en permutar aleatoriamente un subconjunto de los datos (el 1% por defecto), volver a ejecutar el PCA (con lo que se genera una distribución nula de los loadings de los genes) y repetir el proceso. Se identifican como dimensiones significativas aquellas enriquecidas con muchos genes cuyos p-valores sean bajos.
+
+```{r}
+# Nota: El JackStraw puede tardar en completarse
+pbmc <- JackStraw(pbmc)
+pbmc <- ScoreJackStraw(pbmc, dims = 1:15)
+```
+
+
+La función `JackStrawPlot` nos permite comparar de manera visual la distribución de los p-valores de cada componente principal con una distribución uniforme (línea discontínua). Las componentes principales significativas muestran un gran enriquecimiento de genes con p-valores bajos y se situarán muy por encima de la línea discontínua. En este caso se observa que el p-valor aumenta bastante entre la duodécima y la decimotercera componente principal.
+
+
+```{r}
+# Visualizamos las componentes principales significativas
+JackStrawPlot(pbmc, dims = 1:20)
+```
+
+
+Si bien el método JackStraw es efectivo, también es cierto que es computacionalmente costoso, sobre todo en datasets muy grandes, en cuyo caso uno puede optar por usar el Scree test/método del codo. En este caso, nos quedaríamos con las 7 primeras dimensiones:
+
+```{r}
+ElbowPlot(pbmc)
+```
+
 
 ```{r, eval=F}
-
-DimHeatmap(pbmc, dims = 1, cells = 500, balanced = TRUE)
-
-DimHeatmap(pbmc, dims = 1:15, cells = 500, balanced = TRUE)
-
-
-
-
-
-
-
-
-#####################DETERMINE THE DIMENSIONAL OF THE DATASET##################################################
-
 # NOTE: This process can take a long time for big datasets, comment out for expediency. More
 # approximate techniques such as those implemented in ElbowPlot() can be used to reduce
 # computation time
