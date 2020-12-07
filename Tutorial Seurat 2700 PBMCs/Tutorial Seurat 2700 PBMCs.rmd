@@ -349,6 +349,13 @@ ElbowPlot(pbmc)
 Identificar la verdadera dimensionalidad del dataset puede resultar ser una tarea laboriosa e incierta, y existen varios métodos para responder a esta cuestión. En nuestro caso, los métodos probados ofrecieron un nº parecido de dimensiones a estudiar. No obstante, los resultados de los próximos análisis no suelen variar mucho si cogemos más dimensiones de las necesarias (¡pero se ven muy perjudicados si usamos un nº insuficiente de dimensiones!), por lo que 10X Genomics recomienda tender hacia la parte superior del espectro. En nuestro caso, podríamos elegir conservar entre 7 y 12 componentes principales, por lo que el criterio de 10X Genomics nos puede encaminar hacia la elección de 10 componentes principales, por ejemplo.
 
 
+***
+
+<br>
+
+## Agrupar las células (Clustering)
+
+
 
 ```{r, eval=F}
 #####################CLUSTER THE CELLS##################################################
