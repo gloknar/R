@@ -199,13 +199,13 @@ En el ejemplo a continuación, visualizamos las métricas de calidad y las emple
 
 ```{r}
 # Visualizamos las métricas de calidad en un gráfico de violín
-VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+VlnPlot(pbmc, features = c("nFeature_RNA", "percent.mt"), ncol = 3)
 
 # Filtramos las células según los criterios de calidad previamente mencionados
 pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
 
 # Visualizamos las células retenidas por el filtrado
-VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+VlnPlot(pbmc, features = c("nFeature_RNA", "percent.mt"), ncol = 3)
 ```
 
 ***
@@ -259,22 +259,36 @@ LabelPoints(grafico_genes_variable, points = top10, repel = TRUE)
 
 ## Escalado de datos
 
-Después aplicamos una transformación linear (escalado) que es un paso común de preprocesado previo a la aplicación de técnicas de reducción de dimensionalidad (también llamado extracción de características en ML) como PCA. 
+Después de la normalización de los datos, los escalamos. Este es un paso estándar y previo a la aplicación de técnicas de reducción de dimensionalidad (también llamadas en su conjunto como "extracción de características" en el ámbito de Machine Learning). 
 
-Next, we apply a linear transformation ('scaling') that is a standard pre-processing step prior to dimensional reduction techniques like PCA. The ScaleData function:
+El comando `ScaleData`:
 
-* Shifts the expression of each gene, so that the mean expression across cells is 0
+* Cambia la expresión de cada gen de manera que su expresión media en todas las células sea 0
 
-* Scales the expression of each gene, so that the variance across cells is 1
+* Escala la expresión de cada gen, de manera que su varianza a lo largo de todas las células sea 1
 
-  * This step gives equal weight in downstream analyses, so that highly-expressed genes do not dominate
+  * Este paso previene que genes con expresión constitutiva tengan más peso en los próximos análisis que genes con escasa expresión (por ejemplo, aquellos que codifican para factores de transcripción)
   
-* The results of this are stored in `pbmc[["RNA"]]@scale.data`
+* Los datos escalados se guardan en `pbmc[["RNA"]]@scale.data`
+
+* Escala por defecto sólo los genes variables identificados en el paso anterior
+
+  * Si quieres escalar todos los genes, debes pasarle a la función el nombre de todos los genes a través del parámetro `features`
 
 ```{r}
-all.genes <- rownames(pbmc)
-pbmc <- ScaleData(pbmc, features = all.genes)
+#nombres_genes <- rownames(pbmc)
+#pbmc <- ScaleData(pbmc, features = nombres_genes)
+pbmc <- ScaleData(pbmc)
 ```
+
+***
+
+<br>
+
+## Reducción de la dimensionalidad del dataset (PCA)
+
+Next we perform PCA on the scaled data. By default, only the previously determined variable features are used as input, but can be defined using features argument if you wish to choose a different subset
+
 
 
 ```{r, eval=F}
