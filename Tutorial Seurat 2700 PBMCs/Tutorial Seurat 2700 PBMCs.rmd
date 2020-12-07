@@ -304,7 +304,7 @@ El comando `DimHeatmap` en particular ofrece una fácil exploración de las fuen
 ```{r}
 DimHeatmap(pbmc, dims = 1, cells = 500)
 
-DimHeatmap(pbmc, dims = 1:5, cells = 500)
+DimHeatmap(pbmc, dims = 1:6, cells = 500)
 ```
 
 
