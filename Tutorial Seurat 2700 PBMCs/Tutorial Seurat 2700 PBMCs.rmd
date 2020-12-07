@@ -307,6 +307,8 @@ DimHeatmap(pbmc, dims = 1, cells = 500)
 DimHeatmap(pbmc, dims = 1:6, cells = 500)
 ```
 
+Nótese que se podría aplicar un análisis de enriquecimiento génico a los resultados de estos heatmaps, de manera que podamos identificar las facetas biológicas que describen cada componente principal.
+
 
 ***
 
@@ -333,7 +335,7 @@ La función `JackStrawPlot` nos permite comparar de manera visual la distribuci�
 
 ```{r}
 # Visualizamos las componentes principales significativas
-JackStrawPlot(pbmc, dims = 1:20)
+JackStrawPlot(pbmc, dims = 1:15)
 ```
 
 
@@ -344,26 +346,11 @@ ElbowPlot(pbmc)
 ```
 
 
+Identificar la verdadera dimensionalidad del dataset puede resultar ser una tarea laboriosa e incierta, y existen varios métodos para responder a esta cuestión. En nuestro caso, los métodos probados ofrecieron un nº parecido de dimensiones a estudiar. No obstante, los resultados de los próximos análisis no suelen variar mucho si cogemos más dimensiones de las necesarias (¡pero se ven muy perjudicados si usamos un nº insuficiente de dimensiones!), por lo que 10X Genomics recomienda tender hacia la parte superior del espectro. En nuestro caso, podríamos elegir conservar entre 7 y 12 componentes principales, por lo que el criterio de 10X Genomics nos puede encaminar hacia la elección de 10 componentes principales, por ejemplo.
+
+
+
 ```{r, eval=F}
-# NOTE: This process can take a long time for big datasets, comment out for expediency. More
-# approximate techniques such as those implemented in ElbowPlot() can be used to reduce
-# computation time
-pbmc <- JackStraw(pbmc, num.replicate = 100)
-pbmc <- ScoreJackStraw(pbmc, dims = 1:20)
-
-JackStrawPlot(pbmc, dims = 1:15)
-
-
-ElbowPlot(pbmc)
-
-
-
-
-
-
-
-
-
 #####################CLUSTER THE CELLS##################################################
 
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
