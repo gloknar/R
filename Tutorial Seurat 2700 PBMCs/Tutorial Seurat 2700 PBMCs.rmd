@@ -334,7 +334,7 @@ plan()
 ```{r, cache=T}
 # Nota: El JackStraw puede tardar en completarse
 # pbmc <- JackStraw(pbmc, dims = 1:5)
-pbmc <- JackStraw(pbmc, dims = 1:5)
+pbmc <- JackStraw(pbmc, dims = 5)
 # pbmc <- ScoreJackStraw(pbmc, dims = 1:15)
 pbmc <- ScoreJackStraw(pbmc, dims = 1:5)
 # f <- future(JackStraw(pbmc))
@@ -345,7 +345,7 @@ pbmc <- ScoreJackStraw(pbmc, dims = 1:5)
 timing.comparisons <- data.frame(fxn = character(), time = numeric(), strategy = character())
 plan("sequential")
 start <- Sys.time()
-pbmc <- JackStraw(pbmc, dims = 1:5)
+pbmc <- JackStraw(pbmc, dims = 5)
 end <- Sys.time()
 timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", time = as.numeric(end - 
     start, units = "secs"), strategy = "sequential"))
@@ -358,7 +358,7 @@ timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", ti
 
 plan("multiprocess", workers = 4)
 start <- Sys.time()
-pbmc <- JackStraw(pbmc, dims = 1:5)
+pbmc <- JackStraw(pbmc, dims = 5)
 end <- Sys.time()
 timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", time = as.numeric(end - 
     start, units = "secs"), strategy = "multiprocess"))
