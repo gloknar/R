@@ -355,9 +355,9 @@ Identificar la verdadera dimensionalidad del dataset puede resultar ser una tare
 
 ## Agrupar las células (Clustering)
 
-Seurat v3 aplica un clustering basado en grafos, desarrollado a partir de las estrategias empleadas en el artículo previamente mencionado de [Macosko _et al._, 2015](https://www.cell.com/fulltext/S0092-8674(15)00549-8) e inspirado en otros artículos donde se emplea clustering basado en grafos a datos de scRNA-seq [SNN-Cliq, Xu and Su, Bioinformatics, 2015](https://academic.oup.com/bioinformatics/article/31/12/1974/214505) y CyTOF [PhenoGraph, Levine et al., Cell, 2015](https://pubmed.ncbi.nlm.nih.gov/26095251/). 
+Seurat v3 aplica un clustering basado en grafos, desarrollado a partir de las estrategias empleadas en el artículo previamente mencionado de [Macosko _et al._, 2015](https://www.cell.com/fulltext/S0092-8674(15)00549-8) e inspirado en otros artículos donde se emplea clustering basado en grafos a datos de scRNA-seq [SNN-Cliq, Xu y Su, Bioinformatics, 2015](https://academic.oup.com/bioinformatics/article/31/12/1974/214505) y CyTOF [PhenoGraph, Levine _et al._, Cell, 2015](https://pubmed.ncbi.nlm.nih.gov/26095251/). En resumidas cuentas, estos métodos insertan las células en una estructura de forma de grafo (por ejemplo, un grafo basado en K-nearest neighbours (KNN), con los enlaces dibujados entre células con perfiles de expresión génica similares, y luego intentar particionar este grafo en "comunidades" o clústers densamente interconectados ( _quasi-cliques_). 
 
-Briefly, these methods embed cells in a graph structure - for example a K-nearest neighbor (KNN) graph, with edges drawn between cells with similar feature expression patterns, and then attempt to partition this graph into highly interconnected 'quasi-cliques' or 'communities'.
+Como en PhenoGraph,
 
 As in PhenoGraph, we first construct a KNN graph based on the euclidean distance in PCA space, and refine the edge weights between any two cells based on the shared overlap in their local neighborhoods (Jaccard similarity). This step is performed using the FindNeighbors function, and takes as input the previously defined dimensionality of the dataset (first 10 PCs).
 
