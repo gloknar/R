@@ -323,14 +323,6 @@ Existen varias maneras o criterios a seguir a la hora de elegir el nº adecuado 
 
 Dicho test consiste en permutar aleatoriamente un subconjunto de los datos (el 1% por defecto), volver a ejecutar el PCA (con lo que se genera una distribución nula de los loadings de los genes) y repetir el proceso. Se identifican como dimensiones significativas aquellas enriquecidas con muchos genes cuyos p-valores sean bajos.
 
-```{r}
-# Nota: usar https://satijalab.org/seurat/v3.2/future_vignette.html para paralelizar JackStraw y más cosas de Seurat?
-library(future)
-plan(strategy = "multicore", workers = 4)
-# Nota: la estrategia "multiprocess" está obsoleta. En su lugar se usa el parámetro"multicore".
-plan()
-```
-
 ```{r, cache=T}
 # Nota: El JackStraw puede tardar en completarse
 pbmc <- JackStraw(pbmc)
