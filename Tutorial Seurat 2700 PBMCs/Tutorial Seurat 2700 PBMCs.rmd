@@ -347,7 +347,7 @@ plan("sequential")
 start <- Sys.time()
 pbmc <- JackStraw(pbmc, dims = 5)
 end <- Sys.time()
-timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", time = as.numeric(end - 
+timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
     start, units = "secs"), strategy = "sequential"))
 
 start <- Sys.time()
@@ -360,7 +360,7 @@ plan("multiprocess", workers = 4)
 start <- Sys.time()
 pbmc <- JackStraw(pbmc, dims = 5)
 end <- Sys.time()
-timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", time = as.numeric(end - 
+timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
     start, units = "secs"), strategy = "multiprocess"))
 
 start <- Sys.time()
@@ -372,7 +372,6 @@ timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", ti
 
 
 ```{r}
-
 library(ggplot2)
 library(cowplot)
 ggplot(timing.comparisons, aes(fxn, time)) + geom_bar(aes(fill = strategy), stat = "identity", position = "dodge") + 
