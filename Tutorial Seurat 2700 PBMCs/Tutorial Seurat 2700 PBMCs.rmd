@@ -333,8 +333,50 @@ plan()
 
 ```{r, cache=T}
 # Nota: El JackStraw puede tardar en completarse
-pbmc <- JackStraw(pbmc)
-pbmc <- ScoreJackStraw(pbmc, dims = 1:15)
+# pbmc <- JackStraw(pbmc, dims = 1:5)
+pbmc <- JackStraw(pbmc, dims = 1:5)
+# pbmc <- ScoreJackStraw(pbmc, dims = 1:15)
+pbmc <- ScoreJackStraw(pbmc, dims = 1:5)
+# f <- future(JackStraw(pbmc))
+# ?future
+```
+
+```{r, cache = T}
+timing.comparisons <- data.frame(fxn = character(), time = numeric(), strategy = character())
+plan("sequential")
+start <- Sys.time()
+pbmc <- JackStraw(pbmc, dims = 1:5)
+end <- Sys.time()
+timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", time = as.numeric(end - 
+    start, units = "secs"), strategy = "sequential"))
+
+start <- Sys.time()
+pbmc <- ScaleData(pbmc, vars.to.regress = "percent.mt", verbose = FALSE)
+end <- Sys.time()
+timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", time = as.numeric(end - 
+    start, units = "secs"), strategy = "sequential"))
+
+plan("multiprocess", workers = 4)
+start <- Sys.time()
+pbmc <- JackStraw(pbmc, dims = 1:5)
+end <- Sys.time()
+timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", time = as.numeric(end - 
+    start, units = "secs"), strategy = "multiprocess"))
+
+start <- Sys.time()
+pbmc <- ScaleData(pbmc, vars.to.regress = "percent.mt", verbose = FALSE)
+end <- Sys.time()
+timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", time = as.numeric(end - 
+    start, units = "secs"), strategy = "multiprocess"))
+```
+
+
+```{r}
+
+library(ggplot2)
+library(cowplot)
+ggplot(timing.comparisons, aes(fxn, time)) + geom_bar(aes(fill = strategy), stat = "identity", position = "dodge") + 
+    ylab("Time(s)") + xlab("Function") + theme_cowplot()
 ```
 
 
