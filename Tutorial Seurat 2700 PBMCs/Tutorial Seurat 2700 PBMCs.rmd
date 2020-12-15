@@ -62,6 +62,16 @@ Para comenzar el tutorial, primero necesitamos descargar las lecturas crudas de 
 Empezamos cargando las librerías a emplear y leyendo los datos crudos. El comando `Read10X` lee el output del pipeline ["Cell Ranger"](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/what-is-cell-ranger) de 10X Genomics y devuelve una matriz de conteo de Identificadores Moleculares Únicos (o UMI en inglés). Los valores en esta matriz representan el nº de moléculas para cada característica ( _i.e._ gen; fila) que son detectados en cada célula (columna).
 
 A continuación usamos la matriz de conteos para crear un objeto de tipo `Seurat`. Este objeto sirve a modo de contenedor tanto para los datos (la matriz de conteos, por ejemplo) como para los análisis (resultados del PCA o un clustering) de un dataset de célula única. Para una descripción técnica de la estructura de los objetos de tipo `Seurat`, consulta la [Wiki](https://github.com/satijalab/seurat/wiki) que han habilitado sus desarrolladores en GitHub.
+```{r}
+# Nota: usar https://satijalab.org/seurat/v3.2/future_vignette.html para
+# paralelizar NormalizeData, ScaleData, JackStraw, FindMarkers y quizás
+# FindClusters (if clustering over multiple resolutions)
+library(future)
+plan(strategy = "multicore", workers = 4)
+# Nota: la estrategia "multiprocess" está obsoleta. En su lugar se usa el
+# parámetro "multicore".
+plan()
+```
 
 
 ```{r}
@@ -323,55 +333,32 @@ Existen varias maneras o criterios a seguir a la hora de elegir el nº adecuado 
 
 Dicho test consiste en permutar aleatoriamente un subconjunto de los datos (el 1% por defecto), volver a ejecutar el PCA (con lo que se genera una distribución nula de los loadings de los genes) y repetir el proceso. Se identifican como dimensiones significativas aquellas enriquecidas con muchos genes cuyos p-valores sean bajos.
 
-```{r}
-# Nota: usar https://satijalab.org/seurat/v3.2/future_vignette.html para paralelizar JackStraw y más cosas de Seurat?
-library(future)
-plan(strategy = "multicore", workers = 4)
-# Nota: la estrategia "multiprocess" está obsoleta. En su lugar se usa el parámetro"multicore".
-plan()
-```
+
 
 ```{r, cache=T}
 # Nota: El JackStraw puede tardar en completarse
-# pbmc <- JackStraw(pbmc, dims = 1:5)
-pbmc <- JackStraw(pbmc, dims = 5)
-# pbmc <- ScoreJackStraw(pbmc, dims = 1:15)
+pbmc <- JackStraw(pbmc, dims = 20)
 pbmc <- ScoreJackStraw(pbmc, dims = 1:5)
-# f <- future(JackStraw(pbmc))
-# ?future
 ```
 
 ```{r, cache = T}
+# Evaluamos la velocidad obtenida por paralelizar el comando `JackStraw` con el paquete `future`.
 timing.comparisons <- data.frame(fxn = character(), time = numeric(), strategy = character())
+# Single thread
 plan("sequential")
 start <- Sys.time()
 pbmc <- JackStraw(pbmc, dims = 5)
 end <- Sys.time()
 timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
     start, units = "secs"), strategy = "sequential"))
-
-start <- Sys.time()
-pbmc <- ScaleData(pbmc, vars.to.regress = "percent.mt", verbose = FALSE)
-end <- Sys.time()
-timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", time = as.numeric(end - 
-    start, units = "secs"), strategy = "sequential"))
-
-plan("multiprocess", workers = 4)
+# Multithread
+plan("multicore", workers = 4)
 start <- Sys.time()
 pbmc <- JackStraw(pbmc, dims = 5)
 end <- Sys.time()
 timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
-    start, units = "secs"), strategy = "multiprocess"))
+    start, units = "secs"), strategy = "multicore"))
 
-start <- Sys.time()
-pbmc <- ScaleData(pbmc, vars.to.regress = "percent.mt", verbose = FALSE)
-end <- Sys.time()
-timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "ScaleData", time = as.numeric(end - 
-    start, units = "secs"), strategy = "multiprocess"))
-```
-
-
-```{r}
 library(ggplot2)
 library(cowplot)
 ggplot(timing.comparisons, aes(fxn, time)) + geom_bar(aes(fill = strategy), stat = "identity", position = "dodge") + 
