@@ -62,6 +62,8 @@ Para comenzar el tutorial, primero necesitamos descargar las lecturas crudas de 
 Empezamos cargando las librerías a emplear y leyendo los datos crudos. El comando `Read10X` lee el output del pipeline ["Cell Ranger"](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/what-is-cell-ranger) de 10X Genomics y devuelve una matriz de conteo de Identificadores Moleculares Únicos (o UMI en inglés). Los valores en esta matriz representan el nº de moléculas para cada característica ( _i.e._ gen; fila) que son detectados en cada célula (columna).
 
 A continuación usamos la matriz de conteos para crear un objeto de tipo `Seurat`. Este objeto sirve a modo de contenedor tanto para los datos (la matriz de conteos, por ejemplo) como para los análisis (resultados del PCA o un clustering) de un dataset de célula única. Para una descripción técnica de la estructura de los objetos de tipo `Seurat`, consulta la [Wiki](https://github.com/satijalab/seurat/wiki) que han habilitado sus desarrolladores en GitHub.
+
+
 ```{r}
 # Nota: usar https://satijalab.org/seurat/v3.2/future_vignette.html para
 # paralelizar NormalizeData, ScaleData, JackStraw, FindMarkers y quizás
