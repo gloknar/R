@@ -67,10 +67,10 @@ A continuación usamos la matriz de conteos para crear un objeto de tipo `Seurat
 ```{r}
 # Nota: usar https://satijalab.org/seurat/v3.2/future_vignette.html para
 # paralelizar NormalizeData, ScaleData, JackStraw, FindMarkers y quizás
-# FindClusters (if clustering over multiple resolutions)
+# FindClusters (solo si hacemos clustering   over multiple resolutions; nosotros usamos `resolution = 0.5`)
 library(future)
 plan(strategy = "multicore", workers = 4)
-# Nota: la estrategia "multiprocess" está obsoleta. En su lugar se usa el
+# Nota: la estrategia "multiprocess" de la guía original está obsoleta. En su lugar se usa el
 # parámetro "multicore".
 plan()
 ```
@@ -336,8 +336,12 @@ Existen varias maneras o criterios a seguir a la hora de elegir el nº adecuado 
 Dicho test consiste en permutar aleatoriamente un subconjunto de los datos (el 1% por defecto), volver a ejecutar el PCA (con lo que se genera una distribución nula de los loadings de los genes) y repetir el proceso. Se identifican como dimensiones significativas aquellas enriquecidas con muchos genes cuyos p-valores sean bajos.
 
 ```{r, cache = T}
-# Evaluamos la velocidad obtenida por paralelizar el comando `JackStraw` con el paquete `future`.
+# Evaluamos la velocidad obtenida por paralelizar el comando `JackStraw` con el
+# paquete `future`.
+
+
 timing.comparisons <- data.frame(fxn = character(), time = numeric(), strategy = character())
+
 # Single thread
 plan("sequential")
 start <- Sys.time()
@@ -345,6 +349,7 @@ pbmc <- JackStraw(pbmc, dims = 5)
 end <- Sys.time()
 timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
     start, units = "secs"), strategy = "sequential"))
+
 # Multithread
 plan("multicore", workers = 4)
 start <- Sys.time()
@@ -409,6 +414,7 @@ head(Idents(pbmc), 5)
 
 
 ***
+
 
 <br>
 
