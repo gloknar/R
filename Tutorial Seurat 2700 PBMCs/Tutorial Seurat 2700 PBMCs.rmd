@@ -7,7 +7,7 @@ output:
     df_print: paged
     highlight: kate
     number_sections: yes
-    theme: cerulean
+    theme: dark #cerulean
     toc: yes
     toc_float: yes
 ---
@@ -410,7 +410,7 @@ Como en PhenoGraph, primero construimos un grafo de KNN basado en la distancia e
 
 Para agrupar  en clusters las células, a continuación aplicamos técnicas de  optimizacion de la modularidad tales como  el algoritmo de Louvain (por defecto), o SLM ([SLM, Blondel *et al.*, Journal of Statistical Mechanics](http://dx.doi.org/10.1088/1742-5468/2008/10/P10008)), para agrupar células iterativamente, con el objetivo, con el objetivo de optimizar la función estándar de modularidad. El comando `FindClusters` implementa este procedimiento, y contiene el parámetro `resolution`(resolución) que establece la "granularidad" de los posteriores clusterings, y cuando tenemos un valo alto de `resolution`, más clusters generamos. 10X Genomics recomienda usar un `resolution` de entre 0,4 y 1,2 para datasets de single-cell de 3000 células. Para datasets con más de 3000, se recomienda usar valores más altos.
 
-Se puede comprobar a qué clúster pertenece cada célula con el comando `Idents(pbmc)`. En nuestro caso usamos `resolution = 0,5` dado que nuestro dataset es de 2700 células polimorfonucleadas de sangre periférica.
+Se puede comprobar a qué clúster pertenece cada célula con el comando `Idents(pbmc)`. En nuestro caso usamos `resolution = 0,5` dado que nuestro dataset es de menos de 3000 células polimorfonucleadas de sangre periférica.
 
 ```{r}
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
@@ -426,9 +426,12 @@ head(Idents(pbmc), 5)
 
 <br>
 
-## Run non-linear dimensional reduction (UMAP/tSNE)
+## Reducción de dimensionalidad con métodos no lineales(UMAP/tSNE)
 
-Seurat offers several non-linear dimensional reduction techniques, such as tSNE and UMAP, to visualize and explore these datasets. The goal of these algorithms is to learn the underlying manifold of the data in order to place similar cells together in low-dimensional space. Cells within the graph-based clusters determined above should co-localize on these dimension reduction plots. As input to the UMAP and tSNE, we suggest using the same PCs as input to the clustering analysis.
+Seurat ofrece varias técnicas de reducción de dimensionalidad tales como t-SNE y UMAP para visualizar y explorar el dataset.
+
+Tanto para el t-SNE como para el UMAP, 10X Genomics recomienda buscar el mismo nº de dimensiones como las establecidas en el apartado del PCA (en nuestro caso esta)
+El comando `RunUMAP` permite ejecutar un UMAP en Seurat. 10X Genomics recomienda tanto para t-SNE como UMAP buscar el mismo nº de dimensiones que las establecidas en el paso del PCA (10 en nuestro caso).
 
 ```{r, cache = T}
 # Si no tienes insalado el paquete 'UMAP', puedes instalarlo con:
