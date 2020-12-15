@@ -351,14 +351,6 @@ end <- Sys.time()
 timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
     start, units = "secs"), strategy = "sequential"))
 
-# Strategy = "multicore", 4 hilos
-plan("multicore", workers = 4)
-start <- Sys.time()
-pbmc <- JackStraw(pbmc, dims = 5)
-end <- Sys.time()
-timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
-    start, units = "secs"), strategy = "multicore"))
-
 # Strategy = "multisession", 4 hilos
 plan("multisession", workers = 4)
 start <- Sys.time()
@@ -431,6 +423,22 @@ head(Idents(pbmc), 5)
 
 
 <br>
+
+## Run non-linear dimensional reduction (UMAP/tSNE)
+
+Seurat offers several non-linear dimensional reduction techniques, such as tSNE and UMAP, to visualize and explore these datasets. The goal of these algorithms is to learn the underlying manifold of the data in order to place similar cells together in low-dimensional space. Cells within the graph-based clusters determined above should co-localize on these dimension reduction plots. As input to the UMAP and tSNE, we suggest using the same PCs as input to the clustering analysis.
+
+```{r}
+# If you haven't installed UMAP, you can do so via reticulate::py_install(packages =
+# 'umap-learn')
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+```
+
+```{r}
+# note that you can set `label = TRUE` or use the LabelClusters function to help label
+# individual clusters
+DimPlot(pbmc, reduction = "umap")
+```
 
 ```{r, eval=F}
 #####################RUN NON-LINEAR DIMENSIONAL REDUCTION (t-SNE/UMAP)########################
