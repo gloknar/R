@@ -412,7 +412,7 @@ Para agrupar  en clusters las células, a continuación aplicamos técnicas de  
 
 Se puede comprobar a qué clúster pertenece cada célula con el comando `Idents(pbmc)`. En nuestro caso usamos `resolution = 0,5` dado que nuestro dataset es de 2700 células polimorfonucleadas de sangre periférica.
 
-```{r, fig.height=5, fig.width=7}
+```{r}
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
 pbmc <- FindClusters(pbmc, resolution = 0.5)
 
