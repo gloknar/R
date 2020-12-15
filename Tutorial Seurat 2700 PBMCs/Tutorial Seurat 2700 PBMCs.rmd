@@ -359,7 +359,7 @@ ggplot(timing.comparisons, aes(fxn, time)) + geom_bar(aes(fill = strategy), stat
 
 
 ```{r, cache=T}
-# Nota: El JackStraw puede tardar en completarse
+# Nota: El JackStraw con 20 dimensiones puede tardar en completarse
 pbmc <- JackStraw(pbmc, dims = 20)
 pbmc <- ScoreJackStraw(pbmc, dims = 1:15)
 ```
