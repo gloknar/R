@@ -215,7 +215,7 @@ En el ejemplo a continuación, visualizamos las métricas de calidad y las emple
 
 
 
-```{r, cache = T}
+```{r}
 # Visualizamos las métricas de calidad en un gráfico de violín
 VlnPlot(pbmc, features = c("nFeature_RNA", "percent.mt"), ncol = 3)
 
@@ -430,17 +430,18 @@ head(Idents(pbmc), 5)
 
 Seurat offers several non-linear dimensional reduction techniques, such as tSNE and UMAP, to visualize and explore these datasets. The goal of these algorithms is to learn the underlying manifold of the data in order to place similar cells together in low-dimensional space. Cells within the graph-based clusters determined above should co-localize on these dimension reduction plots. As input to the UMAP and tSNE, we suggest using the same PCs as input to the clustering analysis.
 
-```{r}
+```{r, cache = T}
 # Si no tienes insalado el paquete 'UMAP', puedes instalarlo con:
 # reticulate::py_install(packages = 'umap-learn')
-pbmc <- RunUMAP(pbmc, dims = 1:10)
+pbmc <- RunUMAP(pbmc, dims = 5)
+# ?RunUMAP
 ```
 
 
 
 ```{r}
-# note that you can set `label = TRUE` or use the LabelClusters function to help label
-# individual clusters
+# note that you can set `label = TRUE` or use the LabelClusters function to help
+# label individual clusters
 DimPlot(pbmc, reduction = "umap")
 ```
 
