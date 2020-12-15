@@ -433,23 +433,6 @@ head(Idents(pbmc), 5)
 <br>
 
 ```{r, eval=F}
-#####################CLUSTER THE CELLS##################################################
-
-pbmc <- FindNeighbors(pbmc, dims = 1:10)
-pbmc <- FindClusters(pbmc, resolution = 0.5)
-
-# Look at cluster IDs of the first 5 cells
-head(Idents(pbmc), 5)
-
-
-
-
-
-
-
-
-
-
 #####################RUN NON-LINEAR DIMENSIONAL REDUCTION (t-SNE/UMAP)########################
 
 # If you haven't installed UMAP, you can do so via reticulate::py_install(packages =
