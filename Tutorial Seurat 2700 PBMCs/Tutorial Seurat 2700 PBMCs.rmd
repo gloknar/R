@@ -215,7 +215,7 @@ En el ejemplo a continuación, visualizamos las métricas de calidad y las emple
 
 
 
-```{r}
+```{r, cache = T}
 # Visualizamos las métricas de calidad en un gráfico de violín
 VlnPlot(pbmc, features = c("nFeature_RNA", "percent.mt"), ncol = 3)
 
