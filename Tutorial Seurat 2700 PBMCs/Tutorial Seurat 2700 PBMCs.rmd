@@ -449,7 +449,7 @@ DimPlot(pbmc, reduction = "umap", label = T) # label = "FALSE" by default
 
 Si crees que has avanzado bastante y no quieres perder tu progreso, puedes guardar tu objeto Seurat `pbmc` en un archivo `.rds` y así poder retomar tu trabajo en el futuro sin tener que volver a correr los algoritmos computacionalmente pesados de tu script. Guardar el objeto Seurat también te permite compartirlo fácilmente entre colaboradores.
 
-```{r}
+```{r, eval=F}
 saveRDS(pbmc, file = "./2700pbmc_tutorial.rds")
 ```
 
@@ -469,7 +469,11 @@ The min.pct argument requires a feature to be detected at a minimum percentage i
 ```{r}
 # Encontramos todos los marcadores del clúster 1
 cluster1.markers <- FindMarkers(pbmc, ident.1 = 1, min.pct = 0.25)
+View(cluster1.markers)
 head(cluster1.markers, n = 5)
+?FindMarkers()
+FindMarkers(pbmc, ident.1 = 1)
+
 ```
 
 
