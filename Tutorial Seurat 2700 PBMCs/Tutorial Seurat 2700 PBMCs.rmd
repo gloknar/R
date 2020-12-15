@@ -376,7 +376,7 @@ ggplot(timing.comparisons, aes(fxn, time)) + geom_bar(aes(fill = strategy), stat
 ```{r, cache=T}
 # Nota: El JackStraw con 20 dimensiones puede tardar en completarse
 pbmc <- JackStraw(pbmc, dims = 20)
-pbmc <- ScoreJackStraw(pbmc, dims = 1:15)
+pbmc <- ScoreJackStraw(pbmc, dims = 1:20)
 ```
 
 La función `JackStrawPlot` nos permite comparar de manera visual la distribución de los p-valores de cada componente principal con una distribución uniforme (línea discontínua). Las componentes principales significativas muestran un gran enriquecimiento de genes con p-valores bajos y se situarán muy por encima de la línea discontínua. En este caso se observa que el p-valor aumenta bastante entre la duodécima y la decimotercera componente principal.
@@ -384,7 +384,7 @@ La función `JackStrawPlot` nos permite comparar de manera visual la distribuci�
 
 ```{r, cache=T}
 # Visualizamos las componentes principales significativas
-JackStrawPlot(pbmc, dims = 1:15)
+JackStrawPlot(pbmc, dims = 1:20)
 ```
 
 
@@ -402,7 +402,7 @@ Identificar la verdadera dimensionalidad del dataset puede resultar ser una tare
 
 <br>
 
-## Agrupar las células (Clustering)
+## Agrupar las células (Clustering basado en grafos)
 
 Seurat v3 aplica un clustering basado en grafos, desarrollado a partir de las estrategias empleadas en el artículo previamente mencionado de [Macosko _et al._, 2015](https://www.cell.com/fulltext/S0092-8674(15)00549-8) e inspirado en otros artículos donde se emplea clustering basado en grafos a datos de scRNA-seq [SNN-Cliq, Xu y Su, Bioinformatics, 2015](https://academic.oup.com/bioinformatics/article/31/12/1974/214505) y CyTOF [PhenoGraph, Levine _et al._, Cell, 2015](https://pubmed.ncbi.nlm.nih.gov/26095251/). En resumidas cuentas, estos métodos insertan las células en una estructura de forma de grafo (por ejemplo, un grafo basado en K-nearest neighbours (KNN), con los enlaces dibujados entre células con perfiles de expresión génica similares, y luego intentar particionar este grafo en "comunidades" o clústers densamente interconectados ( _quasi-cliques_). 
 
