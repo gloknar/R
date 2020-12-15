@@ -444,28 +444,19 @@ pbmc <- RunUMAP(pbmc, dims = 1:10)
 DimPlot(pbmc, reduction = "umap")
 ```
 
-```{r, eval=F}
-#####################RUN NON-LINEAR DIMENSIONAL REDUCTION (t-SNE/UMAP)########################
+You can save the object at this point so that it can easily be loaded back in without having to rerun the computationally intensive steps performed above, or easily shared with collaborators.
 
-# If you haven't installed UMAP, you can do so via reticulate::py_install(packages =
-# 'umap-learn')
-pbmc <- RunUMAP(pbmc, dims = 1:10)
-
-# note that you can set `label = TRUE` or use the LabelClusters function to help label
-# individual clusters
-DimPlot(pbmc, reduction = "umap")
-
+```{r}
 saveRDS(pbmc, file = "./2700pbmc_tutorial.rds")
 
+```
+
+***
+
+<br>
 
 
-
-
-
-
-
-
-
+```{r, eval=F}
 #####################FINDING DIFFERENTIALLY EXPRESSED FEATURES (CLUSTER BIOMARKERS)########################
 
 # find all markers of cluster 1
