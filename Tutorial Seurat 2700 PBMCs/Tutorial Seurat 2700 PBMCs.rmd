@@ -333,14 +333,6 @@ Existen varias maneras o criterios a seguir a la hora de elegir el nº adecuado 
 
 Dicho test consiste en permutar aleatoriamente un subconjunto de los datos (el 1% por defecto), volver a ejecutar el PCA (con lo que se genera una distribución nula de los loadings de los genes) y repetir el proceso. Se identifican como dimensiones significativas aquellas enriquecidas con muchos genes cuyos p-valores sean bajos.
 
-
-
-```{r, cache=T}
-# Nota: El JackStraw puede tardar en completarse
-pbmc <- JackStraw(pbmc, dims = 20)
-pbmc <- ScoreJackStraw(pbmc, dims = 1:5)
-```
-
 ```{r, cache = T}
 # Evaluamos la velocidad obtenida por paralelizar el comando `JackStraw` con el paquete `future`.
 timing.comparisons <- data.frame(fxn = character(), time = numeric(), strategy = character())
@@ -365,6 +357,12 @@ ggplot(timing.comparisons, aes(fxn, time)) + geom_bar(aes(fill = strategy), stat
     ylab("Time(s)") + xlab("Function") + theme_cowplot()
 ```
 
+
+```{r, cache=T}
+# Nota: El JackStraw puede tardar en completarse
+pbmc <- JackStraw(pbmc, dims = 20)
+pbmc <- ScoreJackStraw(pbmc, dims = 1:5)
+```
 
 La función `JackStrawPlot` nos permite comparar de manera visual la distribución de los p-valores de cada componente principal con una distribución uniforme (línea discontínua). Las componentes principales significativas muestran un gran enriquecimiento de genes con p-valores bajos y se situarán muy por encima de la línea discontínua. En este caso se observa que el p-valor aumenta bastante entre la duodécima y la decimotercera componente principal.
 
