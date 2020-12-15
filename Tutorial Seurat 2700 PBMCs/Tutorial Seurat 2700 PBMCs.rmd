@@ -433,8 +433,7 @@ Seurat offers several non-linear dimensional reduction techniques, such as tSNE 
 ```{r, cache = T}
 # Si no tienes insalado el paquete 'UMAP', puedes instalarlo con:
 # reticulate::py_install(packages = 'umap-learn')
-pbmc <- RunUMAP(pbmc, dims = 5)
-# ?RunUMAP
+pbmc <- RunUMAP(pbmc, dims = 1:10)
 ```
 
 
