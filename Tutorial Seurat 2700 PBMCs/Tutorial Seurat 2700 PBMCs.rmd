@@ -65,13 +65,14 @@ A continuación usamos la matriz de conteos para crear un objeto de tipo `Seurat
 
 
 ```{r}
-# Nota: usar https://satijalab.org/seurat/v3.2/future_vignette.html para
-# paralelizar NormalizeData, ScaleData, JackStraw, FindMarkers y quizás
-# FindClusters (solo si hacemos clustering   over multiple resolutions; nosotros usamos `resolution = 0.5`)
+# Nota: usar el paquete `future` para paralelizar NormalizeData, ScaleData,
+# JackStraw, FindMarkers y quizás FindClusters (solo si hacemos clustering
+# over multiple resolutions; nosotros usamos `resolution = 0.5`)
 library(future)
-plan(strategy = "multicore", workers = 4)
-# Nota: la estrategia "multiprocess" de la guía original está obsoleta. En su lugar se usa el
-# parámetro "multicore".
+plan(strategy = "multisession", workers = 4)
+# Nota: la estrategia "multiprocess" de la guía original está obsoleta. En su lugar se usa la estrategia "multicore" (no soportada en Windows) o "multisession" (soportada en Windows)
+
+# Comprobamos el parámetro "estrategy" y el nº de hilos de nuestro plan actual
 plan()
 ```
 
@@ -350,7 +351,7 @@ end <- Sys.time()
 timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
     start, units = "secs"), strategy = "sequential"))
 
-# Multithread
+# Strategy = "multicore", 4 hilos
 plan("multicore", workers = 4)
 start <- Sys.time()
 pbmc <- JackStraw(pbmc, dims = 5)
@@ -358,11 +359,24 @@ end <- Sys.time()
 timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
     start, units = "secs"), strategy = "multicore"))
 
+# Strategy = "multisession", 4 hilos
+plan("multisession", workers = 4)
+start <- Sys.time()
+pbmc <- JackStraw(pbmc, dims = 5)
+end <- Sys.time()
+timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
+    start, units = "secs"), strategy = "multisession"))
+```
+
+
+
+```{r, echo=F}
 library(ggplot2)
 library(cowplot)
 ggplot(timing.comparisons, aes(fxn, time)) + geom_bar(aes(fill = strategy), stat = "identity", position = "dodge") + 
     ylab("Time(s)") + xlab("Function") + theme_cowplot()
 ```
+
 
 
 ```{r, cache=T}
