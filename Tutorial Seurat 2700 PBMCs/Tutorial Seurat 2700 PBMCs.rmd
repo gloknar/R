@@ -65,14 +65,18 @@ A continuación usamos la matriz de conteos para crear un objeto de tipo `Seurat
 
 
 ```{r}
-# Nota: usar el paquete `future` para paralelizar NormalizeData, ScaleData,
-# JackStraw, FindMarkers y quizás FindClusters (solo si hacemos clustering
-# over multiple resolutions; nosotros usamos `resolution = 0.5`)
+# Nota: El paquete `future` permite paralelizar los comandos `NormalizeData`,
+# `ScaleData`, `JackStraw`, `FindMarkers` y quizás 'FindClusters' (solo si
+# hacemos clustering con resolutcons mayores; nosotros usamos `resolution =
+# 0.5`)
 library(future)
 plan(strategy = "multisession", workers = 4)
-# Nota: la estrategia "multiprocess" de la guía original está obsoleta. En su lugar se usa la estrategia "multicore" (no soportada en Windows) o "multisession" (soportada en Windows)
+# Nota: la estrategia "multiprocess" de la guía original está obsoleta. En su
+# lugar se usa la estrategia "multicore" (no soportada en Windows) o
+# "multisession" (soportada en Windows)
 
 # Comprobamos el parámetro "estrategy" y el nº de hilos de nuestro plan actual
+# con el comando `plan`
 plan()
 ```
 
@@ -176,7 +180,8 @@ Seurat te permite explorar fácilmente las métricas del control de calidad y fi
 
 
 ```{r}
-# Los operadores [[ ]] permiten añadir la columna "percent.mt" a los metadatos del objeto Seurat, guardados en el bolsillo @meta.data (pbmc@meta.data).
+# Los operadores [[ ]] permiten añadir la columna "percent.mt" a los metadatos
+# del objeto Seurat, guardados en el bolsillo @meta.data (pbmc@meta.data).
 pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
 ```
 
@@ -289,8 +294,8 @@ El comando `ScaleData`:
   * Si quieres escalar todos los genes, debes pasarle a la función el nombre de todos los genes a través del parámetro `features`
 
 ```{r}
-#nombres_genes <- rownames(pbmc)
-#pbmc <- ScaleData(pbmc, features = nombres_genes)
+# nombres_genes <- rownames(pbmc)
+# pbmc <- ScaleData(pbmc, features = nombres_genes)
 pbmc <- ScaleData(pbmc)
 ```
 
@@ -302,7 +307,7 @@ pbmc <- ScaleData(pbmc)
 
 Seguidamente realizamos un PCA a los datos escalados. Por defecto, solo se le aplica el PCA a los genes variables previamente seleccionados, pero puedes añadir más genes al análisis si quieres mediante el argumento `features` de la función `RunPCA`. El resultado se almacena en `pbmc[["pca"]]`.
 
-```{r}
+```{r, cache=T}
 pbmc <- RunPCA(pbmc)
 ```
 
@@ -315,8 +320,6 @@ DimPlot(pbmc, reduction = "pca", dims = c(1,2))
 El comando `DimHeatmap` en particular ofrece una fácil exploración de las fuentes primarias de heterogeneidad en el dataset en cuestión, y nos puede ayudar a determinar qué componentes principales deberíamos analizar. Tanto los genes como las células son ordenados en función de sus loadings del PCA. Podemos seleccionar el nº de células a analizar en cada heatmap, de manera que el heatmap no tarde demasiado en dibujarse en pantalla cuando trabajemos con datasets grandes.
 
 ```{r}
-DimHeatmap(pbmc, dims = 1, cells = 500)
-
 DimHeatmap(pbmc, dims = 1:6, cells = 500)
 ```
 
@@ -339,7 +342,6 @@ Dicho test consiste en permutar aleatoriamente un subconjunto de los datos (el 1
 ```{r, cache = T}
 # Evaluamos la velocidad obtenida por paralelizar el comando `JackStraw` con el
 # paquete `future`.
-
 
 timing.comparisons <- data.frame(fxn = character(), time = numeric(), strategy = character())
 
@@ -380,7 +382,7 @@ pbmc <- ScoreJackStraw(pbmc, dims = 1:15)
 La función `JackStrawPlot` nos permite comparar de manera visual la distribución de los p-valores de cada componente principal con una distribución uniforme (línea discontínua). Las componentes principales significativas muestran un gran enriquecimiento de genes con p-valores bajos y se situarán muy por encima de la línea discontínua. En este caso se observa que el p-valor aumenta bastante entre la duodécima y la decimotercera componente principal.
 
 
-```{r}
+```{r, cache=T}
 # Visualizamos las componentes principales significativas
 JackStrawPlot(pbmc, dims = 1:15)
 ```
@@ -429,10 +431,12 @@ head(Idents(pbmc), 5)
 Seurat offers several non-linear dimensional reduction techniques, such as tSNE and UMAP, to visualize and explore these datasets. The goal of these algorithms is to learn the underlying manifold of the data in order to place similar cells together in low-dimensional space. Cells within the graph-based clusters determined above should co-localize on these dimension reduction plots. As input to the UMAP and tSNE, we suggest using the same PCs as input to the clustering analysis.
 
 ```{r}
-# If you haven't installed UMAP, you can do so via reticulate::py_install(packages =
-# 'umap-learn')
+# Si no tienes insalado el paquete 'UMAP', puedes instalarlo con:
+# reticulate::py_install(packages = 'umap-learn')
 pbmc <- RunUMAP(pbmc, dims = 1:10)
 ```
+
+
 
 ```{r}
 # note that you can set `label = TRUE` or use the LabelClusters function to help label
