@@ -418,6 +418,8 @@ pbmc <- FindClusters(pbmc, resolution = 0.5)
 
 # Observamos las IDs de los clusters a los que pertenecen las 5 primeras células.
 head(Idents(pbmc), 5)
+
+Idents(pbmc)[1]
 ```
 
 
@@ -442,9 +444,9 @@ pbmc <- RunUMAP(pbmc, dims = 1:10)
 
 
 ```{r}
-# Puedes usar el parámetro 'label = TRUE` del comando `DimPlot` para visualizar
-# mejor los clusters
-DimPlot(pbmc, reduction = "umap", label = T) # label = "FALSE" by default
+# Puedes usar el parámetro 'label` del comando `DimPlot` para visualizar mejor
+# la correspondencia a cada clúster
+DimPlot(pbmc, reduction = "umap", label = T) # label = "FALSE" por defecto
 ```
 
 Si crees que has avanzado bastante y no quieres perder tu progreso, puedes guardar tu objeto Seurat `pbmc` en un archivo `.rds` y así poder retomar tu trabajo en el futuro sin tener que volver a correr los algoritmos computacionalmente pesados de tu script. Guardar el objeto Seurat también te permite compartirlo fácilmente entre colaboradores.
@@ -459,10 +461,14 @@ saveRDS(pbmc, file = "./2700pbmc_tutorial.rds")
 
 ## Finding differentially expressed features (cluster biomarkers)
 
-Seurat puede ayudarte a encontrar marcadores que definen clusters vía expresión diferencial. Por defecto, identifica marcadores positivos y negativos de un único cluster (especificado en ident.1), comparado con todo el resto de células. `FindAllMarkers` utomatiza este proceso para todos los clusters, pero también puedes testar grupos de clusters vs cada uno o contra todas las células. (?)
+Seurat puede ayudarte a encontrar marcadores que definen clusters vía expresión diferencial. Por defecto, identifica marcadores positivos y negativos de un único cluster (especificado en `ident.1`), comparado con todo el resto de células. `FindAllMarkers` utomatiza este proceso para todos los clusters, pero también puedes testar grupos de clusters vs cada uno o contra todas las células. (?)
 
 
-El argumento `min.pct` requiere , y el parámetro `threst.test` requiere una característica ser diferencialmente expresada (en promedio) por una cantidad entre los dos grupos. Puedes poner ambos argumentos a 0, pero el algoritmo irá mucho más lento ()
+El argumento `min.pct` requiere por defecto que la expresión de un gen sea detectada como mínimo en un 0.1% en cualquiera de los grupos celulares estudiados.*"a feature to be detected at a minimum percentage in either of the two groups of cells"*, y el parámetro `threst.test` requiere una característica ser diferencialmente expresada (en promedio) por una cantidad entre los dos grupos. Puedes poner ambos argumentos a 0, pero el algoritmo irá mucho más lento ()
+```{r}
+?Seurat::FindMarkers
+```
+
 
 The min.pct argument requires a feature to be detected at a minimum percentage in either of the two groups of cells, and the thresh.test argument requires a feature to be differentially expressed (on average) by some amount between the two groups. You can set both of these to 0, but with a dramatic increase in time - since this will test a large number of features that are unlikely to be highly discriminatory. As another option to speed up these computations, max.cells.per.ident can be set. This will downsample each identity class to have no more cells than whatever this is set to. While there is generally going to be a loss in power, the speed increases can be significiant and the most highly differentially expressed features will likely still rise to the top.
 
@@ -471,9 +477,9 @@ The min.pct argument requires a feature to be detected at a minimum percentage i
 cluster1.markers <- FindMarkers(pbmc, ident.1 = 1, min.pct = 0.25)
 View(cluster1.markers)
 head(cluster1.markers, n = 5)
-?FindMarkers()
+# ?FindMarkers()
 FindMarkers(pbmc, ident.1 = 1)
-
+CellsByIdentities(pbmc)
 ```
 
 
