@@ -55,7 +55,7 @@ En este tutorial se trabajará el control de calidad o QC, filtrado de datos, c�
 
 <br>
 
-## Creamos el objeto Seurat "pbmc"
+## Creamos el objeto Seurat `pbmc`
 
 Para comenzar el tutorial, primero necesitamos descargar las lecturas crudas de la plataforma NextSeq 500, las cuales están disponibles en mi repositorio de [GitHub](https://github.com/gloknar/R-Utilities/tree/master/Tutorial%20Seurat%202700%20PBMCs) en forma de archivo comprimido, y ubicarlas en la misma carpeta que este script.
 
@@ -67,7 +67,7 @@ A continuación usamos la matriz de conteos para crear un objeto de tipo `Seurat
 ```{r}
 # Nota: El paquete `future` permite paralelizar los comandos `NormalizeData`,
 # `ScaleData`, `JackStraw`, `FindMarkers` y quizás 'FindClusters' (solo si
-# hacemos clustering con resolutcons mayores; nosotros usamos `resolution =
+# hacemos clustering con resolutions mayores; nosotros usamos `resolution =
 # 0.5`)
 library(future)
 plan(strategy = "multisession", workers = 4)
@@ -181,7 +181,7 @@ Seurat te permite explorar fácilmente las métricas del control de calidad y fi
 
 ```{r}
 # Los operadores [[ ]] permiten añadir la columna "percent.mt" a los metadatos
-# del objeto Seurat, guardados en el bolsillo @meta.data (pbmc@meta.data).
+# del objeto Seurat "pbmc", guardados en el bolsillo @meta.data (pbmc@meta.data).
 pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
 ```
 
@@ -366,7 +366,7 @@ timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", ti
 
 ```{r, echo=F}
 library(ggplot2)
-library(cowplot)
+library(cowplot) # Extensión de ggplot2, incluye más comandos  de la familia "theme_"
 ggplot(timing.comparisons, aes(fxn, time)) + geom_bar(aes(fill = strategy), stat = "identity", position = "dodge") + 
     ylab("Time(s)") + xlab("Function") + theme_cowplot()
 ```
@@ -379,23 +379,23 @@ pbmc <- JackStraw(pbmc, dims = 20)
 pbmc <- ScoreJackStraw(pbmc, dims = 1:20)
 ```
 
-La función `JackStrawPlot` nos permite comparar de manera visual la distribución de los p-valores de cada componente principal con una distribución uniforme (línea discontínua). Las componentes principales significativas muestran un gran enriquecimiento de genes con p-valores bajos y se situarán muy por encima de la línea discontínua. En este caso se observa que el p-valor aumenta bastante entre la duodécima y la decimotercera componente principal.
+La función `JackStrawPlot` nos permite comparar de manera visual la distribución de los p-valores de cada componente principal con una distribución uniforme (línea discontínua). Las componentes principales significativas muestran un gran enriquecimiento de genes con p-valores bajos y se situarán muy por encima de la línea discontínua. En este caso se observa que el p-valor aumenta bastante (¡dos órdenes de magnitud!) entre la decimotercera y la decimocuarta componente principal.
 
 
-```{r, cache=T}
+```{r}
 # Visualizamos las componentes principales significativas
 JackStrawPlot(pbmc, dims = 1:20)
 ```
 
 
-Si bien el método JackStraw es efectivo, también es cierto que es computacionalmente costoso, sobre todo en datasets muy grandes, en cuyo caso uno puede optar por usar el Scree test/método del codo. En este caso, nos quedaríamos con las 7 primeras dimensiones:
+Si bien el método `JackStraw` es efectivo, también es cierto que es computacionalmente costoso, sobre todo en datasets muy grandes, en cuyo caso uno puede optar por usar el Scree test/método del codo. En este caso, nos quedaríamos con las 7 primeras dimensiones:
 
 ```{r}
 ElbowPlot(pbmc)
 ```
 
 
-Identificar la verdadera dimensionalidad del dataset puede resultar ser una tarea laboriosa e incierta, y existen varios métodos para responder a esta cuestión. En nuestro caso, los métodos probados ofrecieron un nº parecido de dimensiones a estudiar. No obstante, los resultados de los próximos análisis no suelen variar mucho si cogemos más dimensiones de las necesarias (¡pero se ven muy perjudicados si usamos un nº insuficiente de dimensiones!), por lo que 10X Genomics recomienda tender hacia la parte superior del espectro. En nuestro caso, podríamos elegir conservar entre 7 y 12 componentes principales, por lo que el criterio de 10X Genomics nos puede encaminar hacia la elección de 10 componentes principales, por ejemplo.
+Identificar la verdadera dimensionalidad del dataset puede resultar ser una tarea laboriosa e incierta, y existen varios métodos para responder a esta cuestión. En nuestro caso, los métodos probados ofrecieron un nº parecido de dimensiones a estudiar. No obstante, los resultados de los próximos análisis no suelen variar mucho si cogemos más dimensiones de las necesarias (¡pero se ven muy perjudicados si usamos un nº insuficiente de dimensiones!), por lo que 10X Genomics recomienda tender hacia la parte superior del espectro. En nuestro caso, podríamos elegir conservar entre 7 y 14 componentes principales, por lo que el criterio de 10X Genomics nos puede encaminar hacia la elección de 12 componentes principales, por ejemplo.
 
 
 ***
@@ -404,16 +404,23 @@ Identificar la verdadera dimensionalidad del dataset puede resultar ser una tare
 
 ## Agrupar las células (Clustering basado en grafos)
 
-Seurat v3 aplica un clustering basado en grafos, desarrollado a partir de las estrategias empleadas en el artículo previamente mencionado de [Macosko _et al._, 2015](https://www.cell.com/fulltext/S0092-8674(15)00549-8) e inspirado en otros artículos donde se emplea clustering basado en grafos a datos de scRNA-seq [SNN-Cliq, Xu y Su, Bioinformatics, 2015](https://academic.oup.com/bioinformatics/article/31/12/1974/214505) y CyTOF [PhenoGraph, Levine _et al._, Cell, 2015](https://pubmed.ncbi.nlm.nih.gov/26095251/). En resumidas cuentas, estos métodos insertan las células en una estructura de forma de grafo (por ejemplo, un grafo basado en K-nearest neighbours (KNN), con los enlaces dibujados entre células con perfiles de expresión génica similares, y luego intentar particionar este grafo en "comunidades" o clústers densamente interconectados ( _quasi-cliques_). 
+Seurat V3 aplica un clustering basado en grafos, desarrollado a partir de las estrategias empleadas en el artículo previamente mencionado de [Macosko _et al._, 2015](https://www.cell.com/fulltext/S0092-8674(15)00549-8) e inspirado en otros artículos donde se emplea clustering basado en grafos a datos de scRNA-seq [SNN-Cliq, Xu y Su, Bioinformatics, 2015](https://academic.oup.com/bioinformatics/article/31/12/1974/214505) y CyTOF [PhenoGraph, Levine _et al._, Cell, 2015](https://pubmed.ncbi.nlm.nih.gov/26095251/). En resumidas cuentas, estos métodos insertan las células en una estructura de forma de grafo (por ejemplo, un grafo basado en K-nearest neighbours (KNN) ), con los enlaces dibujados entre células con perfiles de expresión génica similares, y luego intentan particionar este grafo en "comunidades" o clústers densamente interconectados ( _quasi-cliques_). 
 
-Como en PhenoGraph, primero construimos un grafo de KNN basado en la distancia euclídea en el espacio del PCA, y refinamos los pesos de los enlaces entre dos células, basándonos en el solape compartido entre dos vecindades locales (Similaridad de Jaccard). Este paso se realiza con el comando `FindNeighbors`, y toma como input la dimensionalidad del dataset previamente definida (por defecto usas las primeras 10 componentes principales).
+Al igual que el método de clustering [PhenoGraph](https://dpeerlab.github.io/dpeerlab-website/phenograph.html), primero construimos un grafo de KNN basado en la distancia euclídea en el espacio del PCA, y refinamos los pesos de los enlaces entre dos células, basándonos en el solape compartido entre dos vecindades locales (Similaridad de Jaccard). Este paso se realiza con el comando `FindNeighbors`, y toma como input la dimensionalidad del dataset previamente definida (este comando usa por defecto las 10 primeras componentes principales).
 
-Para agrupar  en clusters las células, a continuación aplicamos técnicas de  optimizacion de la modularidad tales como  el algoritmo de Louvain (por defecto), o SLM ([SLM, Blondel *et al.*, Journal of Statistical Mechanics](http://dx.doi.org/10.1088/1742-5468/2008/10/P10008)), para agrupar células iterativamente, con el objetivo, con el objetivo de optimizar la función estándar de modularidad. El comando `FindClusters` implementa este procedimiento, y contiene el parámetro `resolution`(resolución) que establece la "granularidad" de los posteriores clusterings, y cuando tenemos un valo alto de `resolution`, más clusters generamos. 10X Genomics recomienda usar un `resolution` de entre 0,4 y 1,2 para datasets de single-cell de 3000 células. Para datasets con más de 3000, se recomienda usar valores más altos.
+Para agrupar las células en clusters, a continuación aplicamos técnicas de  optimizacion de la modularidad tales como el [método de Louvain](https://sites.google.com/site/findcommunities/) (por defecto), o SLM ([SLM, Blondel *et al.*, Journal of Statistical Mechanics](http://dx.doi.org/10.1088/1742-5468/2008/10/P10008)), para agrupar células iterativamente con el objetivo de optimizar la función estándar de modularidad. El comando `FindClusters` implementa este procedimiento, y contiene el parámetro `resolution`(resolución) que establece la "granularidad" de los posteriores clusterings, y cuando tenemos un valor alto de `resolution`, más clusters generamos. 10X Genomics recomienda usar un `resolution` de entre 0,4 y 1,2 para datasets de single-cell de 3000 células. Para datasets con más de 3000, se recomienda usar valores más altos.
+
+> Nota para mí: ver tema de modularidad en redes de coexpresión.  
+"Networks with high modularity have dense connections between the nodes within modules but sparse connections between nodes in different modules. Modularity is often used in optimization methods for detecting community structure in networks. However, it has been shown that modularity suffers a resolution limit and, therefore, it is unable to detect small communities. Biological networks, including animal brains, exhibit a high degree of modularity"(https://en.wikipedia.org/wiki/Modularity_(networks))
 
 Se puede comprobar a qué clúster pertenece cada célula con el comando `Idents(pbmc)`. En nuestro caso usamos `resolution = 0,5` dado que nuestro dataset es de menos de 3000 células polimorfonucleadas de sangre periférica.
 
 ```{r}
-pbmc <- FindNeighbors(pbmc, dims = 1:10)
+pbmc <- FindNeighbors(pbmc, dims = 1:12, do.plot = T)
+plot(pbmc@graphs$RNA_nn)
+
+
+?FindNeighbors
 pbmc <- FindClusters(pbmc, resolution = 0.5)
 
 # Observamos las IDs de los clusters a los que pertenecen las 5 primeras células.
