@@ -416,12 +416,9 @@ Para agrupar las células en clusters, a continuación aplicamos técnicas de  o
 Se puede comprobar a qué clúster pertenece cada célula con el comando `Idents(pbmc)`. En nuestro caso usamos `resolution = 0,5` dado que nuestro dataset es de menos de 3000 células polimorfonucleadas de sangre periférica.
 
 ```{r}
-pbmc <- FindNeighbors(pbmc, dims = 1:12, do.plot = T)
-plot(pbmc@graphs$RNA_nn)
-
-
-?FindNeighbors
-pbmc <- FindClusters(pbmc, resolution = 0.5)
+pbmc <- FindNeighbors(pbmc, dims = 1:12)
+pbmc <- FindClusters(pbmc, resolution = 0.5, algorithm = 1) # algorithm = 1 para Louvain original; 2 para Louvain modificado; 3 para algoritmo SLM y 4 para algoritmo de Leiden
+#?FindClusters
 
 # Observamos las IDs de los clusters a los que pertenecen las 5 primeras células.
 head(Idents(pbmc), 5)
@@ -473,7 +470,7 @@ Seurat puede ayudarte a encontrar marcadores que definen clusters vía expresió
 
 El argumento `min.pct` requiere por defecto que la expresión de un gen sea detectada como mínimo en un 0.1% en cualquiera de los grupos celulares estudiados.*"a feature to be detected at a minimum percentage in either of the two groups of cells"*, y el parámetro `threst.test` requiere una característica ser diferencialmente expresada (en promedio) por una cantidad entre los dos grupos. Puedes poner ambos argumentos a 0, pero el algoritmo irá mucho más lento ()
 ```{r}
-?Seurat::FindMarkers
+# ?Seurat::FindMarkers
 ```
 
 
