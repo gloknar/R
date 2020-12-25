@@ -408,27 +408,24 @@ Seurat V3 aplica un clustering basado en grafos, desarrollado a partir de las es
 
 Al igual que el método de clustering [PhenoGraph](https://dpeerlab.github.io/dpeerlab-website/phenograph.html), primero construimos un grafo de KNN basado en la distancia euclídea en el espacio del PCA, y refinamos los pesos de los enlaces entre dos células, basándonos en el solape compartido entre dos vecindades locales (Similaridad de Jaccard). Este paso se realiza con el comando `FindNeighbors`, y toma como input la dimensionalidad del dataset previamente definida (este comando usa por defecto las 10 primeras componentes principales).
 
-Para agrupar las células en clusters, a continuación aplicamos técnicas de  optimizacion de la modularidad tales como el [método de Louvain](https://sites.google.com/site/findcommunities/) (por defecto), o SLM ([SLM, Blondel *et al.*, Journal of Statistical Mechanics](http://dx.doi.org/10.1088/1742-5468/2008/10/P10008)), para agrupar células iterativamente con el objetivo de optimizar la función estándar de modularidad. El comando `FindClusters` implementa este procedimiento, y contiene el parámetro `resolution`(resolución) que establece la "granularidad" de los posteriores clusterings, y cuando tenemos un valor alto de `resolution`, más clusters generamos. 10X Genomics recomienda usar un `resolution` de entre 0,4 y 1,2 para datasets de single-cell de 3000 células. Para datasets con más de 3000, se recomienda usar valores más altos.
+Para agrupar las células en clusters, a continuación aplicamos técnicas de  optimizacion de la modularidad tales como el [método de Louvain](https://sites.google.com/site/findcommunities/) o SLM ([SLM, Blondel *et al.*, Journal of Statistical Mechanics](http://dx.doi.org/10.1088/1742-5468/2008/10/P10008)), para agrupar células iterativamente con el objetivo de optimizar la función estándar de modularidad. El comando `FindClusters` implementa este procedimiento, y contiene el parámetro `resolution`(resolución) que establece la "granularidad" de los clusters, y a mayores valores de `resolution`, más clusters generamos. 10X Genomics recomienda usar una `resolution` de entre 0,4 y 1,2 para datasets de single-cell de 3000 células. Para datasets con más de 3000, se recomienda usar valores más altos. En nuestro caso usamos `resolution = 0.5` dado que nuestro dataset es de menos de 3000 células polimorfonucleadas de sangre periférica.
+
+El parámetro `algorithm` del comando `FindClusters` toma valores entre 1 y 4, y sirve para elegir el algoritmo de optimización de la modularidad: el método original de Louvain es el valor por defecto (`algorithm = 1`), mientras que el algoritmo SLM corresponde a `algorithm = 3`.
+
+Adicionalmente, se puede comprobar a qué clúster pertenece cada célula con el comando `Idents(pbmc)`. 
 
 > Nota para mí: ver tema de modularidad en redes de coexpresión.  
 "Networks with high modularity have dense connections between the nodes within modules but sparse connections between nodes in different modules. Modularity is often used in optimization methods for detecting community structure in networks. However, it has been shown that modularity suffers a resolution limit and, therefore, it is unable to detect small communities. Biological networks, including animal brains, exhibit a high degree of modularity"(https://en.wikipedia.org/wiki/Modularity_(networks))
 
-Se puede comprobar a qué clúster pertenece cada célula con el comando `Idents(pbmc)`. En nuestro caso usamos `resolution = 0,5` dado que nuestro dataset es de menos de 3000 células polimorfonucleadas de sangre periférica.
-
 ```{r}
 pbmc <- FindNeighbors(pbmc, dims = 1:12)
-pbmc <- FindClusters(pbmc, resolution = 0.5, algorithm = 1) # algorithm = 1 para Louvain original; 2 para Louvain modificado; 3 para algoritmo SLM y 4 para algoritmo de Leiden
-#?FindClusters
+pbmc <- FindClusters(pbmc, resolution = 0.5, algorithm = 1) 
 
 # Observamos las IDs de los clusters a los que pertenecen las 5 primeras células.
 head(Idents(pbmc), 5)
-
-Idents(pbmc)[1]
 ```
 
-
 ***
-
 
 <br>
 
@@ -436,13 +433,12 @@ Idents(pbmc)[1]
 
 Seurat ofrece varias técnicas de reducción de dimensionalidad tales como t-SNE y UMAP para visualizar y explorar el dataset.
 
-Tanto para el t-SNE como para el UMAP, 10X Genomics recomienda buscar el mismo nº de dimensiones como las establecidas en el apartado del PCA (en nuestro caso esta)
-El comando `RunUMAP` permite ejecutar un UMAP en Seurat. 10X Genomics recomienda tanto para t-SNE como UMAP buscar el mismo nº de dimensiones que las establecidas en el paso del PCA (10 en nuestro caso).
+El comando `RunUMAP` permite ejecutar un UMAP en Seurat. 10X Genomics recomienda tanto para t-SNE como UMAP buscar el mismo nº de dimensiones que las establecidas en el paso del PCA (7 en nuestro caso).
 
 ```{r, cache = T}
 # Si no tienes insalado el paquete 'UMAP', puedes instalarlo con:
 # reticulate::py_install(packages = 'umap-learn')
-pbmc <- RunUMAP(pbmc, dims = 1:10)
+pbmc <- RunUMAP(pbmc, dims = 1:7)
 ```
 
 
@@ -465,51 +461,54 @@ saveRDS(pbmc, file = "./2700pbmc_tutorial.rds")
 
 ## Finding differentially expressed features (cluster biomarkers)
 
-Seurat puede ayudarte a encontrar marcadores que definen clusters vía expresión diferencial. Por defecto, identifica marcadores positivos y negativos de un único cluster (especificado en `ident.1`), comparado con todo el resto de células. `FindAllMarkers` utomatiza este proceso para todos los clusters, pero también puedes testar grupos de clusters vs cada uno o contra todas las células. (?)
+Seurat puede ayudarte a encontrar marcadores (*i.e.* genes diferencialmente expresados) que definen clusters. Por defecto, identifica marcadores positivos y negativos de un único cluster (especificado en el parámetro `ident.1`), comparado con el resto de células. El comando `FindAllMarkers` automatiza este proceso para todos los clusters, pero también puedes testar grupos de clusters entre ellos, o contra todas las células. (?)
 
 
-El argumento `min.pct` requiere por defecto que la expresión de un gen sea detectada como mínimo en un 0.1% en cualquiera de los grupos celulares estudiados.*"a feature to be detected at a minimum percentage in either of the two groups of cells"*, y el parámetro `threst.test` requiere una característica ser diferencialmente expresada (en promedio) por una cantidad entre los dos grupos. Puedes poner ambos argumentos a 0, pero el algoritmo irá mucho más lento ()
-```{r}
-# ?Seurat::FindMarkers
-```
+Por defecto, el argumento `min.pct` hace que `FindAllMarkers` testeé solo aquellos genes expresados como mínimo en el 10% de las células de cualquiera de los grupos celulares estudiados, y el parámetro `logfc.threshold` selecciona para testar aquellos genes cuya diferencia de expresión entre dos grupos celulares sea de 0.25-fold (en escala logarítmica). Puedes poner ambos argumentos a 0, pero el comando irá mucho más lento (ya que se testarán muchos más genes, la mayoría de los cuales probablemente sean solo ruido). Otra opción para acelerar el comando es ajustar el valor del parámetro `max.cells.per.ident`, el cual establece el nº máximo de células a calcular por clúster (por defecto usa todas las células disponibles). 
 
+Si ajustamos estos 3 parámetros para reducir el tiempo de computación necesario, puede que perdamos un poco de potencia estadística, pero el ahorro en tiempo probablemente será significativo, y los genes más diferencialmente expresados (*i.e.* fold > 2) seguramente seguirán siendo detectados.
 
-The min.pct argument requires a feature to be detected at a minimum percentage in either of the two groups of cells, and the thresh.test argument requires a feature to be differentially expressed (on average) by some amount between the two groups. You can set both of these to 0, but with a dramatic increase in time - since this will test a large number of features that are unlikely to be highly discriminatory. As another option to speed up these computations, max.cells.per.ident can be set. This will downsample each identity class to have no more cells than whatever this is set to. While there is generally going to be a loss in power, the speed increases can be significiant and the most highly differentially expressed features will likely still rise to the top.
+`FindMarkers` busca los marcadores del clúster(s) que le digas al comando, mientras que `FindAllMarkers` busca los marcadores de todos los clusters.
 
 ```{r}
 # Encontramos todos los marcadores del clúster 1
 cluster1.markers <- FindMarkers(pbmc, ident.1 = 1, min.pct = 0.25)
-View(cluster1.markers)
 head(cluster1.markers, n = 5)
-# ?FindMarkers()
-FindMarkers(pbmc, ident.1 = 1)
-CellsByIdentities(pbmc)
+```
+
+```{r}
+# Encontramos todos los marcadores que diferencian el clúster 5 de los clusters 0
+# y 3
+cluster5.markers <- FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3), min.pct = 0.25)
+head(cluster5.markers, n = 5)
+```
+
+```{r}
+# Encontramos los marcadores para cada cluster comparado con el resto de células
+# y reportamos solo los marcadores positivos (`only.pos = T`).
+pbmc.markers <- FindAllMarkers(pbmc, min.pct = 0.25, logfc.threshold = 0.25, 
+                               only.pos = T)
+pbmc.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC)
+```
+
+Seurat tiene varios tests para evaluar la expresión diferencial de los marcadores y puedes seleccionar el test a usar con el parámetro `test.use` del comando `FindMarkers` (mira la [viñeta de expresión diferencial](https://satijalab.org/seurat/v3.0/de_vignette.html) del laboratorio Satija para más detalles). Por ejemplo, el test de la curva ROC devuelve el poder de clasificación de cada marcador (yendo desde 0 (aleatorio) hasta 1 (perfecto) ).
+
+```{r}
+cluster1.markers <- FindMarkers(pbmc, ident.1 = 0, logfc.threshold = 0.25, 
+                                test.use = "roc", only.pos = TRUE)
 ```
 
 
+We include several tools for visualizing marker expression. VlnPlot (shows expression probability distributions across clusters), and FeaturePlot (visualizes feature expression on a tSNE or PCA plot) are our most commonly used visualizations. We also suggest exploring RidgePlot, CellScatter, and DotPlot as additional methods to view your dataset.
+
+```{r}
+VlnPlot(pbmc, features = c("MS4A1", "CD79A"))
+```
+
 
 ```{r, eval=F}
-#####################FINDING DIFFERENTIALLY EXPRESSED FEATURES (CLUSTER BIOMARKERS)########################
-
-# find all markers of cluster 1
-cluster1.markers <- FindMarkers(pbmc, ident.1 = 1, min.pct = 0.25)
-head(cluster1.markers, n = 5)
 
 
-# find all markers distinguishing cluster 5 from clusters 0 and 3
-cluster5.markers <- FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3), min.pct = 0.25)
-head(cluster5.markers, n = 5)
-
-
-# find markers for every cluster compared to all remaining cells, report only the positive ones
-pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
-pbmc.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC)
-
-
-
-cluster1.markers <- FindMarkers(pbmc, ident.1 = 0, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
-
-VlnPlot(pbmc, features = c("MS4A1", "CD79A"))
 
 # you can plot raw counts as well
 VlnPlot(pbmc, features = c("NKG7", "PF4"), slot = "counts", log = TRUE)
