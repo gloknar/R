@@ -260,7 +260,7 @@ El comando `FindVariableFeatures` modela la relación media-varianza de los gene
 ```{r}
 pbmc <- FindVariableFeatures(pbmc)
 
-# Identificamos los top 10 genes más variables con el comando VariableFeatures
+# Identificamos los 10 genes más variables con el comando `VariableFeatures`
 top10 <- head(VariableFeatures(pbmc), 10)
 
 # Graficamos los genes más variables con sus nombres
@@ -487,7 +487,7 @@ head(cluster5.markers, n = 5)
 ```
 
 ```{r}
-# Encontramos los marcadores para cada cluster comparado con el resto de células
+# Encontramos los marcadores para cada clúster comparado con el resto de células
 # y reportamos solo los marcadores positivos (`only.pos = T`).
 pbmc.markers <- FindAllMarkers(pbmc, min.pct = 0.25, logfc.threshold = 0.25, 
                                only.pos = T)
@@ -540,11 +540,11 @@ DotPlot(pbmc, features = c("LYZ", "CD3E"))
 
 <br>
 
-El comando `DoHeatmap` genera un heatmap de expresión génica para las células y genes seleccionados. En este caso graficamos los top 20 biomarcadores para cada clúster.
+El comando `DoHeatmap` genera un heatmap de expresión génica para las células y genes seleccionados. En este caso graficamos los top 20 biomarcadores de cada clúster (el siguiente código es una modificación del encontrado en la sección _2.6 Reducción de la dimensionalidad del dataset (PCA)_):
 
 ```{r}
-top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
-DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+top20 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+DoHeatmap(pbmc, features = top20$gene) # + NoLegend() para eliminar la leyenda
 ```
 
 
