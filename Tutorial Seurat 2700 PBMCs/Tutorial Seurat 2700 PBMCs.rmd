@@ -578,3 +578,53 @@ Una vez acabado el protocolo, podemos guardar nuestro objeto Seurat `pbmc` en un
 ```{r}
 saveRDS(pbmc, file = "./2700pbmc_final.rds")
 ```
+
+<details>
+  <summary> __¿Cómo podemos clasificar los tipos de células representados en los clusters?__</summary>
+
+<br>
+
+En este tutorial, 10X Genomics nos provee con la clasificación de los tipos celulares representados en cada clúster, pero cuando trabajemos con datasets de single cell, ¿cómo podemos asignar a nuestros clusters el tipo de célula que representan?
+
+[Rui Fu _et al.,_ 2019](https://www.biorxiv.org/content/10.1101/855064v1) han desarrollado `clustifyr`, un paquete para R diseñado específicamente para solventar este problema.
+
+```{r}
+library(clustifyr)
+
+# Calculamos el coeficiente de correlación de Spearman entre nuestros clusters y
+# los tipos celulares disponibles
+correlaciones <- clustify(input = pbmc@assays$RNA@data,
+                          metadata = pbmc@meta.data,
+                          cluster_col = "seurat_clusters",
+                          ref_mat = cbmc_ref,
+                          query_genes = pbmc@assays$RNA@var.features,
+                          obj_out = T,
+                          seurat_out = T)
+
+# Mostramos los tipos celulares más probables de nuestros clusters
+asignaciones <- cor_to_call(correlaciones,
+                              metadata = pbmc@meta.data,
+                              cluster_col = "seurat_clusters")
+asignaciones
+
+# Hacemos un vector con el nombre de los clusters
+new.cluster.ids <-  asignaciones %>% arrange(seurat_clusters)
+new.cluster.ids <- new.cluster.ids$type
+
+
+# Asignamos a los clusters los tipos celulares predichos por `clustifyr`
+names(new.cluster.ids) <- levels(pbmc)
+pbmc <- RenameIdents(pbmc, new.cluster.ids)
+grafico_umap_clustify <- DimPlot(pbmc, reduction = "umap", 
+                                 label = T, pt.size = 0.5) +
+  xlab("UMAP 1") + ylab("UMAP 2") + 
+  theme(legend.text = element_text(size = 10))
+
+grafico_umap
+grafico_umap_clustify
+```
+
+</details>
+
+
+
