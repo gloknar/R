@@ -388,14 +388,17 @@ JackStrawPlot(pbmc, dims = 1:20)
 ```
 
 
-Si bien el método `JackStraw` es efectivo, también es cierto que es computacionalmente costoso, sobre todo en datasets muy grandes, en cuyo caso uno puede optar por usar el Scree test/método del codo. En este caso, nos quedaríamos con las 7 primeras dimensiones:
+Si bien el método `JackStraw` es efectivo, también es cierto que es computacionalmente costoso, sobre todo en datasets muy grandes, en cuyo caso uno puede optar por usar el Scree test/método del codo. En este caso, nos quedaríamos con las 8 primeras dimensiones, ya que la pendiente se acerca a 0 a partir de la octava componente principal:
 
 ```{r}
-ElbowPlot(pbmc)
+# Usamos geom_vline en vez de abline dado que la función ElbowPlot devuelve un
+# gráfico de ggplot2
+ElbowPlot(pbmc) + 
+  geom_vline(xintercept = 8, color = "red", linetype = "dashed")
 ```
 
 
-Identificar la verdadera dimensionalidad del dataset puede resultar ser una tarea laboriosa e incierta, y existen varios métodos para responder a esta cuestión. En nuestro caso, los métodos probados ofrecieron un nº parecido de dimensiones a estudiar. No obstante, los resultados de los próximos análisis no suelen variar mucho si cogemos más dimensiones de las necesarias (¡pero se ven muy perjudicados si usamos un nº insuficiente de dimensiones!), por lo que 10X Genomics recomienda tender hacia la parte superior del espectro. En nuestro caso, podríamos elegir conservar entre 7 y 14 componentes principales, por lo que el criterio de 10X Genomics nos puede encaminar hacia la elección de 12 componentes principales, por ejemplo.
+Identificar la verdadera dimensionalidad del dataset puede resultar ser una tarea laboriosa e incierta, y existen varios métodos para responder a esta cuestión. En nuestro caso, los métodos probados ofrecieron un nº parecido de dimensiones a estudiar. No obstante, los resultados de los próximos análisis no suelen variar mucho si cogemos más dimensiones de las necesarias (¡pero se ven muy perjudicados si usamos un nº insuficiente de dimensiones!), por lo que 10X Genomics recomienda tender hacia la parte superior del espectro. En nuestro caso, podríamos elegir conservar entre 8 y 14 componentes principales, por lo que el criterio de 10X Genomics nos puede encaminar hacia la elección de 12 componentes principales, por ejemplo.
 
 
 ***
@@ -459,7 +462,7 @@ saveRDS(pbmc, file = "./2700pbmc_tutorial.rds")
 
 <br>
 
-## Finding differentially expressed features (cluster biomarkers)
+## Encontrar genes diferencialmente expresados (biomarcadores de clusters)
 
 Seurat puede ayudarte a encontrar marcadores (*i.e.* genes diferencialmente expresados) que definen clusters. Por defecto, identifica marcadores positivos y negativos de un único cluster (especificado en el parámetro `ident.1`), comparado con el resto de células. El comando `FindAllMarkers` automatiza este proceso para todos los clusters, pero también puedes testar grupos de clusters entre ellos, o contra todas las células. (?)
 
