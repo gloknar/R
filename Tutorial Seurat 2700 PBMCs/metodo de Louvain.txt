@@ -1,0 +1,3 @@
+https://sites.google.com/site/findcommunities/
+
+metodo usado en clustering para optimizar la modularidad de los clusters.
