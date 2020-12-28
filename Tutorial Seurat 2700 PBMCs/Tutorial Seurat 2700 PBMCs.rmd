@@ -547,23 +547,27 @@ top20 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
 DoHeatmap(pbmc, features = top20$gene) # + NoLegend() para eliminar la leyenda
 ```
 
+***
+
+<br>
 
 
+## Asignar el tipo de célula a cada clúster
 
-```{r, eval=F}
-#####################ASSIGNING CELL TYPE IDENTITY TO CLUSTERS########################
+En el caso de este dataset, podemos usar biomarcadores canónicos para asignar el tipo de célula que representa cada clúster:
 
+```{r}
 new.cluster.ids <- c("Naive CD4 T", "Memory CD4 T", "CD14+ Mono", "B", "CD8 T", "FCGR3A+ Mono", 
                      "NK", "DC", "Platelet")
 names(new.cluster.ids) <- levels(pbmc)
 pbmc <- RenameIdents(pbmc, new.cluster.ids)
 DimPlot(pbmc, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
-
-
-saveRDS(pbmc, file = "./2700pbmc_final.rds")
 ```
 
 
-# Bibliografía
 
-Bach, K., S. Pensa, M. Grzelak, J. Hadfield, D. J. Adams, J. C. Marioni, and W. T. Khaled. 2017. “Differentiation dynamics of mammary epithelial cells revealed by single-cell RNA sequencing.” Nat Commun 8 (1): 2128.
+Una vez acabado el protocolo, procedemos a guardar nuestros avances en un objeto `.rds`
+
+```{r}
+saveRDS(pbmc, file = "./2700pbmc_final.rds")
+```
