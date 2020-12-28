@@ -516,9 +516,11 @@ VlnPlot(pbmc, features = c("NKG7", "PF4"), slot = "counts", log = T)
 
 ```{r}
 # Featureplot
-FeaturePlot(pbmc, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP", "CD8A"), combine = F)
+FeaturePlot(pbmc, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP", "CD8A"))
 ```
 
+<details> 
+  <summary> __Ver gráficos adicionales__</summary>
 ```{r}
 # Ridgeplot. Una visualización alternativa al gráfico de violín
 RidgePlot(pbmc, features = "NKG7")
@@ -527,30 +529,27 @@ RidgePlot(pbmc, features = "NKG7")
 # muestra el coeficiente de correlación de Pearson
 CellScatter(pbmc, cell1 = "AACGCCCTCGGGAA-1", cell2 = "AACGCCCTGGCATT-1")
 
-# Dotplot de la expresión génica entre clusters. No confundir con el dotplot
-# usado en alineamiento de secuencias. El tamaño del punto codifica el
+# Dotplot de la expresión génica entre clusters (no confundir con el dotplot
+# usado en alineamiento de secuencias). El tamaño del punto codifica el
 # porcentaje de células del clúster que expresan el gen, mientras que el color
 # codifica su nivel de expresión medio.
 DotPlot(pbmc, features = c("LYZ", "CD3E"))
 ```
 
+</details>
+
+
+El comando `DoHeatmap` genera un heatmap de expresión génica para las células y genes seleccionados. En este caso graficamos los top 20 biomarcadores para cada clúster.
+
+```{r}
+top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+```
+
+
 
 
 ```{r, eval=F}
-top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
-DoHeatmap(pbmc, features = top10$gene) + NoLegend()
-
-
-
-
-
-
-
-
-
-
-
-
 #####################ASSIGNING CELL TYPE IDENTITY TO CLUSTERS########################
 
 new.cluster.ids <- c("Naive CD4 T", "Memory CD4 T", "CD14+ Mono", "B", "CD8 T", "FCGR3A+ Mono", 
