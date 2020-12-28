@@ -7,7 +7,7 @@ output:
     df_print: paged
     highlight: kate
     number_sections: yes
-    theme: dark #cerulean
+    theme: cerulean
     toc: yes
     toc_float: yes
 ---
@@ -343,22 +343,22 @@ Dicho test consiste en permutar aleatoriamente un subconjunto de los datos (el 1
 # Evaluamos la velocidad obtenida por paralelizar el comando `JackStraw` con el
 # paquete `future`.
 
-timing.comparisons <- data.frame(fxn = character(), time = numeric(), strategy = character())
+comparacion_tiempo <- data.frame(funcion = character(), tiempo = numeric(), strategy = character())
 
-# Single thread
+# Mononúcleo
 plan("sequential")
 start <- Sys.time()
 pbmc <- JackStraw(pbmc, dims = 5)
 end <- Sys.time()
-timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
+comparacion_tiempo <- rbind(comparacion_tiempo, data.frame(funcion = "JackStraw", tiempo = as.numeric(end - 
     start, units = "secs"), strategy = "sequential"))
 
-# Strategy = "multisession", 4 hilos
+# Multinúcleo (4 hilos)
 plan("multisession", workers = 4)
 start <- Sys.time()
 pbmc <- JackStraw(pbmc, dims = 5)
 end <- Sys.time()
-timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", time = as.numeric(end - 
+comparacion_tiempo <- rbind(comparacion_tiempo, data.frame(funcion = "JackStraw", tiempo = as.numeric(end - 
     start, units = "secs"), strategy = "multisession"))
 ```
 
@@ -366,9 +366,9 @@ timing.comparisons <- rbind(timing.comparisons, data.frame(fxn = "JackStraw", ti
 
 ```{r, echo=F}
 library(ggplot2)
-library(cowplot) # Extensión de ggplot2, incluye más comandos  de la familia "theme_"
-ggplot(timing.comparisons, aes(fxn, time)) + geom_bar(aes(fill = strategy), stat = "identity", position = "dodge") + 
-    ylab("Time(s)") + xlab("Function") + theme_cowplot()
+library(cowplot) # Extensión de ggplot2, incluye más comandos de la familia "theme_"
+ggplot(comparacion_tiempo, aes(funcion, tiempo)) + geom_bar(aes(fill = strategy), stat = "identity", position = "dodge2") + 
+    ylab("Tiempo(s)") + xlab("Función") + ggtitle("Aceleración por paralelizado") + theme_cowplot()
 ```
 
 
@@ -417,9 +417,6 @@ El parámetro `algorithm` del comando `FindClusters` toma valores entre 1 y 4, y
 
 Adicionalmente, se puede comprobar a qué clúster pertenece cada célula con el comando `Idents(pbmc)`. 
 
-> Nota para mí: ver tema de modularidad en redes de coexpresión.  
-"Networks with high modularity have dense connections between the nodes within modules but sparse connections between nodes in different modules. Modularity is often used in optimization methods for detecting community structure in networks. However, it has been shown that modularity suffers a resolution limit and, therefore, it is unable to detect small communities. Biological networks, including animal brains, exhibit a high degree of modularity"(https://en.wikipedia.org/wiki/Modularity_(networks))
-
 ```{r}
 pbmc <- FindNeighbors(pbmc, dims = 1:12)
 pbmc <- FindClusters(pbmc, resolution = 0.5, algorithm = 1) 
@@ -450,12 +447,6 @@ pbmc <- RunUMAP(pbmc, dims = 1:8)
 # Puedes usar el parámetro 'label` del comando `DimPlot` para visualizar mejor
 # la correspondencia a cada clúster
 DimPlot(pbmc, reduction = "umap", label = T) # label = "FALSE" por defecto
-```
-
-Si crees que has avanzado bastante y no quieres perder tu progreso, puedes guardar tu objeto Seurat `pbmc` en un archivo `.rds` y así poder retomar tu trabajo en el futuro sin tener que volver a correr los algoritmos computacionalmente pesados de tu script. Guardar el objeto Seurat también te permite compartirlo fácilmente entre colaboradores.
-
-```{r, eval=F}
-saveRDS(pbmc, file = "./2700pbmc_tutorial.rds")
 ```
 
 ***
@@ -556,17 +547,33 @@ DoHeatmap(pbmc, features = top20$gene) # + NoLegend() para eliminar la leyenda
 
 En el caso de este dataset, podemos usar biomarcadores canónicos para asignar el tipo de célula que representa cada clúster:
 
+ID del clúster | Biomarcadores | Tipo de célula
+---------------|---------------|---------------
+0              | IL7R, CCR7    | Linfocito T CD4+ de memoria
+1              | CD14, LYZ     | Monocito CD14+
+2              | IL7R, S100A4  | Linfocito T CD4+ naïve
+3              | MS4A1         | Linfocito B
+4              | CD8A          | Linfocito T CD8+
+5              | FCGR3A, MS4A7 | Monocito FCGR3A+
+6              | GNLY, NKG7    | Natural Killer (NK)
+7              | FCER1A, CST3  | Célula dendrítica (DC)
+8              | PPBP          | Megacariocito
+
+
 ```{r}
-new.cluster.ids <- c("Naive CD4 T", "Memory CD4 T", "CD14+ Mono", "B", "CD8 T", "FCGR3A+ Mono", 
-                     "NK", "DC", "Platelet")
+new.cluster.ids <- c("Naïve CD4 T", "Memory CD4 T", "CD14+ Mono", "B Linfo", "CD8 T",
+                     "FCGR3A+ Mono", "NK", "DC", "Megakaryocyte")
 names(new.cluster.ids) <- levels(pbmc)
 pbmc <- RenameIdents(pbmc, new.cluster.ids)
-DimPlot(pbmc, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
+grafico_umap <- DimPlot(pbmc, reduction = "umap", label = T, pt.size = 0.5) +
+  xlab("UMAP 1") + ylab("UMAP 2") + 
+  theme(legend.text = element_text(size = 10))
+grafico_umap
+ggsave(filename = "./2700pbmc-umap.png", plot = grafico_umap)
 ```
 
 
-
-Una vez acabado el protocolo, procedemos a guardar nuestros avances en un objeto `.rds`
+Una vez acabado el protocolo, podemos guardar nuestro objeto Seurat `pbmc` en un archivo `.rds` para así poder retomar nuestro trabajo en el futuro sin tener que volver a correr los algoritmos computacionalmente pesados del script. Guardar el objeto Seurat también nos permite compartirlo fácilmente con nuestros colaboradores:
 
 ```{r}
 saveRDS(pbmc, file = "./2700pbmc_final.rds")
