@@ -391,8 +391,8 @@ JackStrawPlot(pbmc, dims = 1:20)
 Si bien el método `JackStraw` es efectivo, también es cierto que es computacionalmente costoso, sobre todo en datasets muy grandes, en cuyo caso uno puede optar por usar el Scree test/método del codo. En este caso, nos quedaríamos con las 8 primeras dimensiones, ya que la pendiente se acerca a 0 a partir de la octava componente principal:
 
 ```{r}
-# Usamos geom_vline en vez de abline dado que la función ElbowPlot devuelve un
-# gráfico de ggplot2
+# Usamos el comando `geom_vline` en vez de `abline` dado que la función
+# 'ElbowPlot' devuelve un gráfico de ggplot2
 ElbowPlot(pbmc) + 
   geom_vline(xintercept = 8, color = "red", linetype = "dashed")
 ```
@@ -436,12 +436,12 @@ head(Idents(pbmc), 5)
 
 Seurat ofrece varias técnicas de reducción de dimensionalidad tales como t-SNE y UMAP para visualizar y explorar el dataset.
 
-El comando `RunUMAP` permite ejecutar un UMAP en Seurat. 10X Genomics recomienda tanto para t-SNE como UMAP buscar el mismo nº de dimensiones que las establecidas en el paso del PCA (7 en nuestro caso).
+El comando `RunUMAP` permite ejecutar un UMAP en Seurat. 10X Genomics recomienda tanto para t-SNE como UMAP buscar el mismo nº de dimensiones que las establecidas en el paso del PCA (8 en nuestro caso).
 
 ```{r, cache = T}
-# Si no tienes insalado el paquete 'UMAP', puedes instalarlo con:
-# reticulate::py_install(packages = 'umap-learn')
-pbmc <- RunUMAP(pbmc, dims = 1:7)
+# Si no tienes insalado el paquete `UMAP`, puedes instalarlo con:
+# reticulate::py_install(packages = "umap-learn")
+pbmc <- RunUMAP(pbmc, dims = 1:8)
 ```
 
 
@@ -464,7 +464,7 @@ saveRDS(pbmc, file = "./2700pbmc_tutorial.rds")
 
 ## Encontrar genes diferencialmente expresados (biomarcadores de clusters)
 
-Seurat puede ayudarte a encontrar marcadores (*i.e.* genes diferencialmente expresados) que definen clusters. Por defecto, identifica marcadores positivos y negativos de un único cluster (especificado en el parámetro `ident.1`), comparado con el resto de células. El comando `FindAllMarkers` automatiza este proceso para todos los clusters, pero también puedes testar grupos de clusters entre ellos, o contra todas las células. (?)
+Seurat puede ayudarte a encontrar biomarcadores (*i.e.* genes diferencialmente expresados) que definen clusters. Por defecto, identifica marcadores positivos y negativos de un único cluster (especificado en el parámetro `ident.1`), comparado con el resto de células. El comando `FindAllMarkers` automatiza este proceso para todos los clusters, pero también puedes testar grupos de clusters entre ellos, o testar un clúster contra el resto de células.
 
 
 Por defecto, el argumento `min.pct` hace que `FindAllMarkers` testeé solo aquellos genes expresados como mínimo en el 10% de las células de cualquiera de los grupos celulares estudiados, y el parámetro `logfc.threshold` selecciona para testar aquellos genes cuya diferencia de expresión entre dos grupos celulares sea de 0.25-fold (en escala logarítmica). Puedes poner ambos argumentos a 0, pero el comando irá mucho más lento (ya que se testarán muchos más genes, la mayoría de los cuales probablemente sean solo ruido). Otra opción para acelerar el comando es ajustar el valor del parámetro `max.cells.per.ident`, el cual establece el nº máximo de células a calcular por clúster (por defecto usa todas las células disponibles). 
@@ -502,25 +502,41 @@ cluster1.markers <- FindMarkers(pbmc, ident.1 = 0, logfc.threshold = 0.25,
 ```
 
 
-We include several tools for visualizing marker expression. VlnPlot (shows expression probability distributions across clusters), and FeaturePlot (visualizes feature expression on a tSNE or PCA plot) are our most commonly used visualizations. We also suggest exploring RidgePlot, CellScatter, and DotPlot as additional methods to view your dataset.
+Los comandos de Seurat más comunes para visualizar la expresión de biomarcadores de clusters son `VlnPlot` y `FeaturePlot` (visualiza la expresión génica sobre un gráfico UMAP, t-SNE o PCA). 10X Genomics recomienda también visualizar tu dataset con la ayuda de los comandos `RidgePlot`, `CellScatter` y `DotPlot`.
 
 ```{r}
 VlnPlot(pbmc, features = c("MS4A1", "CD79A"))
+
+# También puedes graficar el nº de transcritos detectados. Ponemos el parámetro
+# 'log = T' dado que se detectaron muchos transcritos. El parámetro `slot` hace
+# referencia a los bolsillos ubicados en pbmc@assays$RNA@ , i.e.
+# pbmc@assays$RNA@counts
+VlnPlot(pbmc, features = c("NKG7", "PF4"), slot = "counts", log = T)
+```
+
+```{r}
+# Featureplot
+FeaturePlot(pbmc, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP", "CD8A"), combine = F)
+```
+
+```{r}
+# Ridgeplot. Una visualización alternativa al gráfico de violín
+RidgePlot(pbmc, features = "NKG7")
+
+# Cellscatter. Compara los niveles de expresión génica entre dos células y
+# muestra el coeficiente de correlación de Pearson
+CellScatter(pbmc, cell1 = "AACGCCCTCGGGAA-1", cell2 = "AACGCCCTGGCATT-1")
+
+# Dotplot de la expresión génica entre clusters. No confundir con el dotplot
+# usado en alineamiento de secuencias. El tamaño del punto codifica el
+# porcentaje de células del clúster que expresan el gen, mientras que el color
+# codifica su nivel de expresión medio.
+DotPlot(pbmc, features = c("LYZ", "CD3E"))
 ```
 
 
+
 ```{r, eval=F}
-
-
-
-# you can plot raw counts as well
-VlnPlot(pbmc, features = c("NKG7", "PF4"), slot = "counts", log = TRUE)
-
-
-FeaturePlot(pbmc, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP", 
-                               "CD8A"))
-
-
 top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
 DoHeatmap(pbmc, features = top10$gene) + NoLegend()
 
