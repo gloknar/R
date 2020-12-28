@@ -538,6 +538,7 @@ DotPlot(pbmc, features = c("LYZ", "CD3E"))
 
 </details>
 
+<br>
 
 El comando `DoHeatmap` genera un heatmap de expresión génica para las células y genes seleccionados. En este caso graficamos los top 20 biomarcadores para cada clúster.
 
