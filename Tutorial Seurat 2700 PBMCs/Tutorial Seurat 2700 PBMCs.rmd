@@ -1,5 +1,5 @@
 ---
-title: "Tutorial Seurat V3 2.700 PBMCs"
+title: "Tutorial clustering Seurat V3 2700 PBMCs"
 author: "Adam Casas"
 date: 'Compilado: `r format(Sys.Date(), "%B %d, %Y")`'
 output: 
