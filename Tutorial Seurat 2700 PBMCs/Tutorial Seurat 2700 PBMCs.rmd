@@ -582,18 +582,19 @@ saveRDS(pbmc, file = "./2700pbmc_final.rds")
 <details>
   <summary> __¿Cómo podemos clasificar los tipos de células representados en los clusters?__</summary>
 
-<br>
 
 En este tutorial, 10X Genomics nos provee con la clasificación de los tipos celulares representados en cada clúster, pero cuando trabajemos con datasets de single cell, ¿cómo podemos asignar a nuestros clusters el tipo de célula que representan?
 
-[Rui Fu _et al.,_ 2019](https://www.biorxiv.org/content/10.1101/855064v1) han desarrollado `clustifyr`, un paquete para R diseñado específicamente para solventar este problema con ayuda de datos de referencia externos.
+[Rui Fu _et al.,_ 2019](https://www.biorxiv.org/content/10.1101/855064v1) han desarrollado `clustifyr`, un paquete para R diseñado específicamente para solventar este problema con ayuda de datos de referencia externos. Este paquete nos aporta funciones para anotar automáticamente clusters (o células, si así lo deseamos). 
+
+Con el comando `clustify` podemos calcular el coeficiente de correlación de Spearman (valor por defecto) de cada tipo celular posible para cada uno de nuestros clusters.
 
 ```{r}
 library(clustifyr)
 
 # Calculamos el coeficiente de correlación de Spearman entre nuestros clusters y
 # los tipos celulares disponibles
-correlaciones <- clustify(input = pbmc@assays$RNA@data,
+correlaciones <- clustify(input = pbmc@assays$RNA@data, # = pbmc[["RNA"]]@data
                           metadata = pbmc@meta.data,
                           cluster_col = "seurat_clusters",
                           ref_mat = cbmc_ref,
@@ -601,28 +602,48 @@ correlaciones <- clustify(input = pbmc@assays$RNA@data,
                           obj_out = T,
                           seurat_out = T)
 
+correlaciones
+```
+
+Ahora usamos el comando `cor_to_call` para obtener el tipo celular más probable de cada clúster, o sea, aquel tipo celular que muestra el mayor coeficiente de correlación para el clúster en cuestión.
+
+```{r}
 # Mostramos los tipos celulares más probables de nuestros clusters
 asignaciones <- cor_to_call(correlaciones,
                               metadata = pbmc@meta.data,
                               cluster_col = "seurat_clusters")
+asignaciones <-  asignaciones %>% arrange(seurat_clusters)
+
 asignaciones
+```
 
-# Hacemos un vector con el nombre de los clusters
-new.cluster.ids <-  asignaciones %>% arrange(seurat_clusters)
-new.cluster.ids <- new.cluster.ids$type
+Ahora podemos asignar a los clusters el tipo de célula que representan.
 
+```{r}
+# Hacemos un vector con el nombre de los clusters, ordenados de 0 al 8
+nuevas.ids.clusters <-  asignaciones$type
 
 # Asignamos a los clusters los tipos celulares predichos por `clustifyr`
-names(new.cluster.ids) <- levels(pbmc)
-pbmc <- RenameIdents(pbmc, new.cluster.ids)
-grafico_umap_clustify <- DimPlot(pbmc, reduction = "umap", 
-                                 label = T, pt.size = 0.5) +
-  xlab("UMAP 1") + ylab("UMAP 2") + 
-  theme(legend.text = element_text(size = 10))
-
-grafico_umap
-grafico_umap_clustify
+names(nuevas.ids.clusters) <- levels(pbmc)
+pbmc <- RenameIdents(pbmc, nuevas.ids.clusters)
+grafico_umap_clustify <- DimPlot(pbmc, 
+                                 reduction = "umap", 
+                                 label = T, 
+                                 pt.size = 0.5) +
+                                 xlab("UMAP 1") + 
+                                 ylab("UMAP 2") + 
+                                 theme(legend.text = element_text(size = 10))
 ```
+
+Ahora comparamos las anotaciones de 10X Genomics con las predichas por `clustifyr`. Vemos que las anotaciones de 10X Genomics son más detalladas, no obstante `clustifyr` no lo ha hecho nada mal. Podría servirnos para una primera toma de contacto y orientarnos para futuros análisis.
+
+Nótese que `clustifyr` ha cometido un error al clasificar el clúster 4. Este clúster representa linfocitos T CD8+, aunque la anotación automática lo fusionó con el clúster 6 (linfocitos natural killer). Si prestamos atención a los coeficientes de correlación de Spearman, podemos entender el por qué del error: vemos que para el clúster 4, la segunda célula más probable es el linfocito T CD8+ con un ` r = 0.7732`, mientras que el linfocito natural killer tiene un coeficiente ligeramente superior (` r = 0.8307`).
+
+```{r}
+grafico_umap_clustify + ggtitle("Anotación automática clustifyr")
+grafico_umap + ggtitle("Anotación manual 10X Genomics")
+```
+
 
 </details>
 
