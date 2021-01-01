@@ -43,9 +43,9 @@ Este paquete ha sido desarrollado y es actualmente mantenido por Andrew Butler, 
 <br>
 
 
-# Workflow en Seurat para el análisis de single-cell RNA-seq
+# Workflow en Seurat para clustering de datos scRNA-seq
 
-Para introducirnos en el workflow de `Seurat`, analizaremos el dataset de 2700 células mononucleares de sangre periférica (PBMCs en inglés), publicado por [10x Genomics](https://www.10xgenomics.com/). En este dataset se secuenciaron mediante técnicas de single-cell RNA-seq 2700 células en la plataforma NextSeq 500 de Illumina.
+Para introducirnos en el workflow de `Seurat` para el clustering de datos, analizaremos el dataset de 2700 células mononucleares de sangre periférica (PBMCs en inglés), publicado por [10x Genomics](https://www.10xgenomics.com/). En este dataset se secuenciaron mediante técnicas de single-cell RNA-seq 2700 células en la plataforma NextSeq 500 de Illumina.
 
 > Nota: Las PBMCs corresponden a linfocitos y monocitos.
 
@@ -545,7 +545,7 @@ DoHeatmap(pbmc, features = top20$gene) # + NoLegend() para eliminar la leyenda
 
 ## Asignar el tipo de célula a cada clúster
 
-En el caso de este dataset, podemos usar biomarcadores canónicos para asignar el tipo de célula que representa cada clúster:
+En el caso de este dataset, podemos usar biomarcadores ya conocidos para asignar el tipo de célula que representa cada clúster:
 
 ID del clúster | Biomarcadores | Tipo de célula
 ---------------|---------------|---------------
@@ -586,7 +586,7 @@ saveRDS(pbmc, file = "./2700pbmc_final.rds")
 
 En este tutorial, 10X Genomics nos provee con la clasificación de los tipos celulares representados en cada clúster, pero cuando trabajemos con datasets de single cell, ¿cómo podemos asignar a nuestros clusters el tipo de célula que representan?
 
-[Rui Fu _et al.,_ 2019](https://www.biorxiv.org/content/10.1101/855064v1) han desarrollado `clustifyr`, un paquete para R diseñado específicamente para solventar este problema.
+[Rui Fu _et al.,_ 2019](https://www.biorxiv.org/content/10.1101/855064v1) han desarrollado `clustifyr`, un paquete para R diseñado específicamente para solventar este problema con ayuda de datos de referencia externos.
 
 ```{r}
 library(clustifyr)
