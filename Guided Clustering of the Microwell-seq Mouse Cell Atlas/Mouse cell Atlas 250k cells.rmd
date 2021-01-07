@@ -1,0 +1,30 @@
+---
+title: "Tutorial clustering Seurat V3 2700 PBMCs"
+author: "Adam Casas"
+date: 'Compilado: `r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+    df_print: paged
+    highlight: kate
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  tidy = TRUE
+)
+```
+
+Adaptado de la guía publicada por el [laboratorio Satija](https://satijalab.org/seurat/v3.2/mca.html).
+
+# Introducción a Seurat V3
+
+
+
+
