@@ -641,8 +641,10 @@ Ahora comparamos las anotaciones de 10X Genomics con las predichas por `clustify
 Nótese que `clustifyr` ha cometido un error al clasificar el clúster 4. Este clúster representa linfocitos T CD8+, aunque la anotación automática lo fusionó con el clúster 6 (linfocitos natural killer). Si prestamos atención a los coeficientes de correlación de Spearman, podemos entender el por qué del error: vemos que para el clúster 4, la segunda célula más probable es el linfocito T CD8+ con un ` r = 0.7732`, mientras que el linfocito natural killer tiene un coeficiente ligeramente superior (` r = 0.8307`).
 
 ```{r}
-grafico_umap_clustify + ggtitle("Anotación automática clustifyr")
-grafico_umap + ggtitle("Anotación manual 10X Genomics")
+grafico_umap_clustify <- grafico_umap_clustify + ggtitle("Anotación automática clustifyr")
+grafico_umap <- grafico_umap + ggtitle("Anotación manual 10X Genomics")
+
+grafico_umap_clustify / grafico_umap # Usamos operador "/" del paquete `patchwork`
 ```
 
 
