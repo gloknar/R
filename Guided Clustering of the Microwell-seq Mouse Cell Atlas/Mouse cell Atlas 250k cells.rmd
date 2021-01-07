@@ -21,6 +21,8 @@ knitr::opts_chunk$set(
 )
 ```
 
+***
+
 Adaptado de la guía publicada por el [laboratorio Satija](https://satijalab.org/seurat/v3.2/mca.html).
 
 # Introducción al tutorial
@@ -28,13 +30,18 @@ Adaptado de la guía publicada por el [laboratorio Satija](https://satijalab.org
 En este tutorial vamos a mostrar un workflow para manejar datasets muy grandes, haciendo hincapié en el uso eficiente de la memoria y el tiempo de CPU de nuestro sistema. Por tanto, no analizaremos el sentido biológico de los clusters de células resultantes del workflow, aunque si te sientes preparado, te invitamos a que los analices por tu cuenta. Los análisis que realicemos en este tutorial se harán en la memoria RAM, aunque Seurat ha añadido recientemente soporte para realizar el análisis desde el disco duro mediante el framework [loom](http://loompy.org/). En esta [viñeta](https://satijalab.org/seurat/mca_loom.html) puedes ver este mismo workflow, pero usando [loomR](https://satijalab.org/loomR/loomR_tutorial.html).
 
 
+***
+
+<br>
+
+# Workflow: Creamos el objeto `Seurat`
+
+El dataset MCA (Mouse Cell Atlas) fue generado por [Xiaoping y compañeros, 2018](https://www.sciencedirect.com/science/article/pii/S0092867418301168), contiene 250000 células y está disponible en este [enlace](https://figshare.com/articles/dataset/MCA_DGE_Data/5435866). No obstante, para agilizar el workflow partimos directamente de un archivo `.rds` que contiene la matriz de expresión (=matriz de conteos UMI) y los metadatos ya combinados (archivo disponible en este [enlace](https://www.dropbox.com/s/8d8t4od38oojs6i/MCA.zip?dl=1))
+
 ```{r}
-format(Sys.Date(), format = "%d de %B del %Y")
-
-
-
-# Para minutos, segundos, horas...
-format(Sys.time(), format = "%c")
+library(Seurat)
+library(patchwork)
+??patchwork
 
 ```
 

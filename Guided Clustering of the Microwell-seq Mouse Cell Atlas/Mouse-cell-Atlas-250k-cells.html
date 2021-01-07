@@ -2917,11 +2917,14 @@ div.tocify {
 <div id="introducción-al-tutorial" class="section level1">
 <h1><span class="header-section-number">1</span> Introducción al tutorial</h1>
 <p>En este tutorial vamos a mostrar un workflow para manejar datasets muy grandes, haciendo hincapié en el uso eficiente de la memoria y el tiempo de CPU de nuestro sistema. Por tanto, no analizaremos el sentido biológico de los clusters de células resultantes del workflow, aunque si te sientes preparado, te invitamos a que los analices por tu cuenta. Los análisis que realicemos en este tutorial se harán en la memoria RAM, aunque Seurat ha añadido recientemente soporte para realizar el análisis desde el disco duro mediante el framework <a href="http://loompy.org/">loom</a>. En esta <a href="https://satijalab.org/seurat/mca_loom.html">viñeta</a> puedes ver este mismo workflow, pero usando <a href="https://satijalab.org/loomR/loomR_tutorial.html">loomR</a>.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">format</span>(<span class="kw">Sys.Date</span>(), <span class="dt">format =</span> <span class="st">&quot;%d de %B del %Y&quot;</span>)</span></code></pre></div>
-<pre><code>## [1] &quot;07 de enero del 2021&quot;</code></pre>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="co"># Para minutos, segundos, horas...</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">format</span>(<span class="kw">Sys.time</span>(), <span class="dt">format =</span> <span class="st">&quot;%c&quot;</span>)</span></code></pre></div>
-<pre><code>## [1] &quot;ju. ene.  7 21:18:18 2021&quot;</code></pre>
+<hr />
+<p><br></p>
+</div>
+<div id="workflow-creamos-el-objeto-seurat" class="section level1">
+<h1><span class="header-section-number">2</span> Workflow: Creamos el objeto <code>Seurat</code></h1>
+<p>El dataset MCA (Mouse Cell Atlas) fue generado por <a href="https://www.sciencedirect.com/science/article/pii/S0092867418301168">Xiaoping y compañeros, 2018</a>, contiene 250000 células y está disponible en este <a href="https://figshare.com/articles/dataset/MCA_DGE_Data/5435866">enlace</a>. No obstante, para agilizar el workflow partimos directamente de un archivo <code>.rds</code> que contiene la matriz de expresión (=matriz de conteos UMI) y los metadatos ya combinados (archivo disponible en este <a href="https://www.dropbox.com/s/8d8t4od38oojs6i/MCA.zip?dl=1">enlace</a>)</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(Seurat)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(patchwork)</span></code></pre></div>
 </div>
 
 

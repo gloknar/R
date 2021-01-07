@@ -20,6 +20,7 @@ knitr::opts_chunk$set(
   tidy = TRUE
 )
 ```
+***
 
 Adaptado de la guía gratuita publicada por [10X Genomics](https://www.dropbox.com/s/38h5zccv0b7l9pr/pbmc3k_tutorial.Rmd?dl=1).
 
