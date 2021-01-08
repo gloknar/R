@@ -76,4 +76,11 @@ mca <- NormalizeData(mca, normalization.method = "LogNormalize", scale.factor = 
 ```
 
 
+El comando `FindVariableGenes` calcula la varianza y la media de cada gen del dataset (y lo guarda en `mca[["RNA]]@meta.features`). Para datasets grandes con UMIs, seleccionar genes muy variables basándose solo en
+
+We have observed that for large-cell datasets with unique molecular identifiers, selecting highly variable genes (HVG) simply based on variance mean ratio (VMR) is an efficient and robust strategy. Here, we select the top 1,000 HVG for downstream analysis.
+
+```{r}
+FindVariableFeatures(mca)
+```
 
