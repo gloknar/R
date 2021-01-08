@@ -105,11 +105,11 @@ datos.pbmc <- Read10X(data.dir = "./filtered_gene_bc_matrices/hg19/")
 
 
 # Inicializamos el objeto Seurat con los datos crudos (no normalizados)
-pbmc <- CreateSeuratObject(
-  counts = datos.pbmc, 
-  project = "2700-PBMCs", 
-  min.cells = 3, 
-  min.features = 200)
+pbmc <- CreateSeuratObject(counts = datos.pbmc, 
+                           project = "2700-PBMCs",
+                           assay = "RNA",
+                           min.cells = 3, 
+                           min.features = 200)
 
 pbmc
 ```

@@ -55,9 +55,9 @@ Nótese que en la matriz de conteos hay 405192 células (=columnas), pero en los
 
 ```{r}
 mca <- CreateSeuratObject(counts = matriz.conteo.UMIs,
-                                    project = "Mouse-Cell-Atlas",
-                                    meta.data = metadatos)
-
+                          project = "Mouse-Cell-Atlas",
+                          meta.data = metadatos,
+                          assay = "RNA")
 
 mca <- subset(x = mca, cells = which(!is.na(mca$ClusterID)))
 mca
@@ -72,15 +72,19 @@ mca
 Normalizamos los datos con el método estándar `LogNormalize`, tal como hicimos en el tutorial de 2700 PBMCs.
 
 ```{r}
-mca <- NormalizeData(mca, normalization.method = "LogNormalize", scale.factor = 10000)
+mca <- NormalizeData(mca,
+                     assay = "RNA",
+                     normalization.method = "LogNormalize", 
+                     scale.factor = 10000)
 ```
 
 
-El comando `FindVariableGenes` calcula la varianza y la media de cada gen del dataset (y lo guarda en `mca[["RNA]]@meta.features`). Para datasets grandes con UMIs, seleccionar genes muy variables basándose solo en
-
-We have observed that for large-cell datasets with unique molecular identifiers, selecting highly variable genes (HVG) simply based on variance mean ratio (VMR) is an efficient and robust strategy. Here, we select the top 1,000 HVG for downstream analysis.
+El comando `FindVariableGenes` calcula la varianza y la media de cada gen del dataset y guarda los genes más variables en `mca[["RNA]]@meta.features`). Para datasets grandes que usen matrices de conteos de UMIs, seleccionar genes muy variables basándose solo en el ratio varianza-media (VMR en inglés) es una estrategia eficiente y robusta. En este caso seleccionamos los 1000 genes con mayor varianza para posteriores análisis.
 
 ```{r}
-FindVariableFeatures(mca)
+mca <- FindVariableFeatures(mca, 
+                            assay = "RNA",
+                            selection.method = "vst", 
+                            nfeatures = 1000)
 ```
 

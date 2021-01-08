@@ -2980,8 +2980,8 @@ div.tocify {
 <span id="cb3-20"><a href="#cb3-20"></a></span>
 <span id="cb3-21"><a href="#cb3-21"></a></span>
 <span id="cb3-22"><a href="#cb3-22"></a><span class="co"># Inicializamos el objeto Seurat con los datos crudos (no normalizados)</span></span>
-<span id="cb3-23"><a href="#cb3-23"></a>pbmc &lt;-<span class="st"> </span><span class="kw">CreateSeuratObject</span>(<span class="dt">counts =</span> datos.pbmc, <span class="dt">project =</span> <span class="st">&quot;2700-PBMCs&quot;</span>, <span class="dt">min.cells =</span> <span class="dv">3</span>, </span>
-<span id="cb3-24"><a href="#cb3-24"></a>    <span class="dt">min.features =</span> <span class="dv">200</span>)</span>
+<span id="cb3-23"><a href="#cb3-23"></a>pbmc &lt;-<span class="st"> </span><span class="kw">CreateSeuratObject</span>(<span class="dt">counts =</span> datos.pbmc, <span class="dt">project =</span> <span class="st">&quot;2700-PBMCs&quot;</span>, <span class="dt">assay =</span> <span class="st">&quot;RNA&quot;</span>, </span>
+<span id="cb3-24"><a href="#cb3-24"></a>    <span class="dt">min.cells =</span> <span class="dv">3</span>, <span class="dt">min.features =</span> <span class="dv">200</span>)</span>
 <span id="cb3-25"><a href="#cb3-25"></a></span>
 <span id="cb3-26"><a href="#cb3-26"></a>pbmc</span></code></pre></div>
 <pre><code>## An object of class Seurat 

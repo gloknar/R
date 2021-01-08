@@ -2945,7 +2945,9 @@ div.tocify {
 <div id="preprocesado-de-datos" class="section level2">
 <h2><span class="header-section-number">2.1</span> Preprocesado de datos</h2>
 <p>Normalizamos los datos con el método estándar <code>LogNormalize</code>, tal como hicimos en el tutorial de 2700 PBMCs.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>mca &lt;-<span class="st"> </span><span class="kw">NormalizeData</span>(mca, <span class="dt">normalization.method =</span> <span class="st">&quot;LogNormalize&quot;</span>, <span class="dt">scale.factor =</span> <span class="dv">10000</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>mca &lt;-<span class="st"> </span><span class="kw">NormalizeData</span>(mca, <span class="dt">assay =</span> <span class="st">&quot;RNA&quot;</span>, <span class="dt">normalization.method =</span> <span class="st">&quot;LogNormalize&quot;</span>, <span class="dt">scale.factor =</span> <span class="dv">10000</span>)</span></code></pre></div>
+<p>El comando <code>FindVariableGenes</code> calcula la varianza y la media de cada gen del dataset y guarda los genes más variables en <code>mca[[&quot;RNA]]@meta.features</code>). Para datasets grandes que usen matrices de conteos de UMIs, seleccionar genes muy variables basándose solo en el ratio varianza-media (VMR en inglés) es una estrategia eficiente y robusta. En este caso seleccionamos los 1000 genes con mayor varianza para posteriores análisis.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>mca &lt;-<span class="st"> </span><span class="kw">FindVariableFeatures</span>(mca, <span class="dt">assay =</span> <span class="st">&quot;RNA&quot;</span>, <span class="dt">selection.method =</span> <span class="st">&quot;vst&quot;</span>, <span class="dt">nfeatures =</span> <span class="dv">1000</span>)</span></code></pre></div>
 </div>
 </div>
 
