@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 ***
 
-Adaptado de la guía publicada por el [laboratorio Satija](https://satijalab.org/seurat/v3.2/mca.html).
+Adaptado de la guía publicada por el [laboratorio Satija](https://satijalab.org/seurat/v3.2/mca.html). 
 
 # Introducción al tutorial
 
