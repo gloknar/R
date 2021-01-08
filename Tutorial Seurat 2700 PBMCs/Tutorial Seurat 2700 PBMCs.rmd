@@ -234,7 +234,7 @@ VlnPlot(pbmc, features = c("nFeature_RNA", "percent.mt"), ncol = 3)
 Tras filtrar las células indeseadas de nuestro conjunto de datos, el siguiente paso es normalizar los niveles de expresión génica mediante el comando `NormalizeData`. `NormalizeData` usa por defecto un factor de escala de 10<sup>4</sup> y el método `LogNormalize`, el cual normaliza los niveles de expresión génica de cada célula de la siguiente manera: Para un gen concreto, divide su nº de transcritos entre el nº total de transcritos presentes en esa célula, luego se multiplica por el factor de escala especificado, y al resultado de esa multiplicación (llamémoslo "x") se le aplica la transformación $ln(1+x)$ (se usa ln(1+x) en lugar de ln(x) para evitar perder precisión cuando x es un número flotante cercano a 0).
 
 ```{r}
-pbmc <- NormalizeData(pbmc)
+pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
 ```
 
 

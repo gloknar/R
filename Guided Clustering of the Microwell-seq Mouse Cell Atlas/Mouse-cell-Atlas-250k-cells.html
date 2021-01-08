@@ -2908,11 +2908,12 @@ div.tocify {
 
 <h1 class="title toc-ignore">Tutorial eficiencia Seurat V3 MCA 250k</h1>
 <h4 class="author">Adam Casas</h4>
-<h4 class="date">Compilado: 07 de enero del 2021</h4>
+<h4 class="date">Compilado: 08 de enero del 2021</h4>
 
 </div>
 
 
+<hr />
 <p>Adaptado de la guía publicada por el <a href="https://satijalab.org/seurat/v3.2/mca.html">laboratorio Satija</a>.</p>
 <div id="introducción-al-tutorial" class="section level1">
 <h1><span class="header-section-number">1</span> Introducción al tutorial</h1>
@@ -2920,11 +2921,32 @@ div.tocify {
 <hr />
 <p><br></p>
 </div>
-<div id="workflow-creamos-el-objeto-seurat" class="section level1">
-<h1><span class="header-section-number">2</span> Workflow: Creamos el objeto <code>Seurat</code></h1>
+<div id="workflow-creamos-el-objeto-seurat-mca" class="section level1">
+<h1><span class="header-section-number">2</span> Workflow: Creamos el objeto Seurat <code>mca</code></h1>
 <p>El dataset MCA (Mouse Cell Atlas) fue generado por <a href="https://www.sciencedirect.com/science/article/pii/S0092867418301168">Xiaoping y compañeros, 2018</a>, contiene 250000 células y está disponible en este <a href="https://figshare.com/articles/dataset/MCA_DGE_Data/5435866">enlace</a>. No obstante, para agilizar el workflow partimos directamente de un archivo <code>.rds</code> que contiene la matriz de expresión (=matriz de conteos UMI) y los metadatos ya combinados (archivo disponible en este <a href="https://www.dropbox.com/s/8d8t4od38oojs6i/MCA.zip?dl=1">enlace</a>)</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(Seurat)</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(patchwork)</span></code></pre></div>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(patchwork)</span>
+<span id="cb1-3"><a href="#cb1-3"></a></span>
+<span id="cb1-4"><a href="#cb1-4"></a>matriz.conteo.UMIs &lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="dt">file =</span> <span class="st">&quot;./MCA_merged_mat.rds&quot;</span>)</span>
+<span id="cb1-5"><a href="#cb1-5"></a>metadatos &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="dt">file =</span> <span class="st">&quot;./MCA_All-batch-removed-assignments.csv&quot;</span>, <span class="dt">row.names =</span> <span class="dv">1</span>)</span></code></pre></div>
+<p>Vamos a analizar las 242000 células a las que se les asignó un clúster y fueron anotadas en el estudio original del que provienen los datos. Por tanto no hace falta hacer el control de calidad (cosa que sí hicimos en el tutorial de las 2700 PBMCs).</p>
+<p>Nótese que en la matriz de conteos hay 405192 células (=columnas), pero en los metadatos hay menos células, ya que no todas fueron asignadas a un clúster y anotadas. Por tanto vamos a quedarnos sólo con aquellas células que hayan sido aisgnadas a un clúster con el comando <code>subset</code> del paquete <code>Seurat</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>mca &lt;-<span class="st"> </span><span class="kw">CreateSeuratObject</span>(<span class="dt">counts =</span> matriz.conteo.UMIs, <span class="dt">project =</span> <span class="st">&quot;Mouse-Cell-Atlas&quot;</span>, </span>
+<span id="cb2-2"><a href="#cb2-2"></a>    <span class="dt">meta.data =</span> metadatos)</span>
+<span id="cb2-3"><a href="#cb2-3"></a></span>
+<span id="cb2-4"><a href="#cb2-4"></a></span>
+<span id="cb2-5"><a href="#cb2-5"></a>mca &lt;-<span class="st"> </span><span class="kw">subset</span>(<span class="dt">x =</span> mca, <span class="dt">cells =</span> <span class="kw">which</span>(<span class="op">!</span><span class="kw">is.na</span>(mca<span class="op">$</span>ClusterID)))</span>
+<span id="cb2-6"><a href="#cb2-6"></a>mca</span></code></pre></div>
+<pre><code>## An object of class Seurat 
+## 39855 features across 242533 samples within 1 assay 
+## Active assay: RNA (39855 features, 0 variable features)</code></pre>
+<hr />
+<p><br></p>
+<div id="preprocesado-de-datos" class="section level2">
+<h2><span class="header-section-number">2.1</span> Preprocesado de datos</h2>
+<p>Normalizamos los datos con el método estándar <code>LogNormalize</code>, tal como hicimos en el tutorial de 2700 PBMCs.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>mca &lt;-<span class="st"> </span><span class="kw">NormalizeData</span>(mca, <span class="dt">normalization.method =</span> <span class="st">&quot;LogNormalize&quot;</span>, <span class="dt">scale.factor =</span> <span class="dv">10000</span>)</span></code></pre></div>
+</div>
 </div>
 
 
