@@ -302,6 +302,7 @@ El comando `ScaleData`:
 # nombres_genes <- rownames(pbmc)
 # pbmc <- ScaleData(pbmc, features = nombres_genes)
 
+
 # Para escalar sólo los genes variables que usaremos en el PCA (valor por defecto):
 pbmc <- ScaleData(pbmc)
 ```

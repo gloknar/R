@@ -3134,9 +3134,10 @@ div.tocify {
 <span id="cb19-3"><a href="#cb19-3"></a><span class="co"># nombres_genes &lt;- rownames(pbmc) pbmc &lt;- ScaleData(pbmc, features =</span></span>
 <span id="cb19-4"><a href="#cb19-4"></a><span class="co"># nombres_genes)</span></span>
 <span id="cb19-5"><a href="#cb19-5"></a></span>
-<span id="cb19-6"><a href="#cb19-6"></a><span class="co"># Para escalar sólo los genes variables que usaremos en el PCA (valor por</span></span>
-<span id="cb19-7"><a href="#cb19-7"></a><span class="co"># defecto):</span></span>
-<span id="cb19-8"><a href="#cb19-8"></a>pbmc &lt;-<span class="st"> </span><span class="kw">ScaleData</span>(pbmc)</span></code></pre></div>
+<span id="cb19-6"><a href="#cb19-6"></a></span>
+<span id="cb19-7"><a href="#cb19-7"></a><span class="co"># Para escalar sólo los genes variables que usaremos en el PCA (valor por</span></span>
+<span id="cb19-8"><a href="#cb19-8"></a><span class="co"># defecto):</span></span>
+<span id="cb19-9"><a href="#cb19-9"></a>pbmc &lt;-<span class="st"> </span><span class="kw">ScaleData</span>(pbmc)</span></code></pre></div>
 <blockquote>
 <p>Nota: Si escalas sólo los 2000 genes variables, el comando <code>ScaleData</code> tardará menos tiempo en ejecutarse que si escalas todos los genes disponibles. No obstante, para ver heatmaps no distorsionados, es necesario escalar todos los genes. Nosotros sólo escalamos esos 2000 genes variables, así que tenlo en cuenta cuando uses el comando <code>DoHeatmap</code> (ver apartado <a href="#encontrar-genes-diferencialmente-expresados-biomarcadores-de-clusters">2.10 Encontrar genes diferencialmente expresados (biomarcadores de clusters)</a>). El siguiente paso, donde usamos el comando <code>Dimheatmap</code>, no se verá afectado dado que dicha función sólo trabaja con los genes variables usados como input del PCA. <strong>En resumen: Escala todos los genes si usas <code>DoHeatmap</code>; escala solo los genes variables si usas <code>Dimheatmap</code></strong>.</p>
 </blockquote>
