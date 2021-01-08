@@ -88,5 +88,5 @@ mca <- FindVariableFeatures(mca,
                             nfeatures = 1000)
 ```
 
-Ahora calculamos y controlamos la expresión de genes mitocondriales por célula para evitar que actúe como un factor de confusión o *confounder*.
+Ahora calculamos y controlamos la expresión de genes mitocondriales de las células para evitar que estos actúen como un factor de confusión o *confounder*.
 

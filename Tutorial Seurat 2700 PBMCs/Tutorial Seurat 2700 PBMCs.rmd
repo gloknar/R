@@ -310,6 +310,19 @@ pbmc <- ScaleData(pbmc)
 > Nota: Si escalas sólo los 2000 genes variables, el comando `ScaleData` tardará menos tiempo en ejecutarse que si escalas todos los genes disponibles. No obstante, para ver heatmaps no distorsionados, es necesario escalar todos los genes. Nosotros sólo escalamos esos 2000 genes variables, así que tenlo en cuenta cuando uses el comando `DoHeatmap` (ver apartado [2.10 Encontrar genes diferencialmente expresados (biomarcadores de clusters)][Encontrar genes diferencialmente expresados (biomarcadores de clusters)]). El siguiente paso, donde usamos el comando `Dimheatmap`, no se verá afectado dado que dicha función sólo trabaja con los genes variables usados como input del PCA. **En resumen: Escala todos los genes si usas `DoHeatmap`; escala solo los genes variables si usas `Dimheatmap`**.
 
 
+<details> 
+  <summary> **¿Cómo puedo eliminar fuentes de varianza indeseadas?** </summary>
+
+Puedes eliminar fuentes de varianza indeseables para el experimento, tales como la contaminación mitocondrial o la varianza asociada al ciclo celular usando el parámetro `vars.to.regress` del comando `ScaleData`. Por ejemplo:
+
+```{r, eval = F}
+pbmc <- ScaleData(pbmc, vars.to.regress = "percent.mt")
+```
+
+No obstante, el laboratorio Satija recomienda encarecidamente a los usuarios avanzados que deseen aprovechar esta funcionalidad usar la nueva función de normalización `SCTransform`. Dicho comando está descrito en este [artículo]((https://www.biorxiv.org/content/10.1101/576827v2)) del laboratorio Satija, y además también han publicado una [viñeta](https://satijalab.org/seurat/v3.0/sctransform_vignette.html) donde usan tal función en Seurat V3. Al igual que `ScaleData`, la función `SCTransform` también incluye el parámetro `vars.to.regress`.
+
+</details>
+
 ***
 
 <br>
