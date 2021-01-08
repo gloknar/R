@@ -259,7 +259,9 @@ El comando `FindVariableFeatures` modela la relación media-varianza de los gene
 
 
 ```{r}
-pbmc <- FindVariableFeatures(pbmc) # Los genes variables se guardan en pbmc[["RNA]]@meta.features
+# Tras usar `FindVariableFeatures`, los genes variables se guardan en
+# pbmc[["RNA]]@meta.features
+pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000) 
 
 # Identificamos los 10 genes más variables con el comando `VariableFeatures`
 top10 <- head(VariableFeatures(pbmc), 10)
