@@ -292,15 +292,22 @@ El comando `ScaleData`:
   
 * Los datos escalados se guardan en `pbmc[["RNA"]]@scale.data`
 
-* Escala por defecto sólo los genes variables identificados en el paso anterior
+* Sólo nos interesa escalar los genes variables, ya que los usaremos como input del PCA. Por defecto, `ScaleData` escala sólo los genes variables identificados en el paso anterior
 
-  * Si quieres escalar todos los genes, debes pasarle a la función el nombre de todos los genes a través del parámetro `features`
+  * Si aún así quieres escalar todos los genes, debes pasarle a la función el nombre de todos los genes a través del parámetro `features` (ver código comentado)
 
 ```{r}
+# Si quieres escalar todos los genes, usa:
+#
 # nombres_genes <- rownames(pbmc)
 # pbmc <- ScaleData(pbmc, features = nombres_genes)
+
+# Para escalar sólo los genes variables que usaremos en el PCA (valor por defecto):
 pbmc <- ScaleData(pbmc)
 ```
+
+> Nota: Si escalas sólo los 2000 genes variables, el comando `ScaleData` tardará menos tiempo en ejecutarse que si escalas todos los genes disponibles. No obstante, para ver heatmaps no distorsionados, es necesario escalar todos los genes. Nosotros sólo escalamos esos 2000 genes variables, así que tenlo en cuenta cuando uses el comando `DoHeatmap` (ver apartado 2.10 "Encontrar genes diferencialmente expresados (biomarcadores de clusters)"). El siguiente paso, donde usamos el comando `Dimheatmap`, no se verá afectado dado que dicha función sólo trabaja con los genes variables usados como input del PCA.
+
 
 ***
 

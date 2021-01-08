@@ -3124,14 +3124,20 @@ div.tocify {
 <li>Este paso previene que genes con expresión constitutiva tengan más peso en los próximos análisis que genes con escasa expresión (por ejemplo, aquellos que codifican para factores de transcripción)</li>
 </ul></li>
 <li><p>Los datos escalados se guardan en <code>pbmc[[&quot;RNA&quot;]]@scale.data</code></p></li>
-<li><p>Escala por defecto sólo los genes variables identificados en el paso anterior</p>
+<li><p>Sólo nos interesa escalar los genes variables, ya que los usaremos como input del PCA. Por defecto, <code>ScaleData</code> escala sólo los genes variables identificados en el paso anterior</p>
 <ul>
-<li>Si quieres escalar todos los genes, debes pasarle a la función el nombre de todos los genes a través del parámetro <code>features</code></li>
+<li>Si aún así quieres escalar todos los genes, debes pasarle a la función el nombre de todos los genes a través del parámetro <code>features</code> (ver código comentado)</li>
 </ul></li>
 </ul>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="co"># nombres_genes &lt;- rownames(pbmc) pbmc &lt;- ScaleData(pbmc, features =</span></span>
-<span id="cb19-2"><a href="#cb19-2"></a><span class="co"># nombres_genes)</span></span>
-<span id="cb19-3"><a href="#cb19-3"></a>pbmc &lt;-<span class="st"> </span><span class="kw">ScaleData</span>(pbmc)</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="co"># Si quieres escalar todos los genes, usa: nombres_genes &lt;- rownames(pbmc) pbmc</span></span>
+<span id="cb19-2"><a href="#cb19-2"></a><span class="co"># &lt;- ScaleData(pbmc, features = nombres_genes)</span></span>
+<span id="cb19-3"><a href="#cb19-3"></a></span>
+<span id="cb19-4"><a href="#cb19-4"></a><span class="co"># Para escalar sólo los genes variables que usaremos en el PCA (valor por</span></span>
+<span id="cb19-5"><a href="#cb19-5"></a><span class="co"># defecto):</span></span>
+<span id="cb19-6"><a href="#cb19-6"></a>pbmc &lt;-<span class="st"> </span><span class="kw">ScaleData</span>(pbmc)</span></code></pre></div>
+<blockquote>
+<p>Nota: Si escalas sólo los 2000 genes variables, el comando <code>ScaleData</code> tardará menos tiempo en ejecutarse que si escalas todos los genes disponibles. No obstante, para ver heatmaps no distorsionados, es necesario escalar todos los genes. Nosotros sólo escalamos esos 2000 genes variables, así que tenlo en cuenta cuando uses el comando <code>DoHeatmap</code> (ver apartado 2.10 “Encontrar genes diferencialmente expresados (biomarcadores de clusters)”). El siguiente paso, donde usamos el comando <code>Dimheatmap</code>, no se verá afectado dado que dicha función sólo trabaja con los genes variables usados como input del PCA.</p>
+</blockquote>
 <hr />
 <p><br></p>
 </div>
