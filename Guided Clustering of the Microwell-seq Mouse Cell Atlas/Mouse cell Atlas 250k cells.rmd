@@ -41,6 +41,7 @@ El dataset MCA (Mouse Cell Atlas) fue generado por [Xiaoping y compañeros, 2018
 ```{r}
 library(Seurat)
 library(patchwork)
+library(ggplot2)
 
 matriz.conteo.UMIs <- readRDS(file = "./MCA_merged_mat.rds")
 metadatos <- read.csv(file = "./MCA_All-batch-removed-assignments.csv", row.names = 1)
@@ -67,7 +68,25 @@ mca
 
 <br>
 
+
+
 ## Preprocesado de datos
+
+Los siguientes pasos se benefician de ser paralelizados en cuanto a tiempo de CPU se refiere, pero al estar trabajando con un dataset muy pesado y teniendo en cuenta que los requerimientos de RAM escalan con el nº de hilos que usemos, se vuelve necesario tener un sistema con mucha memoria RAM para poder paralelizar este workflow. Dado que mi ordenador de trabajo cuenta sólo con 16 GB, no usaré el siguiente código, pero siéntete libre de usarlo si cuentas con más RAM.
+
+```{r, eval = F}
+library(future)
+plan(strategy = "multisession", workers = 4)
+
+# Establecemos el límite de tamaño que puede usar `future` en 2 GBs dado que de
+# lo contrario superamos el límite por defecto de 500 MBs al trabajar con
+# objetos tan grandes
+options(future.globals.maxSize = 2 * 1024^3)
+```
+
+<br>
+
+### Normalización
 
 Normalizamos los datos con el método estándar `LogNormalize`, tal como hicimos en el tutorial de 2700 PBMCs.
 
@@ -78,6 +97,9 @@ mca <- NormalizeData(mca,
                      scale.factor = 10000)
 ```
 
+<br>
+
+### Detección de genes diferencialmente expresados
 
 El comando `FindVariableGenes` calcula la varianza y la media de cada gen del dataset y guarda los genes más variables en `mca[["RNA]]@meta.features`). Para datasets grandes que usen matrices de conteos de UMIs, seleccionar genes muy variables basándose solo en el ratio varianza-media (VMR en inglés) es una estrategia eficiente y robusta. En este caso seleccionamos los 1000 genes con mayor varianza para posteriores análisis.
 
@@ -87,6 +109,83 @@ mca <- FindVariableFeatures(mca,
                             selection.method = "vst", 
                             nfeatures = 1000)
 ```
+<br>
 
-Ahora calculamos y controlamos la expresión de genes mitocondriales de las células para evitar que estos actúen como un factor de confusión o *confounder*.
+### Escalado y control de contaminación mitocondrial
 
+Ahora calculamos la expresión de genes mitocondriales de las células con el comando `PercentageFeatureSet`, y con la función `ScaleData` escalamos los genes diferencialmente expresados (opción por defecto) y controlamos la contaminación mitocondrial para evitar que esta actúe como un factor de confusión o *confounder*.
+
+```{r}
+mca[["percent.mt"]] <- PercentageFeatureSet(mca, pattern = "^mt-")
+mca <- ScaleData(mca, vars.to.regress = "percent.mt")
+```
+
+> Nota: Para datasets grandes, procura paralelizar el workflow de Seurat con el paquete `future` (Si tu capacidad RAM te lo permite) y escalar sólo los genes variables. Como ya se comentó en el tutorial de 2700 PBMCs, sólo los genes diferencialmente expresados se usan como input del PCA, por lo que no nos reporta ningún beneficio escalar el resto de genes. 
+
+***
+
+<br>
+
+## Reducción de la dimensionalidad (PCA)
+
+
+```{r}
+mca <- RunPCA(mca,
+              assay = "RNA",
+              npcs = 100,
+              ndims.print = 1:5,
+              nfeatures.print = 5)
+
+print(mca@reductions$pca, dims = 1:5, nfeatures = 5)
+```
+
+Para elegir la dimensionalidad del dataset, se podría realizar un Jackstraw, pero este dataset en concreto es muy grande, por lo que tal método queda descartado. En su lugar, podemos recurrir al elbow plot.
+
+```{r}
+ElbowPlot(mca, ndims = 100, reduction = "pca") + geom_hline(yintercept = 1, col = "red")
+```
+
+Podríamos quedarnos con todas las componentes principales que tengan una desviación estándar >=1 (línea roja), lo que nos dejaría con unas 60 componentes principales. No obstante, el laboratorio Satija decidió quedarse con 75, y como almacenar más componentes de las necesarias no afecta negativamente a los análisis, elegimos quedarnos con dichas 75 dimensiones.
+
+```{r}
+DimHeatmap(mca, dims = c(1:3, 70:75), cells = 500, reduction = "pca", balanced = T)
+```
+***
+
+<br>
+
+## Clustering de las células
+
+Ahora agrupamos las células mediante la técnica de clustering basadas en grafos de Seurat.
+
+
+```{r}
+mca <- FindNeighbors(mca, reduction = "pca", dims = 1:75, nn.eps = 0.5)
+mca <- FindClusters(mca, resolution = 1.4, n.start = 10) # resolution > 1.2 ya que el dataset > 3000 células
+# ?FindClusters
+```
+
+
+ee
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+e

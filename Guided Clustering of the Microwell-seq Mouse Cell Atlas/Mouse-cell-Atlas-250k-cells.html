@@ -2908,13 +2908,13 @@ div.tocify {
 
 <h1 class="title toc-ignore">Tutorial eficiencia Seurat V3 MCA 250k</h1>
 <h4 class="author">Adam Casas</h4>
-<h4 class="date">Compilado: 08 de enero del 2021</h4>
+<h4 class="date">Compilado: 09 de enero del 2021</h4>
 
 </div>
 
 
 <hr />
-<p>Adaptado de la guía publicada por el <a href="https://satijalab.org/seurat/v3.2/mca.html">laboratorio Satija</a>. <a href="#preprocesado-de-datos">jajaja</a></p>
+<p>Adaptado de la guía publicada por el <a href="https://satijalab.org/seurat/v3.2/mca.html">laboratorio Satija</a>.</p>
 <div id="introducción-al-tutorial" class="section level1">
 <h1><span class="header-section-number">1</span> Introducción al tutorial</h1>
 <p>En este tutorial vamos a mostrar un workflow para manejar datasets muy grandes, haciendo hincapié en el uso eficiente de la memoria y el tiempo de CPU de nuestro sistema. Por tanto, no analizaremos el sentido biológico de los clusters de células resultantes del workflow, aunque si te sientes preparado, te invitamos a que los analices por tu cuenta. Los análisis que realicemos en este tutorial se harán en la memoria RAM, aunque Seurat ha añadido recientemente soporte para realizar el análisis desde el disco duro mediante el framework <a href="http://loompy.org/">loom</a>. En esta <a href="https://satijalab.org/seurat/mca_loom.html">viñeta</a> puedes ver este mismo workflow, pero usando <a href="https://satijalab.org/loomR/loomR_tutorial.html">loomR</a>.</p>
@@ -2943,11 +2943,43 @@ div.tocify {
 <p><br></p>
 <div id="preprocesado-de-datos" class="section level2">
 <h2><span class="header-section-number">2.1</span> Preprocesado de datos</h2>
+<p>Los siguientes pasos se benefician de ser paralelizados en cuanto a tiempo de CPU se refiere, pero al estar trabajando con un dataset muy pesado y teniendo en cuenta que los requerimientos de RAM escalan con el nº de hilos que usemos, se vuelve necesario tener un sistema con mucha memoria RAM para poder paralelizar este workflow. Dado que mi ordenador de trabajo cuenta sólo con 16 GB, no usaré el siguiente código, pero siéntete libre de usarlo si cuentas con más RAM.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">library</span>(future)</span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">plan</span>(<span class="dt">strategy =</span> <span class="st">&quot;multisession&quot;</span>, <span class="dt">workers =</span> <span class="dv">4</span>)</span>
+<span id="cb4-3"><a href="#cb4-3"></a></span>
+<span id="cb4-4"><a href="#cb4-4"></a><span class="co"># Establecemos el límite de tamaño que puede usar `future` en 2 GBs dado que de</span></span>
+<span id="cb4-5"><a href="#cb4-5"></a><span class="co"># lo contrario superamos el límite por defecto de 500 MBs al trabajar con objetos</span></span>
+<span id="cb4-6"><a href="#cb4-6"></a><span class="co"># tan grandes</span></span>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="kw">options</span>(<span class="dt">future.globals.maxSize =</span> <span class="dv">2</span> <span class="op">*</span><span class="st"> </span><span class="dv">1024</span><span class="op">^</span><span class="dv">3</span>)</span></code></pre></div>
+<p><br></p>
+<div id="normalización" class="section level3">
+<h3><span class="header-section-number">2.1.1</span> Normalización</h3>
 <p>Normalizamos los datos con el método estándar <code>LogNormalize</code>, tal como hicimos en el tutorial de 2700 PBMCs.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>mca &lt;-<span class="st"> </span><span class="kw">NormalizeData</span>(mca, <span class="dt">assay =</span> <span class="st">&quot;RNA&quot;</span>, <span class="dt">normalization.method =</span> <span class="st">&quot;LogNormalize&quot;</span>, <span class="dt">scale.factor =</span> <span class="dv">10000</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>mca &lt;-<span class="st"> </span><span class="kw">NormalizeData</span>(mca, <span class="dt">assay =</span> <span class="st">&quot;RNA&quot;</span>, <span class="dt">normalization.method =</span> <span class="st">&quot;LogNormalize&quot;</span>, <span class="dt">scale.factor =</span> <span class="dv">10000</span>)</span></code></pre></div>
+<p><br></p>
+</div>
+<div id="detección-de-genes-diferencialmente-expresados" class="section level3">
+<h3><span class="header-section-number">2.1.2</span> Detección de genes diferencialmente expresados</h3>
 <p>El comando <code>FindVariableGenes</code> calcula la varianza y la media de cada gen del dataset y guarda los genes más variables en <code>mca[[&quot;RNA]]@meta.features</code>). Para datasets grandes que usen matrices de conteos de UMIs, seleccionar genes muy variables basándose solo en el ratio varianza-media (VMR en inglés) es una estrategia eficiente y robusta. En este caso seleccionamos los 1000 genes con mayor varianza para posteriores análisis.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>mca &lt;-<span class="st"> </span><span class="kw">FindVariableFeatures</span>(mca, <span class="dt">assay =</span> <span class="st">&quot;RNA&quot;</span>, <span class="dt">selection.method =</span> <span class="st">&quot;vst&quot;</span>, <span class="dt">nfeatures =</span> <span class="dv">1000</span>)</span></code></pre></div>
-<p>Ahora calculamos y controlamos la expresión de genes mitocondriales por célula para evitar que actúe como un factor de confusión o <em>confounder</em>.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>mca &lt;-<span class="st"> </span><span class="kw">FindVariableFeatures</span>(mca, <span class="dt">assay =</span> <span class="st">&quot;RNA&quot;</span>, <span class="dt">selection.method =</span> <span class="st">&quot;vst&quot;</span>, <span class="dt">nfeatures =</span> <span class="dv">1000</span>)</span></code></pre></div>
+<p><br></p>
+</div>
+<div id="escalado-y-control-de-contaminación-mitocondrial" class="section level3">
+<h3><span class="header-section-number">2.1.3</span> Escalado y control de contaminación mitocondrial</h3>
+<p>Ahora calculamos la expresión de genes mitocondriales de las células con el comando <code>PercentageFeatureSet</code>, y con la función <code>ScaleData</code> escalamos los genes diferencialmente expresados (opción por defecto) y controlamos la contaminación mitocondrial para evitar que esta actúe como un factor de confusión o <em>confounder</em>.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>mca[[<span class="st">&quot;percent.mt&quot;</span>]] &lt;-<span class="st"> </span><span class="kw">PercentageFeatureSet</span>(mca, <span class="dt">pattern =</span> <span class="st">&quot;^mt-&quot;</span>)</span>
+<span id="cb7-2"><a href="#cb7-2"></a>mca &lt;-<span class="st"> </span><span class="kw">ScaleData</span>(mca, <span class="dt">vars.to.regress =</span> <span class="st">&quot;percent.mt&quot;</span>)</span></code></pre></div>
+<blockquote>
+<p>Nota: Para datasets grandes, procura paralelizar el workflow de Seurat con el paquete <code>future</code> (Si tu capacidad RAM te lo permite) y escalar sólo los genes variables. Como ya se comentó en el tutorial de 2700 PBMCs, sólo los genes diferencialmente expresados se usan como input del PCA, por lo que no nos reporta ningún beneficio escalar el resto de genes.</p>
+</blockquote>
+<hr />
+<p><br></p>
+</div>
+</div>
+<div id="reducción-de-la-dimensionalidad-pca" class="section level2">
+<h2><span class="header-section-number">2.2</span> Reducción de la dimensionalidad (PCA)</h2>
+<p>eee</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>mca &lt;-<span class="st"> </span><span class="kw">RunPCA</span>(mca, <span class="dt">assay =</span> <span class="st">&quot;RNA&quot;</span>, <span class="dt">npcs =</span> <span class="dv">100</span>, <span class="dt">ndims.print =</span> <span class="dv">1</span><span class="op">:</span><span class="dv">5</span>, <span class="dt">nfeatures.print =</span> <span class="dv">5</span>)</span></code></pre></div>
 </div>
 </div>
 
