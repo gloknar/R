@@ -15,8 +15,8 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   echo = TRUE,
-  message = FALSE,
-  warning = FALSE,
+  message = T,
+  warning = F,
   tidy = TRUE
 )
 ```
@@ -133,10 +133,10 @@ mca <- ScaleData(mca, vars.to.regress = "percent.mt")
 mca <- RunPCA(mca,
               assay = "RNA",
               npcs = 100,
-              ndims.print = 1:5,
-              nfeatures.print = 5)
+              nfeatures.print = 5,
+              ndims.print = 1:5)
 
-print(mca@reductions$pca, dims = 1:5, nfeatures = 5)
+# print(mca@reductions$pca, dims = 1:5, nfeatures = 5) # = mca[["pca"]]
 ```
 
 Para elegir la dimensionalidad del dataset, se podría realizar un Jackstraw, pero este dataset en concreto es muy grande, por lo que tal método queda descartado. En su lugar, podemos recurrir al elbow plot.
@@ -154,16 +154,28 @@ DimHeatmap(mca, dims = c(1:3, 70:75), cells = 500, reduction = "pca", balanced =
 
 <br>
 
-## Clustering de las células
+## Clustering
 
-Ahora agrupamos las células mediante la técnica de clustering basadas en grafos de Seurat.
+Ahora agrupamos las células mediante la técnica de clustering basadas en grafos de Seurat, ya descrita en el tutorial de 2700 PBMCs. Para el comando `FindNeighbors` usamos tantas dimensiones como las que hayamos conservado en el PCA (75), y el parámetro `nn.eps` vamos a establecerlo en $$0.5$$. El valor por defecto de `nn.eps` es 0 (busca vecinos exactos), pero para datasets grandes, se aconseja incrementar este valor (busca vecinos aproximados), ya que así conseguimos acelerar nuestro código.
 
 
 ```{r}
-mca <- FindNeighbors(mca, reduction = "pca", dims = 1:75, nn.eps = 0.5)
-mca <- FindClusters(mca, resolution = 1.4, n.start = 10) # resolution > 1.2 ya que el dataset > 3000 células
-# ?FindClusters
+mca <- FindNeighbors(mca, 
+                     reduction = "pca", 
+                     dims = 1:75,
+                     assay = "RNA",
+                     nn.eps = 0.5)  # `nn.eps = 0` sería más lento 
+
+mca <- FindClusters(mca, resolution = 3) # resolution > 1.2 ya que el dataset tiene > 3000 células
 ```
+
+
+
+***
+
+<br>
+
+## Visualización tSNE/UMAP
 
 
 ee
