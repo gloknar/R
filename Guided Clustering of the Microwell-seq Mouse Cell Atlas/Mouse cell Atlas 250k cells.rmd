@@ -15,8 +15,8 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   echo = TRUE,
-  message = T,
-  warning = F,
+  message = TRUE,
+  warning = FALSE,
   tidy = TRUE
 )
 ```
@@ -150,13 +150,22 @@ Podríamos quedarnos con todas las componentes principales que tengan una desvia
 ```{r}
 DimHeatmap(mca, dims = c(1:3, 70:75), cells = 500, reduction = "pca", balanced = T)
 ```
+
+```{r}
+DimPlot(mca, reduction = "pca", label = F) + NoLegend()
+```
+
 ***
 
 <br>
 
 ## Clustering
 
-Ahora agrupamos las células mediante la técnica de clustering basadas en grafos de Seurat, ya descrita en el tutorial de 2700 PBMCs. Para el comando `FindNeighbors` usamos tantas dimensiones como las que hayamos conservado en el PCA (75), y el parámetro `nn.eps` vamos a establecerlo en $$0.5$$. El valor por defecto de `nn.eps` es 0 (busca vecinos exactos), pero para datasets grandes, se aconseja incrementar este valor (busca vecinos aproximados), ya que así conseguimos acelerar nuestro código.
+Ahora agrupamos las células mediante la técnica de clustering basadas en grafos de Seurat, ya descrita en el tutorial de 2700 PBMCs. 
+
+Para el comando `FindNeighbors` usamos tantas dimensiones como las que hayamos conservado en el PCA (75), y el parámetro `nn.eps` vamos a establecerlo en $1.5$. El valor por defecto de `nn.eps` es 0 (busca vecinos exactos), pero para datasets grandes, se aconseja incrementar este valor (busca vecinos aproximados), ya que así conseguimos acelerar nuestro código. 
+
+Respecto al comando `FindClusters`, podemos elegir el nº de veces que se ejecuta el clustering con el parámetro `n.start`, ya que dicho parámetro determina el número de comienzos aleatorios del clustering. Al introducir esta variación al comienzo del algoritmo, generamos varios agrupamientos para nuestro dataset, y podemos elegir de todos ellos aquel clustering que genere el grafo con mayor modularidad, o sea, que genere clusters con individuos muy similares entre sí, pero muy distintos de aquellos presentes en otros clusters. El valor por defecto de `n.start` es 10, pero puedes reducirlo para acelerar el clustering. Por otro lado, se aconseja usar un valor de `resolution > 1.2` para datasets de más de 3000 células (ya que de lo contrario generaremos muy pocos clusters en comparación al tamaño del dataset).
 
 
 ```{r}
@@ -166,38 +175,101 @@ mca <- FindNeighbors(mca,
                      assay = "RNA",
                      nn.eps = 0.5)  # `nn.eps = 0` sería más lento 
 
-mca <- FindClusters(mca, resolution = 3) # resolution > 1.2 ya que el dataset tiene > 3000 células
+mca <- FindClusters(mca, resolution = 3, n.start = 10) # resolution > 1.2 ya que el dataset tiene > 3000 células
 ```
-
-
 
 ***
 
 <br>
 
-## Visualización tSNE/UMAP
+## Visualización de clusters en tSNE y UMAP
+
+Ahora visualizamos nuestro dataset en espacios dimensionales reducidos no lineales con `RunTSNE` y `RunUMAP`, respectivamente. Usamos como input de dichos comandos las componentes principales que conservamos en el paso del PCA. 
+
+Cabe destacar que si bien UMAP es una técnica de reducción de la dimensionalidad más eficiente y rápida que tSNE, también es cierto que ahora Seurat soporta el uso de `FIt-SNE`, una implementación del [laboratorio Kluger](https://arxiv.org/abs/1712.09005) de t-SNE acelerada por la transformada rápida de Fourier. Esta implementación es más rápida que el método que usa `RunTSNE` por defecto, `Rtsne`, pero para poder aprovecharlo, necesitas instalar el [software](https://github.com/KlugerLab/FIt-SNE) requerido. Afortunadamente, el repositorio incluye indicaciones claras para instalarlo en función de tu sistema operativo. Una vez instalado, puedes seleccionar la implementación a través del parámetro `tsne.method`. Además, el método `FIt-SNE` permite ser paralelizado sin necesidad de usar el paquete `future`. Aumentar el valor del parámetro `max_iter` del método `FIt-SNE` puede ayudar a mejorar la resolución de los clusters.
+
+En cuanto a UMAP se refiere, el comando `RunUMAP` en `Seurat V3.2.2` usa por defecto el método nativo de R `uwot`, por lo que no es necesario instalar paquetes adicionales. No obstante podría ser útil tomarse las molestias de instalar las dependencias necesarias para poder usar el método de Python `umap-learn` debido a que dicho wrapper permite el paralelizado de la computación en CUDA, aumentando drásticamente la velocidad de ejecución de nuestro código. Dado que mi máquina de trabajo no tiene una GPU compatible con CUDA, mostraré el código pero no lo ejecutaré. Nótese que al usar el método `umap-learn`, debemos cambiar también la métrica de `cosine` (valor por defecto) a `correlation`. Para más detalles sobre cómo ejecutar codigo paralelizable en CUDA en R, puedes revisar los apartados `1.1` y `1.2` de mi [informe](https://rpubs.com/gloknar/682833) al respecto. Finalmente, puedes ajustar los parámetros `n.neighbors` y `min.dist` de la función `RunUMAP` para mejorar la resolución de los clusters en datasets grandes.
 
 
-ee
+```{r, message = F}
+# FIt-SNE
+
+# Los parámetros `nthreads` y `max_iter` son argumentos específicos del método
+# `FIt-SNE`. Para más información sobre los argumentos que acepta `FIt-SNE`,
+# examine la función `fftRtsne` del archivo fast_tsne.R
+mca <- RunTSNE(mca, reduction = "pca", dims = 1:75, tsne.method = "FIt-SNE", 
+               nthreads = 4, max_iter = 2000)
+
+
+# UMAP
+mca <- RunUMAP(mca, reduction = "pca", dims = 1:75, umap.method = "uwot", 
+               metric = "cosine", min.dist = 0.75)
+```
+
+
+```{r, eval = F}
+# UMAP en CUDA (No se ejecuta en este informe)
+
+# Necesario para usar el método "umap-learn", independientemente de si usas CUDA o no:
+reticulate::py_install(packages ='umap-learn') 
+
+mca <- RunUMAP(mca, reduction = "pca", dims = 1:75, umap.method = "umap-learn", 
+               metric = "correlation", min.dist = 0.75)
+```
+
+<br>
+
+<br>
+
+```{r}
+# Gráfico FIt-SNE crudo
+grafico_FItsne <- DimPlot(mca, reduction = "tsne", label = F) + 
+  ggtitle("FIt-SNE") + NoLegend()
+
+grafico_FItsne
+
+
+# Gráfico UMAP crudo
+grafico_umap <- DimPlot(mca, reduction = "umap", label = F) + 
+  ggtitle("UMAP") + NoLegend()
+
+grafico_umap
+```
+
+<br>
+
+```{r, fig.width = 10}
+# Expresión génica sobre FItSNE
+expresion_genica_FItsne <- FeaturePlot(mca, features = c("S100a9", "Sftpc"), dims = c(1,2),
+                         reduction = "tsne", combine = F)
+
+expresion_genica_FItsne <- lapply(X = expresion_genica_FItsne, 
+                                  FUN = function(x) AugmentPlot(x + DarkTheme())) # Aplicamos fondo oscuro y vectorizamos
+
+# expresion_genica_FItsne  # Para ver los graficos por separado
+
+wrap_plots(expresion_genica_FItsne) # Combinamos ambos gráficos en uno solo
 
 
 
 
+# Expresión génica sobre UMAP
+expresion_genica_umap <- FeaturePlot(mca, features = c("S100a9", "Sftpc"), dims = c(1,2),
+                         reduction = "umap", combine = F)
+
+expresion_genica_umap <- lapply(X = expresion_genica_umap, 
+                                  FUN = function(x) AugmentPlot(x + DarkTheme())) # Aplicamos fondo oscuro y vectorizamos
+
+# expresion_genica_umap  # Para ver los graficos por separado
+
+wrap_plots(expresion_genica_umap) # Combinamos ambos gráficos en uno solo
+
+
+```
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-e
+```{r, eval = F}
+# Guardamos nuestro trabajo
+SaveRDS(mca, file = "./mca_final.rds")
+```
