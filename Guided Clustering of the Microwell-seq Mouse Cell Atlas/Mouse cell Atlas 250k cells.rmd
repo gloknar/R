@@ -21,6 +21,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r, echo = F}
+hora_comienzo <- Sys.time()
+```
+
 ***
 
 Adaptado de la guía publicada por el [laboratorio Satija](https://satijalab.org/seurat/v3.2/mca.html). 
@@ -40,6 +44,7 @@ El dataset MCA (Mouse Cell Atlas) fue generado por [Xiaoping y compañeros, 2018
 
 ```{r}
 library(Seurat)
+library(dplyr)
 library(patchwork)
 library(ggplot2)
 
@@ -150,6 +155,9 @@ Podríamos quedarnos con todas las componentes principales que tengan una desvia
 ```{r}
 DimHeatmap(mca, dims = c(1:3, 70:75), cells = 500, reduction = "pca", balanced = T)
 ```
+<br>
+
+Por último, podemos visualizar nuestras células representadas en el espacio del PCA (omitimos la leyenda debido al gargantuesco número de clusters que hay):
 
 ```{r}
 DimPlot(mca, reduction = "pca", label = F) + NoLegend()
@@ -275,3 +283,101 @@ Finalmente procedemos a guardar nuestro trabajo.
 # Guardamos nuestro trabajo
 SaveRDS(mca, file = "./mca_final.rds")
 ```
+
+***
+
+<br>
+
+
+## Identificación tipos celulares
+
+Si bien el archivo de origen con el que hemos trabajado ya tenía las células anotadas en función de su tejido origen, desconocemos sus tipos celulares. Por ello, podemos usar el paquete `clustifyr` para anotar nuestras células con mayor detalle.
+
+El paquete `clustifyr` no incluye el material de referencia de nuestro dataset, pero incluye las URLs de los materiales de referencia almacenados en el github de su desarrollador. Podemos ver dichos enlaces con el siguiente comando:
+
+```{r}
+library(clustifyr)
+
+clustifyr::downrefs
+```
+
+
+Una vez localizado el archivo de referencia de nuestro dataset, pegamos su URL y lo descargamos con `download.file`. Acto seguido lo cargamos en nuestro `Environment`:
+
+```{r}
+# download.file("https://github.com/rnabioco/clustifyrdata/raw/master/data/ref_MCA.rda", destfile = "ref_MCA.rda")
+
+# Cargamos el material de referencia para el dataset Mouse Cell Atlas
+load(file = "ref_MCA.rda") 
+```
+
+
+
+Ahora podemos proseguir con el workflow de `clustifyr`:
+
+```{r}
+# Calculamos el coeficiente de correlación de Spearman entre nuestros clusters y
+# los tipos celulares disponibles
+correlaciones <- clustify(input = mca[["RNA"]]@data,
+                          metadata = mca@meta.data,
+                          cluster_col = "ClusterID",
+                          ref_mat = ref_MCA,
+                          query_genes = mca@assays$RNA@var.features,
+                          obj_out = T,
+                          seurat_out = T) 
+
+correlaciones
+```
+
+
+A continuación usamos el comando `cor_to_call` para obtener el tipo celular más probable de cada clúster, o sea, aquel tipo celular que muestra el mayor coeficiente de correlación para el clúster en cuestión.
+
+```{r}
+# Mostramos los tipos celulares más probables de nuestros clusters
+asignaciones <- cor_to_call(correlaciones,
+                              metadata = mca@meta.data,
+                              cluster_col = "ClusterID")
+
+asignaciones <-  asignaciones %>% arrange(ClusterID)
+
+asignaciones
+```
+
+
+Acto segido asignamos a los clusters el tipo de célula que representan y los visualizamos sobre el UMAP (también podemos visualizarlos sobre el FIt-SNE de así desearlo):
+
+```{r}
+# Hacemos un vector con el nombre de los clusters, ordenados de 0 al 8
+nuevas.ids.clusters <-  asignaciones$type
+
+# Asignamos a los clusters los tipos celulares predichos por `clustifyr`
+names(nuevas.ids.clusters) <- levels(mca)
+mca <- RenameIdents(mca, nuevas.ids.clusters)
+grafico_umap_clustify <- DimPlot(mca, 
+                                 reduction = "umap", 
+                                 label = T, 
+                                 pt.size = 0.5) +
+                                 xlab("UMAP 1") + 
+                                 ylab("UMAP 2") + 
+                                 theme(legend.text = element_text(size = 10))
+
+# Vectorizamos el gráfico y lo visualizamos
+grafico_umap_clustify <-  AugmentPlot(plot = grafico_umap_clustify) 
+
+grafico_umap_clustify
+```
+
+***
+
+<br>
+
+
+# Tiempo de ejecución e información del sistema
+
+```{r, echo = F}
+hora_fin <- Sys.time()
+tiempo_compilado <- hora_fin - hora_comienzo
+
+cat("Este informe ejecutó todos los comandos en modo secuencial excepto por el comando RunTSNE con la implementación FIt-SNE (4 hilos) debido a la insuficiente capacidad RAM del ordenador empleado para el dataset en cuestión, y tardó en compilarse", format(tiempo_compilado, format = "%M:%S"), ".", "\n\nEl SO empleado fue Windows 10 x64 compilación 19042, y el hardware se compone de un ordenador de sobremesa con un procesador Ryzen 9 3900X @ 3.8GHz, 16GB de RAM y una GPU R9 Fury (no compatible con CUDA).")
+```
+
