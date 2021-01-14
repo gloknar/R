@@ -140,8 +140,11 @@ mca <- RunPCA(mca,
               npcs = 100,
               nfeatures.print = 5,
               ndims.print = 1:5)
+```
 
-# print(mca@reductions$pca, dims = 1:5, nfeatures = 5) # = mca[["pca"]]
+```{r, echo = F, eval = F}
+# Por si quieres ver información sobre genes o componentes principales específicas:
+print(mca@reductions$pca, dims = 1:5, nfeatures = 5) # = mca[["pca"]]
 ```
 
 Para elegir la dimensionalidad del dataset, se podría realizar un Jackstraw, pero este dataset en concreto es muy grande, por lo que tal método queda descartado. En su lugar, podemos recurrir al elbow plot.
@@ -214,7 +217,7 @@ mca <- RunTSNE(mca, reduction = "pca", dims = 1:75, tsne.method = "FIt-SNE",
 mca <- RunUMAP(mca, reduction = "pca", dims = 1:75, umap.method = "uwot", 
                metric = "cosine", min.dist = 0.75)
 ```
-
+<br>
 
 ```{r, eval = F}
 # UMAP en CUDA (No se ejecuta en este informe)
@@ -299,6 +302,9 @@ El paquete `clustifyr` no incluye el material de referencia de nuestro dataset, 
 library(clustifyr)
 
 clustifyr::downrefs
+
+# Puedes encontrar más información sobre los materiales de referencia en el github de clustifyrdata:
+# https://github.com/rnabioco/clustifyrdata
 ```
 
 
@@ -336,7 +342,7 @@ asignaciones <- cor_to_call(correlaciones,
                               metadata = mca@meta.data,
                               cluster_col = "ClusterID")
 
-asignaciones <-  asignaciones %>% arrange(ClusterID)
+asignaciones <-  asignaciones %>% arrange(ClusterID) # Arreglar eso de bladder_1, bladder_10, bladder_11, bladder_2...
 
 head(asignaciones)
 ```
@@ -370,12 +376,12 @@ grafico_umap_clustify
 <br>
 
 
-# Tiempo de ejecución e información del sistema
+# Tiempo de ejecución e información del sistema {-}
 
 ```{r, echo = F}
 hora_fin <- Sys.time()
 tiempo_compilado <- hora_fin - hora_comienzo
 
-cat("Este informe ejecutó todos los comandos en modo secuencial excepto por el comando RunTSNE con la implementación FIt-SNE (4 hilos) debido a la insuficiente capacidad RAM del ordenador empleado para el dataset en cuestión, y tardó en compilarse", format(tiempo_compilado, format = "%M:%S"), ".", "\n\nEl SO empleado fue Windows 10 x64 compilación 19042, y el hardware se compone de un ordenador de sobremesa con un procesador Ryzen 9 3900X @ 3.8GHz, 16GB de RAM y una GPU R9 Fury (no compatible con CUDA).")
+cat("Este informe ejecutó todos los comandos en modo secuencial excepto por el comando RunTSNE con la implementación FIt-SNE (4 hilos) debido a la insuficiente capacidad RAM del ordenador empleado para el dataset en cuestión, y tardó en compilarse", format(tiempo_compilado, format = "%H:%M:%S"), ".", "\n\nEl SO empleado fue Windows 10 x64 compilación 19042, y el hardware se compone de un ordenador de sobremesa con un procesador Ryzen 9 3900X @ 3.8GHz, 16GB de RAM y una GPU R9 Fury (no compatible con CUDA).")
 ```
 
