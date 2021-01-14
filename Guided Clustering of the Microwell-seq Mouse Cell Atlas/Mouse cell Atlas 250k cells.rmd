@@ -188,10 +188,10 @@ Ahora visualizamos nuestro dataset en espacios dimensionales reducidos no lineal
 
 Cabe destacar que si bien UMAP es una técnica de reducción de la dimensionalidad más eficiente y rápida que tSNE, también es cierto que ahora Seurat soporta el uso de `FIt-SNE`, una implementación del [laboratorio Kluger](https://arxiv.org/abs/1712.09005) de t-SNE acelerada por la transformada rápida de Fourier. Esta implementación es más rápida que el método que usa `RunTSNE` por defecto, `Rtsne`, pero para poder aprovecharlo, necesitas instalar el [software](https://github.com/KlugerLab/FIt-SNE) requerido. Afortunadamente, el repositorio incluye indicaciones claras para instalarlo en función de tu sistema operativo. Una vez instalado, puedes seleccionar la implementación a través del parámetro `tsne.method`. Además, el método `FIt-SNE` permite ser paralelizado sin necesidad de usar el paquete `future`. Aumentar el valor del parámetro `max_iter` del método `FIt-SNE` puede ayudar a mejorar la resolución de los clusters.
 
-En cuanto a UMAP se refiere, el comando `RunUMAP` en `Seurat V3.2.2` usa por defecto el método nativo de R `uwot`, por lo que no es necesario instalar paquetes adicionales. No obstante podría ser útil tomarse las molestias de instalar las dependencias necesarias para poder usar el método de Python `umap-learn` debido a que dicho wrapper permite el paralelizado de la computación en CUDA, aumentando drásticamente la velocidad de ejecución de nuestro código. Dado que mi máquina de trabajo no tiene una GPU compatible con CUDA, mostraré el código pero no lo ejecutaré. Nótese que al usar el método `umap-learn`, debemos cambiar también la métrica de `cosine` (valor por defecto) a `correlation`. Para más detalles sobre cómo ejecutar codigo paralelizable en CUDA en R, puedes revisar los apartados `1.1` y `1.2` de mi [informe](https://rpubs.com/gloknar/682833) al respecto. Finalmente, puedes ajustar los parámetros `n.neighbors` y `min.dist` de la función `RunUMAP` para mejorar la resolución de los clusters en datasets grandes.
+En cuanto a UMAP se refiere, el comando `RunUMAP` en `Seurat V3.2.2` usa por defecto el método nativo de R `uwot`, por lo que no es necesario instalar paquetes adicionales. No obstante podría ser útil tomarse las molestias de instalar las dependencias necesarias para poder usar el método de Python `umap-learn` debido a que dicho wrapper permite el paralelizado de la computación en CUDA, aumentando drásticamente la velocidad de ejecución de nuestro código. Dado que mi máquina de trabajo no tiene una GPU compatible con CUDA, mostraré el código pero no lo ejecutaré. Nótese que al usar el método `umap-learn`, debemos cambiar también la métrica de `cosine` (valor por defecto) a `correlation`. Para más detalles sobre cómo ejecutar código paralelizable en CUDA en R, puedes revisar los apartados `1.1` y `1.2` de mi [informe](https://rpubs.com/gloknar/682833) al respecto. Finalmente, puedes ajustar los parámetros `n.neighbors` y `min.dist` de la función `RunUMAP` para mejorar la resolución de los clusters en datasets grandes.
 
 
-```{r, message = F}
+```{r}
 # FIt-SNE
 
 # Los parámetros `nthreads` y `max_iter` son argumentos específicos del método
@@ -199,8 +199,9 @@ En cuanto a UMAP se refiere, el comando `RunUMAP` en `Seurat V3.2.2` usa por def
 # examine la función `fftRtsne` del archivo fast_tsne.R
 mca <- RunTSNE(mca, reduction = "pca", dims = 1:75, tsne.method = "FIt-SNE", 
                nthreads = 4, max_iter = 2000)
+```
 
-
+```{r, collapse = T}
 # UMAP
 mca <- RunUMAP(mca, reduction = "pca", dims = 1:75, umap.method = "uwot", 
                metric = "cosine", min.dist = 0.75)
@@ -223,28 +224,26 @@ mca <- RunUMAP(mca, reduction = "pca", dims = 1:75, umap.method = "umap-learn",
 
 ```{r}
 # Gráfico FIt-SNE crudo
-grafico_FItsne <- DimPlot(mca, reduction = "tsne", label = F) + 
-  ggtitle("FIt-SNE") + NoLegend()
+grafico_FItsne <- DimPlot(mca, reduction = "tsne", label = F) + ggtitle("FIt-SNE") + NoLegend()
 
 grafico_FItsne
 
 
 # Gráfico UMAP crudo
-grafico_umap <- DimPlot(mca, reduction = "umap", label = F) + 
-  ggtitle("UMAP") + NoLegend()
+grafico_umap <- DimPlot(mca, reduction = "umap", label = F) + ggtitle("UMAP") + NoLegend()
 
 grafico_umap
 ```
 
 <br>
 
-```{r, fig.width = 10}
-# Expresión génica sobre FItSNE
-expresion_genica_FItsne <- FeaturePlot(mca, features = c("S100a9", "Sftpc"), dims = c(1,2),
-                         reduction = "tsne", combine = F)
+```{r, fig.width = 14}
+# Expresión génica sobre FIt-SNE
+expresion_genica_FItsne <- FeaturePlot(mca, features = c("S100a9", "Sftpc"), 
+                                       dims = c(1,2), reduction = "tsne", combine = F)
 
 expresion_genica_FItsne <- lapply(X = expresion_genica_FItsne, 
-                                  FUN = function(x) AugmentPlot(x + DarkTheme())) # Aplicamos fondo oscuro y vectorizamos
+                                  FUN = function(x) AugmentPlot(x + DarkTheme())) # Aplicamos fondo oscuro y vectorizamos el gráfico
 
 # expresion_genica_FItsne  # Para ver los graficos por separado
 
@@ -254,11 +253,11 @@ wrap_plots(expresion_genica_FItsne) # Combinamos ambos gráficos en uno solo
 
 
 # Expresión génica sobre UMAP
-expresion_genica_umap <- FeaturePlot(mca, features = c("S100a9", "Sftpc"), dims = c(1,2),
-                         reduction = "umap", combine = F)
+expresion_genica_umap <- FeaturePlot(mca, features = c("S100a9", "Sftpc"), 
+                                     dims = c(1,2), reduction = "umap", combine = F)
 
 expresion_genica_umap <- lapply(X = expresion_genica_umap, 
-                                  FUN = function(x) AugmentPlot(x + DarkTheme())) # Aplicamos fondo oscuro y vectorizamos
+                                  FUN = function(x) AugmentPlot(x + DarkTheme())) # Aplicamos fondo oscuro y vectorizamos el gráfico
 
 # expresion_genica_umap  # Para ver los graficos por separado
 
@@ -268,6 +267,9 @@ wrap_plots(expresion_genica_umap) # Combinamos ambos gráficos en uno solo
 ```
 
 
+<br>
+
+Finalmente procedemos a guardar nuestro trabajo.
 
 ```{r, eval = F}
 # Guardamos nuestro trabajo
