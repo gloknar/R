@@ -324,9 +324,7 @@ correlaciones <- clustify(input = mca[["RNA"]]@data,
                           ref_mat = ref_MCA,
                           query_genes = mca@assays$RNA@var.features,
                           obj_out = T,
-                          seurat_out = T) 
-
-correlaciones
+                          seurat_out = T)
 ```
 
 
@@ -340,14 +338,14 @@ asignaciones <- cor_to_call(correlaciones,
 
 asignaciones <-  asignaciones %>% arrange(ClusterID)
 
-asignaciones
+head(asignaciones)
 ```
 
 
 Acto segido asignamos a los clusters el tipo de célula que representan y los visualizamos sobre el UMAP (también podemos visualizarlos sobre el FIt-SNE de así desearlo):
 
 ```{r}
-# Hacemos un vector con el nombre de los clusters, ordenados de 0 al 8
+# Hacemos un vector con el nombre de los clusters ordenados 
 nuevas.ids.clusters <-  asignaciones$type
 
 # Asignamos a los clusters los tipos celulares predichos por `clustifyr`
