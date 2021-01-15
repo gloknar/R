@@ -19,6 +19,9 @@ knitr::opts_chunk$set(
   warning = FALSE,
   tidy = TRUE
 )
+##################################################
+#######        Encoded in UTF-8        ###########
+##################################################
 ```
 
 ```{r, echo = F}
@@ -199,7 +202,7 @@ Ahora visualizamos nuestro dataset en espacios dimensionales reducidos no lineal
 
 Cabe destacar que si bien UMAP es una técnica de reducción de la dimensionalidad más eficiente y rápida que tSNE, también es cierto que ahora Seurat soporta el uso de `FIt-SNE`, una implementación del [laboratorio Kluger](https://arxiv.org/abs/1712.09005) de t-SNE acelerada por la transformada rápida de Fourier. Esta implementación es más rápida que el método que usa `RunTSNE` por defecto, `Rtsne`, pero para poder aprovecharlo, necesitas instalar el [software](https://github.com/KlugerLab/FIt-SNE) requerido. Afortunadamente, el repositorio incluye indicaciones claras para instalarlo en función de tu sistema operativo. Una vez instalado, puedes seleccionar la implementación a través del parámetro `tsne.method`. Además, el método `FIt-SNE` permite ser paralelizado sin necesidad de usar el paquete `future`. Aumentar el valor del parámetro `max_iter` del método `FIt-SNE` puede ayudar a mejorar la resolución de los clusters.
 
-En cuanto a UMAP se refiere, el comando `RunUMAP` en `Seurat V3.2.2` usa por defecto el método nativo de R `uwot`, por lo que no es necesario instalar paquetes adicionales. No obstante podría ser útil tomarse las molestias de instalar las dependencias necesarias para poder usar el método de Python `umap-learn` debido a que dicho wrapper permite el paralelizado de la computación en CUDA, aumentando drásticamente la velocidad de ejecución de nuestro código. Dado que mi máquina de trabajo no tiene una GPU compatible con CUDA, mostraré el código pero no lo ejecutaré. Nótese que al usar el método `umap-learn`, debemos cambiar también la métrica de `cosine` (valor por defecto) a `correlation`. Para más detalles sobre cómo ejecutar código paralelizable en CUDA en R, puedes revisar los apartados `1.1` y `1.2` de mi [informe](https://rpubs.com/gloknar/682833) al respecto. Finalmente, puedes ajustar los parámetros `n.neighbors` y `min.dist` de la función `RunUMAP` para mejorar la resolución de los clusters en datasets grandes.
+En cuanto a UMAP se refiere, el comando `RunUMAP` en `Seurat V3.2.2` usa por defecto el método nativo de R `uwot`, por lo que no es necesario instalar paquetes adicionales. No obstante podría ser útil tomarse las molestias de instalar las dependencias necesarias para poder usar el método de Python `umap-learn` debido a que dicho wrapper permite el paralelizado de la computación en CUDA, aumentando drásticamente la velocidad de ejecución de nuestro código. Dado que mi máquina de trabajo no tiene una GPU compatible con CUDA, mostraré el código pero no lo ejecutaré. Nótese que al usar el método `umap-learn`, debemos cambiar también la métrica de `cosine` (valor por defecto) a `correlation`. Para más detalles sobre cómo ejecutar código paralelizable en CUDA en R, puedes revisar los apartados `1.1` y `1.2` de mi [informe](https://github.com/gloknar/R-Utilities/tree/master/Tensorflow%20en%20gpu) al respecto. Finalmente, puedes ajustar los parámetros `n.neighbors` y `min.dist` de la función `RunUMAP` para mejorar la resolución de los clusters en datasets grandes.
 
 
 ```{r}
@@ -273,8 +276,6 @@ expresion_genica_umap <- lapply(X = expresion_genica_umap,
 # expresion_genica_umap  # Para ver los graficos por separado
 
 wrap_plots(expresion_genica_umap) # Combinamos ambos gráficos en uno solo
-
-
 ```
 
 
@@ -299,19 +300,17 @@ Si bien el archivo de origen con el que hemos trabajado ya tenía las células a
 El paquete `clustifyr` no incluye el material de referencia de nuestro dataset, pero incluye las URLs de los materiales de referencia almacenados en el github de su desarrollador. Podemos ver dichos enlaces con el siguiente comando:
 
 ```{r}
-library(clustifyr)
-
-clustifyr::downrefs
-
 # Puedes encontrar más información sobre los materiales de referencia en el github de clustifyrdata:
 # https://github.com/rnabioco/clustifyrdata
+library(clustifyr)
+downrefs
 ```
 
 
-Una vez localizado el archivo de referencia de nuestro dataset, pegamos su URL y lo descargamos con `download.file`. Acto seguido lo cargamos en nuestro `Environment`:
+Una vez localizado el archivo de referencia de nuestro dataset, copiamos su URL y lo descargamos con `download.file`. Acto seguido lo cargamos en nuestro `Environment`.
 
 ```{r}
-# download.file("https://github.com/rnabioco/clustifyrdata/raw/master/data/ref_MCA.rda", destfile = "ref_MCA.rda")
+# download.file("https://github.com/rnabioco/clustifyrdata/raw/master/data/ref_MCA.rda", destfile = "./ref_MCA.rda")
 
 # Cargamos el material de referencia para el dataset Mouse Cell Atlas
 load(file = "ref_MCA.rda") 
@@ -319,14 +318,14 @@ load(file = "ref_MCA.rda")
 
 
 
-Ahora podemos proseguir con el workflow de `clustifyr`:
+Ahora podemos proseguir con el workflow de `clustifyr`.
 
 ```{r}
-# Calculamos el coeficiente de correlación de Spearman entre nuestros clusters y
-# los tipos celulares disponibles
+# Calculamos el coeficiente de correlación de Spearman entre los clusters y los
+# tipos celulares disponibles
 correlaciones <- clustify(input = mca[["RNA"]]@data,
                           metadata = mca@meta.data,
-                          cluster_col = "ClusterID",
+                          cluster_col = "seurat_clusters",
                           ref_mat = ref_MCA,
                           query_genes = mca@assays$RNA@var.features,
                           obj_out = T,
@@ -334,41 +333,51 @@ correlaciones <- clustify(input = mca[["RNA"]]@data,
 ```
 
 
-A continuación usamos el comando `cor_to_call` para obtener el tipo celular más probable de cada clúster, o sea, aquel tipo celular que muestra el mayor coeficiente de correlación para el clúster en cuestión.
+A continuación usamos el comando `cor_to_call` para obtener el tipo celular más probable de cada clúster y ordenamos alfabéticamente el dataframe resultante en función del nombre de los clusters.
 
 ```{r}
 # Mostramos los tipos celulares más probables de nuestros clusters
 asignaciones <- cor_to_call(correlaciones,
-                              metadata = mca@meta.data,
-                              cluster_col = "ClusterID")
+                            metadata = mca@meta.data,
+                            cluster_col = "seurat_clusters")
 
-asignaciones <-  asignaciones %>% arrange(ClusterID) # Arreglar eso de bladder_1, bladder_10, bladder_11, bladder_2...
+head(asignaciones) # Desordenado
 
-head(asignaciones)
+
+# Ordenamos los clusters del objeto `asignaciones` por orden alfabético
+
+# install.packages("remotes")
+# remotes::install_github("jmw86069/jamba")
+library("jamba")
+asignaciones <- mixedSortDF(asignaciones, byCols = 1) # mixedSortDF evita 1, 11, 12... 19, 2, 20, 21...
+head(asignaciones)  # Ordenado
 ```
 
 
-Acto segido asignamos a los clusters el tipo de célula que representan y los visualizamos sobre el UMAP (también podemos visualizarlos sobre el FIt-SNE de así desearlo):
+Acto segido asignamos a los clusters el tipo de célula que representan y los visualizamos sobre el UMAP (también podemos visualizarlos sobre el FIt-SNE de así desearlo).
 
 ```{r}
-# Hacemos un vector con el nombre de los clusters ordenados 
-nuevas.ids.clusters <-  asignaciones$type
+# Hacemos un vector con el tipo celular de los clusters ordenados 
+tipo.celular.clusters <-  asignaciones$type
+
+# Ordenamos los clusters en el objeto mca@meta.data para que esté ordenado de la
+# misma manera que el objeto tipo.celular.clusters
+mca@meta.data <- mixedSortDF(mca@meta.data, byCols = 10) # columna 10 = seurat_clusters
 
 # Asignamos a los clusters los tipos celulares predichos por `clustifyr`
-names(nuevas.ids.clusters) <- levels(mca)
-mca <- RenameIdents(mca, nuevas.ids.clusters)
+names(tipo.celular.clusters) <- levels(mca)
+mca <- RenameIdents(mca, tipo.celular.clusters)
 grafico_umap_clustify <- DimPlot(mca, 
                                  reduction = "umap", 
-                                 label = T, 
-                                 pt.size = 0.5) +
-                                 xlab("UMAP 1") + 
-                                 ylab("UMAP 2") + 
-                                 theme(legend.text = element_text(size = 10))
+                                 label = T,
+                                 repel = T,
+                                 label.box = T,
+                                 label.size = 2,
+                                 pt.size = 0.5) + theme(legend.text = element_text(size = 10))
 
-# Vectorizamos el gráfico y lo visualizamos
-grafico_umap_clustify <-  AugmentPlot(plot = grafico_umap_clustify) 
-
-grafico_umap_clustify
+# Visualizamos el gráfico
+grafico_umap_clustify <- AugmentPlot(plot = grafico_umap_clustify, dpi = 600, width = 15, height = 15)
+grafico_umap_clustify # Las etiquetas podrian verse mejor...
 ```
 
 ***
@@ -382,6 +391,6 @@ grafico_umap_clustify
 hora_fin <- Sys.time()
 tiempo_compilado <- hora_fin - hora_comienzo
 
-cat("Este informe ejecutó todos los comandos en modo secuencial excepto por el comando RunTSNE con la implementación FIt-SNE (4 hilos) debido a la insuficiente capacidad RAM del ordenador empleado para el dataset en cuestión, y tardó en compilarse", format(tiempo_compilado, format = "%H:%M:%S"), ".", "\n\nEl SO empleado fue Windows 10 x64 compilación 19042, y el hardware se compone de un ordenador de sobremesa con un procesador Ryzen 9 3900X @ 3.8GHz, 16GB de RAM y una GPU R9 Fury (no compatible con CUDA).")
+cat("Este informe ejecutó todos los comandos en modo secuencial excepto por el comando RunTSNE con la implementación FIt-SNE (4 hilos) debido a la insuficiente capacidad RAM del ordenador empleado para el dataset en cuestión, y tardó en compilarse", format(tiempo_compilado, format = "%H:%M:%S"), ".", "\n\nEl SO empleado fue Windows 10 x64 compilación 19042, y el hardware se compone de un ordenador de sobremesa con un procesador Ryzen 9 3900X @ 3.8GHz, 16GB de RAM y una GPU R9 Fury (no compatible con CUDA). ¿Puedes mejorarlo?")
 ```
 
