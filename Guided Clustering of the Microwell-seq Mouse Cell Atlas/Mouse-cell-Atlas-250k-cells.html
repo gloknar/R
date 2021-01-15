@@ -3035,7 +3035,7 @@ div.tocify {
 ## Running Louvain algorithm...
 ## Maximum modularity in 10 random starts: 0.9356
 ## Number of communities: 178
-## Elapsed time: 92 seconds</code></pre>
+## Elapsed time: 94 seconds</code></pre>
 <hr />
 <p><br></p>
 </div>
@@ -3043,7 +3043,7 @@ div.tocify {
 <h2><span class="header-section-number">2.4</span> Visualización de clusters en tSNE y UMAP</h2>
 <p>Ahora visualizamos nuestro dataset en espacios dimensionales reducidos no lineales con <code>RunTSNE</code> y <code>RunUMAP</code>, respectivamente. Usamos como input de dichos comandos las componentes principales que conservamos en el paso del PCA.</p>
 <p>Cabe destacar que si bien UMAP es una técnica de reducción de la dimensionalidad más eficiente y rápida que tSNE, también es cierto que ahora Seurat soporta el uso de <code>FIt-SNE</code>, una implementación del <a href="https://arxiv.org/abs/1712.09005">laboratorio Kluger</a> de t-SNE acelerada por la transformada rápida de Fourier. Esta implementación es más rápida que el método que usa <code>RunTSNE</code> por defecto, <code>Rtsne</code>, pero para poder aprovecharlo, necesitas instalar el <a href="https://github.com/KlugerLab/FIt-SNE">software</a> requerido. Afortunadamente, el repositorio incluye indicaciones claras para instalarlo en función de tu sistema operativo. Una vez instalado, puedes seleccionar la implementación a través del parámetro <code>tsne.method</code>. Además, el método <code>FIt-SNE</code> permite ser paralelizado sin necesidad de usar el paquete <code>future</code>. Aumentar el valor del parámetro <code>max_iter</code> del método <code>FIt-SNE</code> puede ayudar a mejorar la resolución de los clusters.</p>
-<p>En cuanto a UMAP se refiere, el comando <code>RunUMAP</code> en <code>Seurat V3.2.2</code> usa por defecto el método nativo de R <code>uwot</code>, por lo que no es necesario instalar paquetes adicionales. No obstante podría ser útil tomarse las molestias de instalar las dependencias necesarias para poder usar el método de Python <code>umap-learn</code> debido a que dicho wrapper permite el paralelizado de la computación en CUDA, aumentando drásticamente la velocidad de ejecución de nuestro código. Dado que mi máquina de trabajo no tiene una GPU compatible con CUDA, mostraré el código pero no lo ejecutaré. Nótese que al usar el método <code>umap-learn</code>, debemos cambiar también la métrica de <code>cosine</code> (valor por defecto) a <code>correlation</code>. Para más detalles sobre cómo ejecutar código paralelizable en CUDA en R, puedes revisar los apartados <code>1.1</code> y <code>1.2</code> de mi <a href="https://rpubs.com/gloknar/682833">informe</a> al respecto. Finalmente, puedes ajustar los parámetros <code>n.neighbors</code> y <code>min.dist</code> de la función <code>RunUMAP</code> para mejorar la resolución de los clusters en datasets grandes.</p>
+<p>En cuanto a UMAP se refiere, el comando <code>RunUMAP</code> en <code>Seurat V3.2.2</code> usa por defecto el método nativo de R <code>uwot</code>, por lo que no es necesario instalar paquetes adicionales. No obstante podría ser útil tomarse las molestias de instalar las dependencias necesarias para poder usar el método de Python <code>umap-learn</code> debido a que dicho wrapper permite el paralelizado de la computación en CUDA, aumentando drásticamente la velocidad de ejecución de nuestro código. Dado que mi máquina de trabajo no tiene una GPU compatible con CUDA, mostraré el código pero no lo ejecutaré. Nótese que al usar el método <code>umap-learn</code>, debemos cambiar también la métrica de <code>cosine</code> (valor por defecto) a <code>correlation</code>. Para más detalles sobre cómo ejecutar código paralelizable en CUDA en R, puedes revisar los apartados <code>1.1</code> y <code>1.2</code> de mi <a href="https://github.com/gloknar/R-Utilities/tree/master/Tensorflow%20en%20gpu">informe</a> al respecto. Finalmente, puedes ajustar los parámetros <code>n.neighbors</code> y <code>min.dist</code> de la función <code>RunUMAP</code> para mejorar la resolución de los clusters en datasets grandes.</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="co"># FIt-SNE</span></span>
 <span id="cb24-2"><a href="#cb24-2"></a></span>
 <span id="cb24-3"><a href="#cb24-3"></a><span class="co"># Los parámetros `nthreads` y `max_iter` son argumentos específicos del método</span></span>
@@ -3055,20 +3055,20 @@ div.tocify {
 <div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="co"># UMAP</span></span>
 <span id="cb26-2"><a href="#cb26-2"></a>mca &lt;-<span class="st"> </span><span class="kw">RunUMAP</span>(mca, <span class="dt">reduction =</span> <span class="st">&quot;pca&quot;</span>, <span class="dt">dims =</span> <span class="dv">1</span><span class="op">:</span><span class="dv">75</span>, <span class="dt">umap.method =</span> <span class="st">&quot;uwot&quot;</span>, <span class="dt">metric =</span> <span class="st">&quot;cosine&quot;</span>, </span>
 <span id="cb26-3"><a href="#cb26-3"></a>    <span class="dt">min.dist =</span> <span class="fl">0.75</span>)</span>
-<span id="cb26-4"><a href="#cb26-4"></a><span class="co">## 21:32:59 UMAP embedding parameters a = 0.2734 b = 1.622</span></span>
-<span id="cb26-5"><a href="#cb26-5"></a><span class="co">## 21:32:59 Read 242533 rows and found 75 numeric columns</span></span>
-<span id="cb26-6"><a href="#cb26-6"></a><span class="co">## 21:32:59 Using Annoy for neighbor search, n_neighbors = 30</span></span>
-<span id="cb26-7"><a href="#cb26-7"></a><span class="co">## 21:32:59 Building Annoy index with metric = cosine, n_trees = 50</span></span>
+<span id="cb26-4"><a href="#cb26-4"></a><span class="co">## 23:10:25 UMAP embedding parameters a = 0.2734 b = 1.622</span></span>
+<span id="cb26-5"><a href="#cb26-5"></a><span class="co">## 23:10:26 Read 242533 rows and found 75 numeric columns</span></span>
+<span id="cb26-6"><a href="#cb26-6"></a><span class="co">## 23:10:26 Using Annoy for neighbor search, n_neighbors = 30</span></span>
+<span id="cb26-7"><a href="#cb26-7"></a><span class="co">## 23:10:26 Building Annoy index with metric = cosine, n_trees = 50</span></span>
 <span id="cb26-8"><a href="#cb26-8"></a><span class="co">## 0%   10   20   30   40   50   60   70   80   90   100%</span></span>
 <span id="cb26-9"><a href="#cb26-9"></a><span class="co">## [----|----|----|----|----|----|----|----|----|----|</span></span>
 <span id="cb26-10"><a href="#cb26-10"></a><span class="co">## **************************************************|</span></span>
-<span id="cb26-11"><a href="#cb26-11"></a><span class="co">## 21:33:46 Writing NN index file to temp file C:\Users\Adam_\AppData\Local\Temp\Rtmp0G5MAB\file5a84072424c</span></span>
-<span id="cb26-12"><a href="#cb26-12"></a><span class="co">## 21:33:46 Searching Annoy index using 1 thread, search_k = 3000</span></span>
-<span id="cb26-13"><a href="#cb26-13"></a><span class="co">## 21:35:02 Annoy recall = 100%</span></span>
-<span id="cb26-14"><a href="#cb26-14"></a><span class="co">## 21:35:02 Commencing smooth kNN distance calibration using 1 thread</span></span>
-<span id="cb26-15"><a href="#cb26-15"></a><span class="co">## 21:35:12 Initializing from normalized Laplacian + noise</span></span>
-<span id="cb26-16"><a href="#cb26-16"></a><span class="co">## 21:38:57 Commencing optimization for 200 epochs, with 11349282 positive edges</span></span>
-<span id="cb26-17"><a href="#cb26-17"></a><span class="co">## 21:42:45 Optimization finished</span></span></code></pre></div>
+<span id="cb26-11"><a href="#cb26-11"></a><span class="co">## 23:11:13 Writing NN index file to temp file C:\Users\Adam_\AppData\Local\Temp\Rtmpq8wquT\file19103d326e5b</span></span>
+<span id="cb26-12"><a href="#cb26-12"></a><span class="co">## 23:11:13 Searching Annoy index using 1 thread, search_k = 3000</span></span>
+<span id="cb26-13"><a href="#cb26-13"></a><span class="co">## 23:12:29 Annoy recall = 100%</span></span>
+<span id="cb26-14"><a href="#cb26-14"></a><span class="co">## 23:12:30 Commencing smooth kNN distance calibration using 1 thread</span></span>
+<span id="cb26-15"><a href="#cb26-15"></a><span class="co">## 23:12:39 Initializing from normalized Laplacian + noise</span></span>
+<span id="cb26-16"><a href="#cb26-16"></a><span class="co">## 23:15:50 Commencing optimization for 200 epochs, with 11349282 positive edges</span></span>
+<span id="cb26-17"><a href="#cb26-17"></a><span class="co">## 23:19:20 Optimization finished</span></span></code></pre></div>
 <p><br></p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="co"># UMAP en CUDA (No se ejecuta en este informe)</span></span>
 <span id="cb27-2"><a href="#cb27-2"></a></span>
@@ -3191,7 +3191,7 @@ div.tocify {
 </div>
 <div id="tiempo-de-ejecución-e-información-del-sistema" class="section level1 unnumbered">
 <h1>Tiempo de ejecución e información del sistema</h1>
-<pre><code>## Este informe ejecutó todos los comandos en modo secuencial excepto por el comando RunTSNE con la implementación FIt-SNE (4 hilos) debido a la insuficiente capacidad RAM del ordenador empleado para el dataset en cuestión, y tardó en compilarse 59.27509 mins . 
+<pre><code>## Este informe ejecutó todos los comandos en modo secuencial excepto por el comando RunTSNE con la implementación FIt-SNE (4 hilos) debido a la insuficiente capacidad RAM del ordenador empleado para el dataset en cuestión, y tardó en compilarse 55.21193 mins . 
 ## 
 ## El SO empleado fue Windows 10 x64 compilación 19042, y el hardware se compone de un ordenador de sobremesa con un procesador Ryzen 9 3900X @ 3.8GHz, 16GB de RAM y una GPU R9 Fury (no compatible con CUDA). ¿Puedes mejorarlo?</code></pre>
 </div>
