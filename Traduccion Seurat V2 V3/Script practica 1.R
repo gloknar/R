@@ -1,6 +1,9 @@
+# Práctica 1 en Seurat V3.2 y R 3.6.1
+
 ##################################################
 #######        Encoded in UTF-8        ###########
 ##################################################
+
 
 
 # Instalación monocle3 en R 3.6.1
@@ -38,9 +41,13 @@ library("monocle3")
 set.seed(1234567)
 
 
+# Leemos matriz de conteos UMIs (contiene valores separados por tabuladores)
+sc3 <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/D3Ecounts.txt", sep = "\t", header = T)
+
+head(sc3[1:10, 1:10])
 
 
-
-
-
-
+# Formateamos la matriz para que quede más bonita y ordenada
+rownames(sc3) <- sc3$Geneid
+sc3 <- sc3[,2:ncol(sc3)]
+head(sc3[1:10, 1:10])
