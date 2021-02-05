@@ -100,8 +100,10 @@ curl_download(url_lecturas, destfile = "pbmc3k_filtered_gene_bc_matrices.tar.gz"
 untar("pbmc3k_filtered_gene_bc_matrices.tar.gz", exdir = "./")
 
 
-# Cargamos la matriz de conteos de nuestras 2.700 PBMCs
+# Cargamos la matriz de conteos de nuestras 2.700 PBMCs y visualizamos los 10
+# primeros genes y células
 datos.pbmc <- Read10X(data.dir = "./filtered_gene_bc_matrices/hg19/")
+head(datos.pbmc[1:10, 1:10])
 
 
 # Inicializamos el objeto Seurat con los datos crudos (no normalizados)
