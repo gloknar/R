@@ -179,17 +179,58 @@ FeatureScatter(object = cm,
 En el gráfico anterior se observa que hay una relación (aunque no muy buena, dado que R = 0.44) entre el nº de genes que expresa una célula y el nº de transcritos de ARN que contiene la susodicha, lo cual es lógico.
 
 
+<br>
 
 
+Podemos excluir del análisis aquellas células que presenten un valor anormalmente elevado de transcritos con el comando `subset`:
+
+```{r}
+# Nota: Seurat V2 usa "FilterCells", Seurat V3 usa "subset" 
+cm <- subset(x = cm, subset = nCount_RNA < 1e+07)
+
+max(cm@meta.data$nCount_RNA)
+```
+
+***
+
+<br>
+
+# Normalización
+
+Tras eliminar células indeseadas del dataset, el siguiente paso es normalizar los datos. Por defecto usamos `LogNormalize`, método ya explicado en el [tutorial](https://github.com/gloknar/R-Utilities/blob/master/Tutorial%20Seurat%202700%20PBMCs/Tutorial-Seurat-2700-PBMCs.html) de 2700 PBMCs.
+
+Nótese que siempre podemos utilizar el método `sctransform` en lugar de `LogNormalize` para obtener una mejor resolución de los datos biológicos en cuestión (véase el [tutorial](https://satijalab.org/seurat/articles/sctransform_vignette.html) pertinente del laboratorio Satija) 
+
+```{r}
+cm <- NormalizeData(cm, normalization.method = "LogNormalize", scale.factor = 10000)
+```
+***
+
+<br>
+
+# Genes altamente variables
+
+Seurat calcula los genes altamente variables y centra los posteriores análisis en ellos. El método `mvp` (mean.var.plot) del comando `FindVariableGenes` calcula la expresión media y la dispersión (desviación estándar) de cada gen, luego coloca los genes en grupos (bins) y finalmente calcula el z-score para la dispersión dentro de cada grupo. Esto permite controlar la fuerte relación entre la varianza y la expresión media de cada gen. No obstante, el método por defecto en Seurat V3 es `vst`.
 
 
+```{r, message = F}
+# Nota: Seurat V2 usa "FindVariableGenes", Seurat V3 usa "FindVariableFeatures"
+cm <- FindVariableFeatures(cm, selection.method = "mvp")
 
+VariableFeaturePlot(cm)
 
+# Identificamos los 10 genes más variables
+top10 <- head(VariableFeatures(cm), 10)
 
+# Graficamos dichos genes
+grafico_genes_variable <- VariableFeaturePlot(cm)
+LabelPoints(grafico_genes_variable, points = top10, repel = TRUE)
+```
 
+***
 
+<br>
 
+# Reducción lineal de la dimensionalidad (PCA)
 
-
-
-
+ee
