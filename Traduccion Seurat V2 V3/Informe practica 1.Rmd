@@ -210,7 +210,7 @@ cm <- NormalizeData(cm, normalization.method = "LogNormalize", scale.factor = 10
 
 # Genes altamente variables
 
-Seurat calcula los genes altamente variables y centra los posteriores análisis en ellos. El método `mvp` (mean.var.plot) del comando `FindVariableGenes` calcula la expresión media y la dispersión (desviación estándar) de cada gen, luego coloca los genes en grupos (bins) y finalmente calcula el z-score para la dispersión dentro de cada grupo. Esto permite controlar la fuerte relación entre la varianza y la expresión media de cada gen. No obstante, el método por defecto en Seurat V3 es `vst`.
+Seurat calcula los genes altamente variables y centra los posteriores análisis en ellos. Pedro usa el método `mvp` (mean.var.plot) del comando `FindVariableGenes`, el cual calcula la expresión media y la dispersión (desviación estándar) de cada gen, luego coloca los genes en grupos (bins) y finalmente calcula el z-score para la dispersión dentro de cada grupo. Esto permite controlar la fuerte relación entre la varianza y la expresión media de cada gen. No obstante, el método por defecto en Seurat V3 es `vst`.
 
 
 ```{r, message = F}
@@ -231,6 +231,94 @@ LabelPoints(grafico_genes_variable, points = top10, repel = TRUE)
 
 <br>
 
+# Escalado de datos
+
+Después de la normalización de los datos, los escalamos. Este es un paso estándar y previo a la aplicación de técnicas de reducción de dimensionalidad (también llamadas en su conjunto como "extracción de características" en el ámbito de Machine Learning). En este paso podemos controlar algunos _confounders_ mediante el parámetro `vars.to.regress` (no se hace en la práctica 1).
+
+```{r, message = F}
+cm <- ScaleData(cm)
+```
+
+***
+
+<br>
+
 # Reducción lineal de la dimensionalidad (PCA)
 
+A continuación realizamos el PCA en los datos escalados. Por defecto el comando `RunPCA` actúa sobre los genes variables detectados previamente (almacenados en `cm[["RNA"]]@meta.features`), aunque podemos configurar los genes sobre los que realizar el PCA mediante el parámetro `features` (los genes seleccionados necesitan estar escalados y tener varianza distinta de 0). 
+
+La razón por la que las técnicas de reducción de la dimensionalidad en Seurat usan como input sólo los genes variables es que con algunos tipos de datos (como las matrices de conteos de UMIs), y sobre todo si se controlan variables técnicas, dichas técnicas devuelven resultados similares tanto si se ejecutan sólo sobre los genes variables como si se ejecutan en muchos más genes o incluso en el transcriptoma completo (lo cual es más lento de computar).
+
+```{r}
+# Nota: Seurat V2 usa parámetros "pcs.print", "genes.print" y "pcs.compute",
+# mientras que Seurat v3 usa "ndims.print", "nfeatures.print" y "npcs",
+# respectivamente.
+cm <- RunPCA(object = cm,
+             ndims.print = 1:5,
+             nfeatures.print = 5,
+             npcs = 20)
+```
+<br>
+
+Seurat ofrece varias maneras de visualizar las células y los genes que definen las componentes principales encontradas:
+
+```{r}
+# Células
+head(cm@reductions$pca@cell.embeddings[,1:10])
+
+# Genes
+head(cm@reductions$pca@feature.loadings[,1:10])
+```
+
+```{r}
+# Nota: Seurat V2 usa "PCAPlot"
+DimPlot(cm, reduction = "pca", dims = c(1,2))
+```
+
+
+Concretamente, los comandos `PCHeatmap` y `DimHeatmap` (realizan exactamente la misma función) permiten explorar fácilmente las fuentes de varianza en un dataset, y pueden ser útiles a la hora de decidir la verdadera dimensionalidad del dataset, o sea, decidir qué componentes principales conservar para los próximos análisis. Tanto las células como los genes están ordenados en función de sus _loadings_ del PCA. El parámetro `cells` permite visualizar un número reducido de células (útil para graficar datasets grandes), e incluye las células con los loadings de ambos extremos ( _i.e._ incluye en el heatmap tanto las células que más infraexpresan un gen concreto como aquellas que más lo sobreexpresan). Colores violáceos indican infraexpresión, mientras que colores amarillos indican sobreexpresión.
+
+```{r}
+# PCHeatmap(object = cm,
+#           dims = 1:6,
+#           cells = 500,
+#           balanced = T,
+#           fast = F)
+
+DimHeatmap(object = cm, 
+           dims = 1:6, 
+           cells = 500,
+           balanced = T,
+           fast = F)
+
+
+```
+
+Nótese que el parámetro `fast` (`TRUE` por defecto) permite graficar rápidamente los heatmaps, pero elimina la leyenda y previene que podamos modificar los gráficos resultantes (por ejemplo, no podremos cambiar el título de los heatmaps).
+
+***
+
+<br>
+
+# Componentes principales significativas
+
+
 ee
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
