@@ -257,7 +257,7 @@ pbmc[["RNA"]]@data[968:974,1:3]
 
 A continuación calculamos un subconjunto de genes cuya expresión génica presente una gran varianza (o sea, que se expresen mucho en algunas células, y que apenas se expresen en otras). 10X Genomics y otros tantos [investigadores](https://www.nature.com/articles/nmeth.2645) han descubierto que centrarse en el análisis de estos genes ayuda a resaltar señales biológicas en datasets de célula única.
 
-El comando `FindVariableFeatures` modela la relación media-varianza de los genes para detectar aquellos con mayor varianza, y por defecto devuelve 2.000 genes. La implementación de dicho comando en Seurat se debe al trabajo de [10X Genomics](https://www.nature.com/articles/nmeth.2645).
+El método `vst` del comando `FindVariableFeatures` modela la relación media-varianza de los genes para detectar aquellos con mayor varianza, y por defecto devuelve 2.000 genes. La implementación de dicho comando en Seurat se debe al trabajo de [10X Genomics](https://www.nature.com/articles/nmeth.2645).
 
 
 ```{r}
