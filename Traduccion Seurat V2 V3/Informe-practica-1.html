@@ -630,17 +630,25 @@ div.tocify {
 ## EXMC.10 EXMC.11 EXMC.12 EXMC.13 EXMC.14 EXMC.15 EXMC.16 EXMC.17 EXMC.18 EXMC.19 
 ##       6       6       6       6       6       6       6       6       6       6 
 ## Levels: 0 1 2 3 4 5 6 7 8 9 10</code></pre>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Nº de células por clúster</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="co"># table(cm$seurat_clusters)</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="co"># table(cm$RNA_snn_res.0.6)</span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(cm<span class="sc">@</span>active.ident)</span></code></pre></div>
+<pre><code>## 
+##  0  1  2  3  4  5  6  7  8  9 10 
+## 55 54 52 49 44 34 33 32 21 14 11</code></pre>
 <p>Una utilidad muy práctica de Seurat es la posibilidad de obtener los parámetros con los que configuramos los comandos previamente ejecutados sobre el objeto seurat <code>cm</code>. Con el comando <code>Command(cm)</code> podemos ver una lista de dichas funciones, y con la estructura <code>cm$comando_usado</code> podemos obtener los parámetros con los que ejecutamos previamente esa función:</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Comandos ejecutados</span></span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Command</span>(cm)</span></code></pre></div>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Comandos ejecutados</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Command</span>(cm)</span></code></pre></div>
 <pre><code>## [1] &quot;NormalizeData.RNA&quot;        &quot;FindVariableFeatures.RNA&quot;
 ## [3] &quot;ScaleData.RNA&quot;            &quot;RunPCA.RNA&quot;              
 ## [5] &quot;JackStraw.RNA.pca&quot;        &quot;ScoreJackStraw&quot;          
 ## [7] &quot;FindNeighbors.RNA.pca&quot;    &quot;FindClusters&quot;</code></pre>
-<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Parámetros del comando &quot;FindClusters&quot;</span></span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>cm<span class="sc">$</span>FindClusters</span></code></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Parámetros del comando &quot;FindClusters&quot;</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>cm<span class="sc">$</span>FindClusters</span></code></pre></div>
 <pre><code>## Command: FindClusters(object = cm, resolution = 0.6)
-## Time: 2021-02-08 17:20:08
+## Time: 2021-02-08 17:25:40
 ## graph.name : RNA_snn 
 ## modularity.fxn : 1 
 ## resolution : 0.6 
