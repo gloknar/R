@@ -557,11 +557,11 @@ DotPlot(pbmc, features = c("LYZ", "CD3E"))
 
 <br>
 
-El comando `DoHeatmap` genera un heatmap de expresión génica para las células y genes seleccionados. En este caso graficamos los top 20 biomarcadores de cada clúster (el siguiente código es una modificación del encontrado en la sección _2.6 Reducción de la dimensionalidad del dataset (PCA)_):
+El comando `DoHeatmap` genera un heatmap de expresión génica para las células y genes seleccionados. En este caso graficamos los top 10 biomarcadores de cada clúster (el siguiente código es una modificación del encontrado en la sección _2.6 Reducción de la dimensionalidad del dataset (PCA)_):
 
 ```{r}
-top20 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
-DoHeatmap(pbmc, features = top20$gene) # + NoLegend() para eliminar la leyenda
+top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+DoHeatmap(pbmc, features = top10$gene) # + NoLegend() para eliminar la leyenda
 ```
 
 ***
