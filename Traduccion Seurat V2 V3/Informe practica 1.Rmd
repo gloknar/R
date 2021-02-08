@@ -277,7 +277,9 @@ VizDimLoadings(cm, dims = 1:2, nfeatures = 30, reduction = "pca")
 
 
 ```{r}
-# Nota: Seurat V2 usa "PCAPlot"
+# Nota: También puedes usar "PCAPlot"
+#
+# PCAPlot(cm)
 DimPlot(cm, reduction = "pca", dims = c(1,2))
 ```
 
@@ -345,6 +347,8 @@ El método de clustering que incorpora Seurat se basa en grafos y ya viene expli
 
 La función `FindClusters` contiene un parámetro de resolución que establece la granularidad del clustering. A mayor valor de resolución/granularidad, más clusters se generan. Tanto 10x Genomics como Pedro recomiendan establecer una resolución de entre 0,4 ~ 1,2 para datasets de 3000 células. Para datasets mayores, la resolución debe aumentar proporcionalmente. Los clusters con sus respectivas células se guardan en `cm@active.ident`, `cm$RNA_snn_res.0.6` y `cm$seurat_clusters` (`cm@ident` en Seurat V2), y se puede acceder a ellos con el comando `Idents(cm)`.
 
+Nótese que una vez realizado el clustering, las visualizaciones en PCA, tSNE y UMAP pasarán a incluir información sobre a qué clúster pertenece cada célula representada en las mismas.
+
 
 ```{r}
 # Nota: Seurat V2 prescinde del comando "FindNeighbors" y en su lugar agrupa
@@ -362,7 +366,6 @@ head(Idents(cm), n = 20L)
 table(cm@active.ident)
 ```
 
-
 Una utilidad muy práctica de Seurat es la posibilidad de obtener los parámetros con los que configuramos los comandos previamente ejecutados sobre el objeto seurat `cm`. Con el comando `Command(cm)` podemos ver una lista de dichas funciones, y con la estructura `cm$comando_usado` podemos obtener los parámetros con los que ejecutamos previamente esa función:
 
 ```{r}
@@ -378,13 +381,24 @@ Seurat permite usar también gráficos tSNE y UMAP para visualizar el clustering
 
 
 ```{r}
-RunTSNE(cm)
-?RunTSNE
+cm <- RunTSNE(cm, reduction = "pca", dims = 1:9, tsne.method = "Rtsne", verbose = F)
+
+# Nota: También puedes usar "TSNEPlot"
+#
+# TSNEPlot(cm)
+DimPlot(cm, reduction = "tsne", dims = c(1,2))
 ```
 
+Ídem para UMAP:
 
+```{r}
+cm <- RunUMAP(cm, reduction = "pca", dims = 1:9, umap.method = "uwot", metric = "cosine", min.dist = 0.3)
 
-
+# Nota: También puedes usar "UMAPPlot"
+#
+# UMAPPlot(cm)
+DimPlot(cm, reduction = "umap", dims = c(1,2), label = T)
+```
 
 
 
