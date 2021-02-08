@@ -343,7 +343,7 @@ ElbowPlot(cm)
 El método de clustering que incorpora Seurat se basa en grafos y ya viene explicado en otro [informe](https://github.com/gloknar/R-Utilities/tree/master/Tutorial%20Seurat%202700%20PBMCs).
 
 
-La función `FindClusters` contiene un parámetro de resolución que establece la granularidad del clustering. A mayor valor de resolución/granularidad, más clusters se generan. Tanto 10x Genomics como Pedro recomiendan establecer una resolución de entre 0,4 ~ 1,2 para datasets de 3000 células. Para datasets mayores, la resolución debe aumentar proporcionalmente. Los clusters con sus respectivas células se guardan en `cm@active.ident`, y se puede acceder a ellos con el comando `Idents(cm)`.
+La función `FindClusters` contiene un parámetro de resolución que establece la granularidad del clustering. A mayor valor de resolución/granularidad, más clusters se generan. Tanto 10x Genomics como Pedro recomiendan establecer una resolución de entre 0,4 ~ 1,2 para datasets de 3000 células. Para datasets mayores, la resolución debe aumentar proporcionalmente. Los clusters con sus respectivas células se guardan en `cm@active.ident`, `cm$RNA_snn_res.0.6` y `cm$seurat_clusters` (`cm@ident` en Seurat V2), y se puede acceder a ellos con el comando `Idents(cm)`.
 
 
 ```{r}
@@ -354,7 +354,39 @@ cm <- FindClusters(object = cm, resolution = 0.6)
 
 # 20 primeras células y sus clusters
 head(Idents(cm), n = 20L)
+
+# Nº de células por clúster
+#
+# table(cm$seurat_clusters)
+# table(cm$RNA_snn_res.0.6)
+table(cm@active.ident)
 ```
+
+
+Una utilidad muy práctica de Seurat es la posibilidad de obtener los parámetros con los que configuramos los comandos previamente ejecutados sobre el objeto seurat `cm`. Con el comando `Command(cm)` podemos ver una lista de dichas funciones, y con la estructura `cm$comando_usado` podemos obtener los parámetros con los que ejecutamos previamente esa función:
+
+```{r}
+# Comandos ejecutados
+Command(cm)
+
+# Parámetros del comando "FindClusters"
+cm$FindClusters
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ee

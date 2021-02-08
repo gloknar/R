@@ -607,7 +607,7 @@ div.tocify {
 <div id="clustering-basado-en-grafos" class="section level1" number="10">
 <h1 number="10"><span class="header-section-number">10</span> Clustering basado en grafos</h1>
 <p>El método de clustering que incorpora Seurat se basa en grafos y ya viene explicado en otro <a href="https://github.com/gloknar/R-Utilities/tree/master/Tutorial%20Seurat%202700%20PBMCs">informe</a>.</p>
-<p>La función <code>FindClusters</code> contiene un parámetro de resolución que establece la granularidad del clustering. A mayor valor de resolución/granularidad, más clusters se generan. Tanto 10x Genomics como Pedro recomiendan establecer una resolución de entre 0,4 ~ 1,2 para datasets de 3000 células. Para datasets mayores, la resolución debe aumentar proporcionalmente. Los clusters con sus respectivas células se guardan en <code>cm@active.ident</code>, y se puede acceder a ellos con el comando <code>Idents(cm)</code>.</p>
+<p>La función <code>FindClusters</code> contiene un parámetro de resolución que establece la granularidad del clustering. A mayor valor de resolución/granularidad, más clusters se generan. Tanto 10x Genomics como Pedro recomiendan establecer una resolución de entre 0,4 ~ 1,2 para datasets de 3000 células. Para datasets mayores, la resolución debe aumentar proporcionalmente. Los clusters con sus respectivas células se guardan en <code>cm@active.ident</code>, <code>cm$RNA_snn_res.0.6</code> y <code>cm$seurat_clusters</code> (<code>cm@ident</code> en Seurat V2), y se puede acceder a ellos con el comando <code>Idents(cm)</code>.</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Nota: Seurat V2 prescinde del comando &quot;FindNeighbors&quot; y en su lugar agrupa</span></span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="co"># todos sus parámetros en la función &quot;FindCluster&quot;</span></span>
 <span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>cm <span class="ot">&lt;-</span> <span class="fu">FindNeighbors</span>(<span class="at">object =</span> cm, <span class="at">reduction =</span> <span class="st">&quot;pca&quot;</span>, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>, <span class="at">k.param =</span> <span class="dv">11</span>)</span></code></pre></div>
@@ -630,6 +630,27 @@ div.tocify {
 ## EXMC.10 EXMC.11 EXMC.12 EXMC.13 EXMC.14 EXMC.15 EXMC.16 EXMC.17 EXMC.18 EXMC.19 
 ##       6       6       6       6       6       6       6       6       6       6 
 ## Levels: 0 1 2 3 4 5 6 7 8 9 10</code></pre>
+<p>Una utilidad muy práctica de Seurat es la posibilidad de obtener los parámetros con los que configuramos los comandos previamente ejecutados sobre el objeto seurat <code>cm</code>. Con el comando <code>Command(cm)</code> podemos ver una lista de dichas funciones, y con la estructura <code>cm$comando_usado</code> podemos obtener los parámetros con los que ejecutamos previamente esa función:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Comandos ejecutados</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Command</span>(cm)</span></code></pre></div>
+<pre><code>## [1] &quot;NormalizeData.RNA&quot;        &quot;FindVariableFeatures.RNA&quot;
+## [3] &quot;ScaleData.RNA&quot;            &quot;RunPCA.RNA&quot;              
+## [5] &quot;JackStraw.RNA.pca&quot;        &quot;ScoreJackStraw&quot;          
+## [7] &quot;FindNeighbors.RNA.pca&quot;    &quot;FindClusters&quot;</code></pre>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Parámetros del comando &quot;FindClusters&quot;</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>cm<span class="sc">$</span>FindClusters</span></code></pre></div>
+<pre><code>## Command: FindClusters(object = cm, resolution = 0.6)
+## Time: 2021-02-08 17:20:08
+## graph.name : RNA_snn 
+## modularity.fxn : 1 
+## resolution : 0.6 
+## method : matrix 
+## algorithm : 1 
+## n.start : 10 
+## n.iter : 10 
+## random.seed : 0 
+## group.singletons : TRUE 
+## verbose : TRUE</code></pre>
 <p>ee</p>
 </div>
 
