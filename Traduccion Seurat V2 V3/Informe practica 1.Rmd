@@ -64,6 +64,7 @@ Comenzamos cargando Seurat y Monocle3.
 # Cargamos librerías
 library("Seurat")
 library("monocle3")
+library("ggplot2")
 ```
 
 <br>
@@ -399,6 +400,108 @@ cm <- RunUMAP(cm, reduction = "pca", dims = 1:9, umap.method = "uwot", metric = 
 # UMAPPlot(cm)
 DimPlot(cm, reduction = "umap", dims = c(1,2), label = T)
 ```
+
+***
+
+<br>
+
+# Genes marcadores (biomarcadores de clusters/genes diferencialmente expresados)
+
+
+Seurat te permite encontrar marcadores que definen clusters mediante expresión diferencial. Por defecto, identifica marcadores positivos y negativos de un único clúster, comparado con el resto de células. Puedes testar clusters entre sí o un grupo de clusters vs el resto de células. Por ejemplo, para encontrar los biomarcadores del clúster 2 ejecutamos este código:
+
+
+```{r}
+cluster2.markers <- FindMarkers(cm, ident.1 = 2, min.pct = 0.25)
+head(cluster2.markers, n = 5)
+```
+
+Para ver los genes diferencialmente expresados entre el clúster 2 y el 4 ( o sea, comparar los patrones de expresión génica del clúster 2 vs los patrones del clúster 4):
+
+```{r}
+cluster2_4.markers <- FindMarkers(cm, ident.1 = 2, ident.2 = 4, min.pct = 0.25)
+head(cluster2_4.markers, n = 5)
+```
+
+
+Para ver los genes diferencialmente expresados del clúster 1 y 5 vs el resto del dataset:
+
+```{r}
+cluster1_5.markers <- FindMarkers(cm, ident.1 = c(1,5), min.pct = 0.25)
+head(cluster1_5.markers, n = 5)
+```
+
+
+
+Podemos visualizar los biomarcadores de los clusters con:
+
+```{r}
+VlnPlot(cm, features = "BMP6")
+
+FeaturePlot(cm, features = "IL6R", reduction = "umap", pt.size = 2)
+```
+
+El comando `FindAllMarkers` automatiza este proceso y encuentra los biomarcadores de todos los clusters (seleccionamos solo los genes sobreexpresados de cada cluster con el parámetro `only.pos = T`):
+
+```{r}
+# Nota: En Seurat V2 el parámetro "logfc.threshold" se llama "thresh.use"
+markers <- FindAllMarkers(cm, min.pct = 0.25, logfc.threshold = 0.25, only.pos = T)
+head(markers)
+```
+
+
+El comando `DoHeatmap` genera un heatmap de expresión génica para las células y genes seleccionados. En este caso graficamos los top 5 biomarcadores de cada clúster:
+
+
+```{r}
+top5 <- markers %>% group_by(cluster) %>% slice_max(order_by = avg_logFC, n = 5)
+DoHeatmap(cm, features = top5$gene)
+```
+
+
+
+Ahora podemos asignar las etiquetas dadas a las células (disponibles en el archivo accesorio `colnames.txt`):
+
+```{r}
+archivo_etiquetas_celulas <- t(read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/colnames.txt"))
+
+# Descartamos el primer elemento del archivo dado que no es un nombre de célula
+NewIdent <- as.factor(archivo_etiquetas_celulas[2:length(archivo_etiquetas_celulas)])
+
+
+names(NewIdent) <- names(cm@active.ident)
+cm@active.ident <- NewIdent
+cm <- AddMetaData(cm, metadata = NewIdent, col.name = "Cell.Identity")
+
+head(cm@meta.data)
+```
+
+
+
+```{r}
+# UMAP con etiquetas
+DimPlot(cm , group.by='Cell.Identity', reduction = "umap", pt.size=2, label = T) + 
+  ggtitle("UMAP") + theme(plot.title = element_text(hjust = 0.5))
+
+# t-SNE con etiquetas
+DimPlot(cm , group.by='Cell.Identity', reduction = "tsne", pt.size=2, label = T) + 
+  ggtitle("t-SNE") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+***
+
+<br>
+
+# Interpretación biológica
+
+
+
+
+
+
+
+
+
 
 
 
