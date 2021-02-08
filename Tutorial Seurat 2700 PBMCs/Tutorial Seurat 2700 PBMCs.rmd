@@ -441,7 +441,7 @@ Para agrupar las células en clusters, aplicamos seguidamente técnicas de  opti
 
 El parámetro `algorithm` del comando `FindClusters` toma valores entre 1 y 4, y sirve para elegir el algoritmo de optimización de la modularidad: el método original de Louvain es el valor por defecto (`algorithm = 1`), mientras que el algoritmo SLM corresponde a `algorithm = 3`.
 
-Los clusters con sus respectivas células se guardan en `pbmc@active.ident`. Alternativamente, podemos acceder a dicha información con el comando `Idents(pbmc)`. 
+Los clusters con sus respectivas células se guardan en `pbmc@active.ident`, `pbmc$RNA_snn_res.0.6` y `pbmc$seurat_clusters`. Alternativamente, podemos acceder a dicha información con el comando `Idents(pbmc)`. 
 
 ```{r}
 pbmc <- FindNeighbors(pbmc, dims = 1:12)
