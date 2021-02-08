@@ -67,9 +67,9 @@ A continuación usamos la matriz de conteos para crear un objeto de tipo `Seurat
 
 ```{r}
 # Nota: El paquete `future` permite paralelizar los comandos `NormalizeData`,
-# `ScaleData`, `JackStraw`, `FindMarkers` y quizás 'FindClusters' (solo si
-# hacemos clustering con resolutions mayores; nosotros usamos `resolution =
-# 0.5`)
+# `ScaleData`, `JackStraw`, `FindMarkers`, `RunUMAP` y quizás 'FindClusters'
+# (solo si hacemos clustering con resolutions mayores; nosotros usamos
+# `resolution = 0.5`)
 library(future)
 plan(strategy = "multisession", workers = 4)
 # Nota: la estrategia "multiprocess" de la guía original está obsoleta. En su
