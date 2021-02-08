@@ -374,7 +374,13 @@ cm$FindClusters
 ```
 
 
+Seurat permite usar también gráficos tSNE y UMAP para visualizar el clustering. tSNE usa como input las dimensiones significativas del PCA (por ejemplo, las 9 que detallábamos en el paso del `JackStraw`), aunque también podemos pedirle que use como input un set de genes escalados concretos mediante el argumento `features` (`genes.use` en Seurat V2).
 
+
+```{r}
+RunTSNE(cm)
+?RunTSNE
+```
 
 
 
