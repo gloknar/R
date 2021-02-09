@@ -517,30 +517,28 @@ DimPlot(cm, reduction = "umap", group.by = "Phase", pt.size = 2) +
   ggtitle("UMAP") + theme(plot.title = element_text(hjust= 0.5))
 ```
 
-```{r}
-# PCNA y MCM6 son de la fase S; TOP2A y MKI67 son de la fase G2/M
-RidgePlot(cm, features = c("PCNA", "MCM6", "TOP2A", "MKI67"))
 
+Mediante un ridgeplot podemos comprobar visualmente la expresión diferencial de los marcadores PCNA, MCM6, TOP2A y MKI67 en función de la fase en la que se haye la célula:
+
+```{r}
+# PCNA y MCM6 son marcadores de la fase S;
+# TOP2A y MKI67 son marcadores de la fase G2/M
+RidgePlot(cm, features = c("PCNA", "MCM6", "TOP2A", "MKI67"), group.by = "Phase", ncol = 2)
 ```
 
 
+Por último procedemos a guardar el trabajo realizado hasta ahora, pues lo necesitaremos en la práctica 4
 
-ee
+```{r, eval = F}
+saveRDS(object = cm, file = "./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/nakamura_P4.rds")
+```
 
+***
 
+<br>
 
+# sessionInfo()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r, echo = F}
+sessionInfo()
+```
