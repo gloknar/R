@@ -496,31 +496,31 @@ DimPlot(cm , group.by='Cell.Identity', reduction = "tsne", pt.size=2, label = T)
 # Inferencia del ciclo celular
 
 
-Para la inferencia del ciclo celular, asiganmos a cada célula una puntuación basada en sus niveles de expresión de genes marcadores de los puntos de control G1/S y G2/M. Los niveles de expresión de los biomarcadores de un punto de control deberían estar inversamente correlacionados con los del otro punto de control (están en extremops opuestos del ciclo celular), y las células que no expresen ninguno de estos biomarcadores se encontrarán probablemente en la fase G1 (no se están duplicando).
+Para la inferencia del ciclo celular, asiganmos a cada célula una puntuación basada en sus niveles de expresión de genes marcadores de las fases S y G2/M. Los niveles de expresión de los biomarcadores de una fase celular deberían estar inversamente correlacionados con los de la otra fase (están en extremos opuestos del ciclo celular), y las células que no expresen ninguno de estos biomarcadores se encontrarán probablemente en la fase G1 (no se están duplicando).
 
-En Seurat, asiganmos esta puntuación a las células con la función `CellCycleScoring`, la cual almacena las puntuación de los puntos de control G1/S y G2/M en cm@meta.data, junto con la clasificación predicha de cada célula en fase G1, S o G2/M. `CellCycleScoring` can also set the identity of the Seurat object to the cell-cycle phase by passing set.ident = TRUE (the original identities are stored as old.ident).
+En Seurat, asiganmos esta puntuación a las células con la función `CellCycleScoring`, la cual almacena las puntuación de las fases S y G2/M en `cm@meta.data`, junto con la fase celular predicha de cada célula. Si estableces el parámetro `set.ident = TRUE`, la identidad de las células pasará a ser su fase celular y la identidad previa se guardará en la columna `old.ident`.
 
-Los biomarcadores de estos puntos de control en _Macaca fascicularis_ se encuentran en el archivo de texto `regev_lab_cell_cycle_genes.txt`. Los primeros 43 genes corresponden a los biomarcadores del punto de control G1/S, y los 54 genes restantes corresponden a los del punto de control G2/M.
-
-In Seurat, we assign scores in the CellCycleScoring function, which stores S and G2/M scores in object@meta.
-data, along with the predicted classification of each cell in either G2M, S or G1 phase. CellCycleScoring can
-also set the identity of the Seurat object to the cell-cycle phase by passing set.ident = TRUE (the original
-identities are stored as old.ident).
+Los biomarcadores de estos puntos de control en _Macaca fascicularis_ se encuentran en el archivo de texto `regev_lab_cell_cycle_genes.txt`. Los primeros 43 genes corresponden a los biomarcadores de la fase S, y los 54 genes restantes corresponden a los de las fases G2/M.
 
 
 ```{r}
-# Leemos el archivo de texto con los biomarcadores
+# Leemos el archivo de texto con los biomarcadores y separamos los genes de cada
+# fase
 cellcycle.genes <- readLines(con = "./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/regev_lab_cell_cycle_genes.txt")
-
-g1.s.genes <- cellcycle.genes[1:43]
+s.genes <- cellcycle.genes[1:43]
 g2.m.genes <- cellcycle.genes[44:97]
-  
-cm <- CellCycleScoring(cm, s.features = g1.s.genes, g2m.features = g2.m.genes, set.ident = T)
 
-cm@meta.data
+# Predecimos la fase celular de nuestras células
+cm <- CellCycleScoring(cm, s.features = s.genes, g2m.features = g2.m.genes, set.ident = F)
 
+DimPlot(cm, reduction = "umap", group.by = "Phase", pt.size = 2) + 
+  ggtitle("UMAP") + theme(plot.title = element_text(hjust= 0.5))
+```
 
-?CellCycleScoring
+```{r}
+# PCNA y MCM6 son de la fase S; TOP2A y MKI67 son de la fase G2/M
+RidgePlot(cm, features = c("PCNA", "MCM6", "TOP2A", "MKI67"))
+
 ```
 
 
