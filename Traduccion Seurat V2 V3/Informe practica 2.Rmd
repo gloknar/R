@@ -120,13 +120,21 @@ colnames(deng) <- cellLabels
 ```
 
 
-Tal como muestra el siguiente gráfico, el PCA muestra bastante bien la estructura de los datos y los separa correctamente en su mayoría, exceptuando aquellas células que corresponden al estadio de blastocisto (early/mid/lateblast).
+Tal como muestra el siguiente gráfico, el PCA muestra bastante bien la estructura de los datos y los separa correctamente en su mayoría, exceptuando aquellas células que corresponden al estadio de blastocisto (early/mid/lateblast), que están mezcladas entre sí. Se aprecia cómo las células están ordenadas en el espacio del PCA en sentido horario, desde la etapa de zigoto (zy) hasta la de blastocisto tardío (lateblast).
 
 ```{r}
+# Corremos PCA en un objeto de tipo SingleCellExperiment
 deng_SCE <- runPCA(deng_SCE)
-plotPCA(deng_SCE, colour_by = "cell_type2")
+
+# Graficamos el PCA
+BiocGenerics::plotPCA(deng_SCE, colour_by = "cell_type2") + 
+  ggtitle("PCA de células embrionarias de ratón") + 
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
+PCA, here, provides a useful baseline for assessing different pseudotime methods. Unlike t-SNE and
+UMAP, PCA might better reveal developmental time - at the expense of producing worst
+clustering. For a very naive pseudotime we can just take the co-ordinates of the first principal component.
 
 
 ***
