@@ -51,9 +51,7 @@ set.seed(1)
 
 En muchas situaciones, uno estudia un proceso en el cual las células cambian continuamente. Esto incluye, por ejemplo, muchos procesos de diferenciación que tienen lugar durante el desarrollo del organismo: tras un estímulo, las células cambian de un tipo a otro. Idealmente, nos interesaría monitorizar los niveles de expresión de una célula dada a lo largo del tiempo. Desafortunadamente, tal monitorización no es posible en scRNA-seq dado que la célula se lisa cuando el ARN se extrae.
 
-![Figura 1. Descripción de los diversos métodos de inferencia de trayectoria para datos de scRNA-seq (Figura 2 de Cannoodt _et al._, 2016)](./Cosas Accesorias Informe 2/fig2.jpg)
 
-<br>
 
 En su lugar, debemos muestrear en múltiples puntos del tiempo y así obtener "fotografías" de los perfiles de expresión génicos. Puesto que algunas células se diferenciarán más rápido que otras, cada fotografía puede contener células en diversas etapas del desarrollo. __Usamos métodos estadísticos para ordenar las células a lo largo de una o más trayectorias las cuales representan las trayectorias del desarrollo subyacentes, este ordenamiento se conoce como "pseudotiempo".__
 
@@ -69,28 +67,45 @@ Una revisión más o menos reciente de [Cannoodt _et al._](https://onlinelibrary
 
 * **SLICER** - Paquete de R, disponible sólo a través de GitHub
 
-* Waterfall - Paquete de R (se incluye un script en el suplemento del artículo original de [Shin _et al,_ 2015](https://www.cell.com/cell-stem-cell/fulltext/S1934-5909(15)00312-4) y en mi GitHub)
+* Waterfall - Paquete de R (se incluye un script en el suplemento del artículo original de [Shin _et al,_ 2015](https://www.cell.com/cell-stem-cell/fulltext/S1934-5909(15)00312-4) y en los [archivos asociados](https://github.com/gloknar/R-Utilities/tree/master/Traduccion%20Seurat%20V2%20V3/Cosas%20accesorias%20Informe%202) a este informe)
 
-* SCUBA
+* Mpath - Paquete de R disponible en GitHub (comprimido con formato `tar.gz`). La función está documentada, pero el workflow no, ni tiene una _vignette_.
 
-* Wanderlust
+* Wishbone - Paquete de Python
 
-* Wishbone
+* SCUBA - Paquete de Matlab
 
-* SCOUP
+* Wanderlust - Paquete de Matlab
 
-* Mpath
+* SCOUP - Programa en C++ por línea de comandos 
+
+<br>
+
+Las figuras 1 y 2 del paper de Cannoodt _et al._ resumen algunas de las características de estos métodos.
 
 
+![Figura 1. Descripción de los diversos métodos de inferencia de trayectoria para datos de scRNA-seq (Figura 2 de Cannoodt _et al._, 2016).](./Cosas Accesorias Informe 2/fig2.png)
+
+<br>
+
+![Figura 2. Caracterización de los métodos de inferencia de trayectoria para scRNA-seq (Figura 3 de Cannoodt _et al._, 2016).](./Cosas Accesorias Informe 2/fig3.png)
 
 
+***
 
+<br>
+
+# Visualización del dataset
+
+
+jaja
 
 
 
 ***
 
 <br>
+
 
 # sessionInfo()
 
