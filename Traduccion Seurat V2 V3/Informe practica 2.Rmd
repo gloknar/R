@@ -98,7 +98,34 @@ Las figuras 1 y 2 del paper de Cannoodt _et al._ resumen algunas de las caracter
 # Visualización del dataset
 
 
-jaja
+Al igual que el dataset de Nakamura _et al._ usado en la práctica 1, el dataset de Deng _et al._ contiene células embrionarias en etapas iniciales del desarrollo, solo que en este caso las células son de ratón, y no del macaco cangrejero. El dataset de esta práctica se encuentra en el archivo `deng-reads.rds`.
+
+
+```{r}
+# Leemos los datos
+deng_SCE <- readRDS(file = "./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/deng-reads.rds")
+
+# Reordenamos los niveles, ya que zigoto < 2 células < 4 células, etc...
+deng_SCE$cell_type2 <- factor(deng_SCE$cell_type2, 
+                              levels = c("zy", "early2cell", "mid2cell", "late2cell",
+                              "4cell", "8cell", "16cell", "earlyblast", "midblast", 
+                              "lateblast")) 
+
+
+# Generamos y formateamos una matriz de conteos
+deng <- counts(deng_SCE)
+
+cellLabels <- deng_SCE$cell_type2
+colnames(deng) <- cellLabels
+```
+
+
+Tal como muestra el siguiente gráfico, el PCA muestra bastante bien la estructura de los datos y los separa correctamente en su mayoría, exceptuando aquellas células que corresponden al estadio de blastocisto (early/mid/lateblast).
+
+```{r}
+deng_SCE <- runPCA(deng_SCE)
+plotPCA(deng_SCE, colour_by = "cell_type2")
+```
 
 
 
