@@ -84,7 +84,7 @@ En la práctica 1 de Seurat usaremos datos de SC3-seq (un tipo de scRNA-seq con 
 
 La tabla 2.1 muestra detalles sobre los tipos celulares encontrados en el dataset.
 
-![](./imagenes informe 1/tabla2.1.png)
+![](./Cosas Accesorias Informe 1/tabla2.1.png)
 
 <br>
 

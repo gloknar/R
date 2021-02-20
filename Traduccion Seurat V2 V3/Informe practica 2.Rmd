@@ -51,10 +51,40 @@ set.seed(1)
 
 En muchas situaciones, uno estudia un proceso en el cual las células cambian continuamente. Esto incluye, por ejemplo, muchos procesos de diferenciación que tienen lugar durante el desarrollo del organismo: tras un estímulo, las células cambian de un tipo a otro. Idealmente, nos interesaría monitorizar los niveles de expresión de una célula dada a lo largo del tiempo. Desafortunadamente, tal monitorización no es posible en scRNA-seq dado que la célula se lisa cuando el ARN se extrae.
 
-![Figura 1. Descripción de los diversos métodos de inferencia de trayectoria para datos de scRNA-seq (Figura 2 de Cannoodt _et al._, 2016)](./imagenes informe 2/fig2.jpg)
+![Figura 1. Descripción de los diversos métodos de inferencia de trayectoria para datos de scRNA-seq (Figura 2 de Cannoodt _et al._, 2016)](./Cosas Accesorias Informe 2/fig2.jpg)
 
+<br>
 
 En su lugar, debemos muestrear en múltiples puntos del tiempo y así obtener "fotografías" de los perfiles de expresión génicos. Puesto que algunas células se diferenciarán más rápido que otras, cada fotografía puede contener células en diversas etapas del desarrollo. __Usamos métodos estadísticos para ordenar las células a lo largo de una o más trayectorias las cuales representan las trayectorias del desarrollo subyacentes, este ordenamiento se conoce como "pseudotiempo".__
+
+
+En esta práctica nos centraremos en 4 herramientas para ordenar las células según su grado de desarrollo en el pseudotiempo: TSCAN, SLICER, destiny y ouija. Para ilustrar su uso, emplearemos el dataset del desarrollo embrionario en ratón de [Deng _et al._, 2014](https://science.sciencemag.org/content/343/6167/193). Dicho dataset cuenta con 268 células provenientes de la fase temprana del desarrollo embrional y extraídas en 10 puntos de tiempo. En este caso no hace falta alinear las células a la trayectoria del pseudotiempo dado que están ya etiquetadas con información sobre la trayectoria embrionaria. Por tanto, las etiquetas son la _ground truth_ o verdad experimental sobre la cual podemos comparar el rendimiento obtenido por los susodichos métodos.
+
+Una revisión más o menos reciente de [Cannoodt _et al._](https://onlinelibrary.wiley.com/doi/full/10.1002/eji.201646347) publicada en 2016 nos aporta un resumen detallado de los distintos algoritmos empleados para la inferencia de trayectoria en scRNA-seq. Dicha revisión cubre:
+
+
+* **Monocle** - Paquete de Bioconductor
+
+* **TSCAN** - Paquete de Bioconductor
+
+* **SLICER** - Paquete de R, disponible sólo a través de GitHub
+
+* Waterfall - Paquete de R (se incluye un script en el suplemento del artículo original de [Shin _et al,_ 2015](https://www.cell.com/cell-stem-cell/fulltext/S1934-5909(15)00312-4) y en mi GitHub)
+
+* SCUBA
+
+* Wanderlust
+
+* Wishbone
+
+* SCOUP
+
+* Mpath
+
+
+
+
+
 
 
 
