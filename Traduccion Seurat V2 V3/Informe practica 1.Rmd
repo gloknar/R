@@ -539,6 +539,12 @@ saveRDS(object = cm, file = "./Archivos accesorios/Codigo y datos de las Practic
 
 # sessionInfo()
 
+<details>
+
+<summary> Click para mostrar </summary>
+
 ```{r, echo = F}
 sessionInfo()
 ```
+
+</details>

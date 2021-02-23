@@ -187,9 +187,6 @@ pseudotime_order_tscan <- as.character(dengorderTSCAN$sample_name)
 # Creamos el bolsillo vacío "pseudotime_order_tscan" en el objeto deng_SCE
 deng_SCE$pseudotime_order_tscan <- NA
 deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengorderTSCAN$Pseudotime
-
-
-# deng_SCE$pseudotime_order_tscan
 ```
 
 
@@ -197,7 +194,8 @@ deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengo
 Ahora vemos los _timepoints_ que se han asignado a cada estado celular:
 
 ```{r}
-# El cluster 10 corresponde a células en fase "late2cell"
+# El último cúster (nº10), o sea el último paso del pseudotiempo según TSCAN,
+# corresponde a células en fase "late2cell"
 cellLabels[dengclust$clusterid == 10]
 
 # Graficamos el pseudotiempo final de TSCAN
@@ -206,19 +204,161 @@ ggplot(as.data.frame(colData(deng_SCE)),
        geom_quasirandom(groupOnX = F) + theme_classic() +
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("Células ordenadas por TSCAN") +
-       xlab("pseudotime según TSCAN") + ylab("Etapa de desarrollo") +
+       xlab("pseudotiempo según TSCAN") + ylab("Etapa de desarrollo") +
        scale_colour_calc()
 ```
 
 
-e
+En la gráfica se aprecia que en nuestro dataset, TSCAN infiere al revés la trayectoria del desarrollo embrionario. Esto no es un problema _per se_ ya que podemos darle la vuelta al ordenamiento para entenderlo, pero no podemos asegurar que funcione mejor que el ordenamiento que hicimos mediante las coordenadas de la 1ª componente principal. El motivo de esto se debe al hecho de que TSCAN es un método de inferencia de trayectoria basado en PCA.
 
-TSCAN gets the development trajectory the “wrong way around”, in the sense that later pseudotime values
-correspond to early timepoints and vice versa. This is not inherently a problem (it is easy enough to reverse
-the ordering to get the intuitive interpretation of pseudotime), but overall it would be a stretch to suggest
-that TSCAN performs better than PCA on this dataset. (As it is a PCA-based method, perhaps this is not
-entirely surprising.)
 
+<details>
+<summary> __Ejercicio 2.1: Compara los resultados obtenidos al variar el parámetro `clusternum` (nº de clusters) del comando `exprmclust`__ </summary>
+
+<br>
+
+__Solución__: en este dataset, TSCAN infiere bien en su mayoría la trayectoria del desarrollo embrionario si elegimos `clusternum` entre 3 y 8.
+
+
+```{r, echo = F}
+# clustering buscando 2 clusters
+dengclust <- TSCAN::exprmclust(procdeng, clusternum = 2)
+
+# Graficamos el resultado
+# TSCAN::plotmclust(dengclust)
+
+
+# Ordenamos las células
+dengorderTSCAN <- TSCAN::TSCANorder(dengclust, orderonly = F)
+pseudotime_order_tscan <- as.character(dengorderTSCAN$sample_name)
+
+# Creamos el bolsillo vacío "pseudotime_order_tscan" en el objeto deng_SCE
+deng_SCE$pseudotime_order_tscan <- NA
+deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengorderTSCAN$Pseudotime
+
+# Graficamos el pseudotiempo final de TSCAN
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
+       geom_quasirandom(groupOnX = F) + theme_classic() +
+       theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("TSCAN, 2 clusters") +
+       xlab("pseudotiempo") + ylab("Etapa de desarrollo") +
+       scale_colour_calc()
+```
+
+<br>
+
+```{r, echo = F}
+# clustering buscando 3 clusters
+dengclust <- TSCAN::exprmclust(procdeng, clusternum = 3)
+
+# Graficamos el resultado
+# TSCAN::plotmclust(dengclust)
+
+
+# Ordenamos las células
+dengorderTSCAN <- TSCAN::TSCANorder(dengclust, orderonly = F)
+pseudotime_order_tscan <- as.character(dengorderTSCAN$sample_name)
+
+# Creamos el bolsillo vacío "pseudotime_order_tscan" en el objeto deng_SCE
+deng_SCE$pseudotime_order_tscan <- NA
+deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengorderTSCAN$Pseudotime
+
+# Graficamos el pseudotiempo final de TSCAN
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
+       geom_quasirandom(groupOnX = F) + theme_classic() +
+       theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("TSCAN, 3 clusters") +
+       xlab("pseudotiempo") + ylab("Etapa de desarrollo") +
+       scale_colour_calc()
+```
+
+<br>
+
+```{r, echo = F}
+# clustering buscando 8 clusters
+dengclust <- TSCAN::exprmclust(procdeng, clusternum = 8)
+
+# Graficamos el resultado
+# TSCAN::plotmclust(dengclust)
+
+
+# Ordenamos las células
+dengorderTSCAN <- TSCAN::TSCANorder(dengclust, orderonly = F)
+pseudotime_order_tscan <- as.character(dengorderTSCAN$sample_name)
+
+# Creamos el bolsillo vacío "pseudotime_order_tscan" en el objeto deng_SCE
+deng_SCE$pseudotime_order_tscan <- NA
+deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengorderTSCAN$Pseudotime
+
+# Graficamos el pseudotiempo final de TSCAN
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
+       geom_quasirandom(groupOnX = F) + theme_classic() +
+       theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("TSCAN, 8 clusters") +
+       xlab("pseudotiempo") + ylab("Etapa de desarrollo") +
+       scale_colour_calc()
+```
+
+<br>
+
+```{r, echo = F}
+# clustering buscando 9 clusters
+dengclust <- TSCAN::exprmclust(procdeng, clusternum = 9)
+
+# Graficamos el resultado
+# TSCAN::plotmclust(dengclust)
+
+
+# Ordenamos las células
+dengorderTSCAN <- TSCAN::TSCANorder(dengclust, orderonly = F)
+pseudotime_order_tscan <- as.character(dengorderTSCAN$sample_name)
+
+# Creamos el bolsillo vacío "pseudotime_order_tscan" en el objeto deng_SCE
+deng_SCE$pseudotime_order_tscan <- NA
+deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengorderTSCAN$Pseudotime
+
+# Graficamos el pseudotiempo final de TSCAN
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
+       geom_quasirandom(groupOnX = F) + theme_classic() +
+       theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("TSCAN, 9 clusters") +
+       xlab("pseudotiempo") + ylab("Etapa de desarrollo") +
+       scale_colour_calc()
+```
+
+<br>
+
+```{r, echo = F}
+# clustering buscando 10 clusters
+dengclust <- TSCAN::exprmclust(procdeng, clusternum = 10)
+
+# Graficamos el resultado
+# TSCAN::plotmclust(dengclust)
+
+
+# Ordenamos las células
+dengorderTSCAN <- TSCAN::TSCANorder(dengclust, orderonly = F)
+pseudotime_order_tscan <- as.character(dengorderTSCAN$sample_name)
+
+# Creamos el bolsillo vacío "pseudotime_order_tscan" en el objeto deng_SCE
+deng_SCE$pseudotime_order_tscan <- NA
+deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengorderTSCAN$Pseudotime
+
+# Graficamos el pseudotiempo final de TSCAN
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
+       geom_quasirandom(groupOnX = F) + theme_classic() +
+       theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("TSCAN, 10 clusters") +
+       xlab("pseudotiempo") + ylab("Etapa de desarrollo") +
+       scale_colour_calc()
+```
+
+</details>
 
 
 ***
@@ -228,6 +368,12 @@ entirely surprising.)
 
 # sessionInfo()
 
+<details>
+
+<summary> Click para mostrar </summary>
+
 ```{r, echo = F}
 sessionInfo()
 ```
+
+</details>
