@@ -138,16 +138,22 @@ Aquí el PCA nos proporciona un útil punto de referencia para comprobar diverso
 ```{r}
 deng_SCE$PC1 <- reducedDim(x = deng_SCE, type = "PCA")[,1]
 
-ggplot(as.data.frame(colData(deng_SCE)), aes(x = PC1, y = cell_type2, colour = cell_type2)) + 
-  geom_quasirandom(groupOnX = F) + theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) +
-  xlab("Primera componente principal") + ylab("Etapa del desarrollo") + 
-  ggtitle("Células ordenadas por la 1ªCP") + scale_colour_calc()
+# Graficamos el pseudotiempo según las coordenadas de la primera componente
+# principal
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = PC1, y = cell_type2, colour = cell_type2)) + 
+       geom_quasirandom(groupOnX = F) + theme_classic() + 
+       theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("Células ordenadas por la 1ªCP") + 
+       xlab("Primera componente principal") + ylab("Etapa de desarrollo") + 
+       scale_colour_calc()
 ```
 
 Aplicando dicho algoritmo básico, y tal y como muestra el gráfico anterior, vemos que a la primera dimensión le cuesta un poco diferenciar algunos tipos celulares, pero en general ordena bien las células según su estapa de desarrollo.
 
 En las siguientes secciones veremos qué rendimiento desempeñan los algoritmos previamente citados ( _i.e._ TSCAN y sucedáneos).
+
+
 
 ***
 
@@ -155,10 +161,63 @@ En las siguientes secciones veremos qué rendimiento desempeñan los algoritmos 
 
 # TSCAN
 
-TSCAN combines clustering with pseudotime analysis. First, it clusters the cells using mclust, which is
-based on a mixture of normal distributions. Then it builds a minimum spanning tree to connect the clusters.
-The branch of this tree that connects the largest number of clusters is the main branch which is used to
-determine pseudotime.
+`TSCAN` combina el clustering con el análisis de pseudotiempo. Primero agrupa las células usando `mclust`, el cual se basa en una mezcla de distribuciones normales. Seguidamente construye un árbol del menor tamaño posible que conecte los clusters. La rama principal del árbol será la que conecte el mayor nº de clusters, y es la rama que se usa para determinar el pseudotiempo.
+
+Primero intentaremos usar todos los genes para ordenar las células:
+
+```{r}
+# Preprocesamos la matriz de conteos
+procdeng <- TSCAN::preprocess(deng)
+
+# Cambiamos el nombre de las columnas de tipo celular a índice numérico
+colnames(procdeng) <- 1:ncol(deng)
+
+# Hacemos el clustering con `mclust`
+dengclust <- TSCAN::exprmclust(procdeng, clusternum = 10)
+
+# Graficamos el resultado
+TSCAN::plotmclust(dengclust)
+
+
+# Ordenamos las células. Con `orderonly = F`, nos devuelve también el
+# pseudotiempo.
+dengorderTSCAN <- TSCAN::TSCANorder(dengclust, orderonly = F)
+pseudotime_order_tscan <- as.character(dengorderTSCAN$sample_name)
+
+# Creamos el bolsillo vacío "pseudotime_order_tscan" en el objeto deng_SCE
+deng_SCE$pseudotime_order_tscan <- NA
+deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengorderTSCAN$Pseudotime
+
+
+# deng_SCE$pseudotime_order_tscan
+```
+
+
+
+Ahora vemos los _timepoints_ que se han asignado a cada estado celular:
+
+```{r}
+# El cluster 10 corresponde a células en fase "late2cell"
+cellLabels[dengclust$clusterid == 10]
+
+# Graficamos el pseudotiempo final de TSCAN
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
+       geom_quasirandom(groupOnX = F) + theme_classic() +
+       theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("Células ordenadas por TSCAN") +
+       xlab("pseudotime según TSCAN") + ylab("Etapa de desarrollo") +
+       scale_colour_calc()
+```
+
+
+e
+
+TSCAN gets the development trajectory the “wrong way around”, in the sense that later pseudotime values
+correspond to early timepoints and vice versa. This is not inherently a problem (it is easy enough to reverse
+the ordering to get the intuitive interpretation of pseudotime), but overall it would be a stretch to suggest
+that TSCAN performs better than PCA on this dataset. (As it is a PCA-based method, perhaps this is not
+entirely surprising.)
 
 
 
