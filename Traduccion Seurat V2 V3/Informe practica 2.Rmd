@@ -98,7 +98,7 @@ Las figuras 1 y 2 del paper de Cannoodt _et al._ resumen algunas de las caracter
 # Visualización del dataset
 
 
-Al igual que el dataset de Nakamura _et al._ usado en la práctica 1, el dataset de Deng _et al._ contiene células embrionarias en etapas iniciales del desarrollo, solo que en este caso las células son de ratón, y no del macaco cangrejero. El dataset de esta práctica se encuentra en el archivo `deng-reads.rds`.
+Al igual que el dataset de Nakamura _et al._ usado en la práctica 1, el dataset de Deng _et al._ contiene células embrionarias en los primeros estadios de Carnegie, solo que en este caso las células son de ratón, y no de macaco cangrejero. El dataset de esta práctica se encuentra en el archivo `deng-reads.rds`.
 
 
 ```{r}
@@ -132,9 +132,34 @@ BiocGenerics::plotPCA(deng_SCE, colour_by = "cell_type2") +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-PCA, here, provides a useful baseline for assessing different pseudotime methods. Unlike t-SNE and
-UMAP, PCA might better reveal developmental time - at the expense of producing worst
-clustering. For a very naive pseudotime we can just take the co-ordinates of the first principal component.
+Aquí el PCA nos proporciona un útil punto de referencia para comprobar diversos métodos de inferencia de trayectoria. A diferencia del t-SNE y el UMAP, el PCA podría revelarnos mejor el tiempo de desarrollo, a expensas de producir un clustering peor. Un algoritmo muy sencillo de inferencia podría ser simplemente utilizar las coordenadas en el espacio del PCA de la primera componente principal. 
+
+
+```{r}
+deng_SCE$PC1 <- reducedDim(x = deng_SCE, type = "PCA")[,1]
+
+ggplot(as.data.frame(colData(deng_SCE)), aes(x = PC1, y = cell_type2, colour = cell_type2)) + 
+  geom_quasirandom(groupOnX = F) + theme_classic() + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Primera componente principal") + ylab("Etapa del desarrollo") + 
+  ggtitle("Células ordenadas por la 1ªCP") + scale_colour_calc()
+```
+
+Aplicando dicho algoritmo básico, y tal y como muestra el gráfico anterior, vemos que a la primera dimensión le cuesta un poco diferenciar algunos tipos celulares, pero en general ordena bien las células según su estapa de desarrollo.
+
+En las siguientes secciones veremos qué rendimiento desempeñan los algoritmos previamente citados ( _i.e._ TSCAN y sucedáneos).
+
+***
+
+<br>
+
+# TSCAN
+
+TSCAN combines clustering with pseudotime analysis. First, it clusters the cells using mclust, which is
+based on a mixture of normal distributions. Then it builds a minimum spanning tree to connect the clusters.
+The branch of this tree that connects the largest number of clusters is the main branch which is used to
+determine pseudotime.
+
 
 
 ***
