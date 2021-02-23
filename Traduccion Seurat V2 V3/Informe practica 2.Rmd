@@ -366,6 +366,66 @@ ggplot(as.data.frame(colData(deng_SCE)),
 <br>
 
 
+# Mapas de difusión: `destiny`
+
+Los mapas de difusión fueron inventados por Ronald Coifman y Stephane Lagon, y la idea principal es asumir que los datos son muestras de un proceso de difusión. Este método infiere la estructura de los datos en un espacio de baja dimensionalidad al estimar los eigenvalues y los eigenvectors del operador de la difusión relacionado con los datos.
+
+Angerer _et al._ han aplicado el concepto de los mapas de difusión a los datos de scRNA-seq para crear un paquete de R llamado `destiny`.
+
+En este paso, tomaremos el orden de las células en la primera componente del mapa de difusión como el "pseudotiempo del mapa de difusión".
+
+```{r}
+# Primero usamos `logcounts` del paquete `SingleCellExperiment`.
+#
+# Get or set a matrix of log-transformed counts or count-like values. In most
+# cases, this will be defined as log-transformed normcounts, e.g., using log
+# base 2 and a pseudo-count of 1. Pseudocuenta de 1 = log2(x+1)
+deng <- logcounts(deng_SCE)
+
+colnames(deng) <- cellLabels
+
+# Calculamos las componentes de difusión
+dm <- DiffusionMap(t(deng))
+# ?DiffusionMap
+
+# Creamos un dataframe con 3 columnas: DC1, DC2 y etapa_desarrollo
+tmp <- data.frame(DC1 = eigenvectors(dm)[,1],
+                  DC2 = eigenvectors(dm)[,2],
+                  etapa_desarrollo = deng_SCE$cell_type2)
+```
+
+```{r}
+# Graficamos las dos primeras componentes del mapa de difusión
+ggplot(tmp, aes(x = DC1, y = DC2, color = etapa_desarrollo)) + geom_point() + 
+       theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + 
+       xlab("Componente de difusión 1") + ylab("Componente de difusión 2") + 
+       scale_color_calc() + ggtitle("destiny")
+```
+
+
+```{r}
+# Ordenamos las células según sus coordenadas en la primera componente del mapa
+# de difusión
+deng_SCE$pseudotime_diffusionmap <- rank(eigenvectors(dm)[,1])
+
+# Graficamos
+ggplot(as.data.frame(colData(deng_SCE)), aes(x = pseudotime_diffusionmap, y = cell_type2, colour = cell_type2)) +
+       geom_quasirandom(groupOnX = FALSE) + scale_color_calc() + theme_classic() + 
+       theme(plot.title = element_text(hjust = 0.5)) + xlab("Pseudotiempo del mapa de difusión (1ª componente)") + 
+       ylab("Etapa de desarrollo") + ggtitle("Células ordenadas según el pseudotiempo del mapa de difusión")
+```
+
+
+Like the other methods, using the first diffusion map component from destiny as pseudotime does a good
+job at ordering the early time-points (if we take high values as “earlier” in developement), but it is unable
+to distinguish the later ones.
+
+
+***
+
+<br>
+
+
 # sessionInfo()
 
 <details>
