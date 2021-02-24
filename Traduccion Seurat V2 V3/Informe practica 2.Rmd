@@ -434,8 +434,12 @@ Al igual que otros métodos, usar la 1ª componente de difusión a modo de pseud
 
 # SLICER
 
-The SLICER method is an algorithm for constructing trajectories that describe gene expression changes
-during a 
+
+SLICER es un algoritmo para construir trayectorias que describen cambios en la expresión génica durante un proceso biológico secuencial (al igual que Monocle y TSCAN). SLICER está diseñado para capturar cambios de expresión génica no lineales, seleccionar automáticamente aquellos genes que participen en el proceso biológico y detectar ramas/caminos alternativos y loops en la trayectoria ([Welch _et al._, 2016](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0975-3)). El paquete de SLICER está disponible en [GitHub](https://github.com/jw156605/SLICER) y se puede instalar mediante `devtools`.
+
+
+We use the select_genes function in SLICER to automatically select the genes to use in builing the cell
+trajector
 
 
 
