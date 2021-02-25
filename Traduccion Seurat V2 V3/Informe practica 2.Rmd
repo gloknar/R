@@ -206,8 +206,8 @@ ggplot(as.data.frame(colData(deng_SCE)),
        aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
        geom_quasirandom(groupOnX = F) + theme_classic() +
        theme(plot.title = element_text(hjust = 0.5)) +
-       ggtitle("Células ordenadas por TSCAN") +
-       xlab("pseudotiempo según TSCAN") + ylab("Etapa de desarrollo") +
+       ggtitle("Células ordenadas según TSCAN") +
+       xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
        scale_colour_calc()
 ```
 
@@ -245,7 +245,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        geom_quasirandom(groupOnX = F) + theme_classic() +
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("TSCAN, 2 clusters") +
-       xlab("pseudotiempo") + ylab("Etapa de desarrollo") +
+       xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
        scale_colour_calc()
 ```
 
@@ -273,7 +273,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        geom_quasirandom(groupOnX = F) + theme_classic() +
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("TSCAN, 3 clusters") +
-       xlab("pseudotiempo") + ylab("Etapa de desarrollo") +
+       xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
        scale_colour_calc()
 ```
 
@@ -301,7 +301,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        geom_quasirandom(groupOnX = F) + theme_classic() +
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("TSCAN, 8 clusters") +
-       xlab("pseudotiempo") + ylab("Etapa de desarrollo") +
+       xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
        scale_colour_calc()
 ```
 
@@ -329,7 +329,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        geom_quasirandom(groupOnX = F) + theme_classic() +
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("TSCAN, 9 clusters") +
-       xlab("pseudotiempo") + ylab("Etapa de desarrollo") +
+       xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
        scale_colour_calc()
 ```
 
@@ -357,7 +357,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        geom_quasirandom(groupOnX = F) + theme_classic() +
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("TSCAN, 10 clusters") +
-       xlab("pseudotiempo") + ylab("Etapa de desarrollo") +
+       xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
        scale_colour_calc()
 ```
 
@@ -475,7 +475,7 @@ Ahora que hemos calculado el LLE, podemos construir un grafo basado en k-nearest
 
 
 ```{r}
-# Construimos el grafo
+# Construimos el grafo con la función `conn_knn_graph()`
 slicer_traj_graph <- conn_knn_graph(slicer_traj_lle, k = 10)
 
 # Graficamos
@@ -485,7 +485,7 @@ plot(slicer_traj_graph, main = "Fully connected kNN graph from SLICER")
 A partir del grafo podemos identificar las células distales (de los extremos), las cuales serán candidatas para el comienzo y el fin de la trayectoria.
 
 ```{r}
-# Encontramos células distales
+# Encontramos células distales con el comando `find_extreme_cells()`
 ends <- find_extreme_cells(traj_graph = slicer_traj_graph, embedding = slicer_traj_lle)
 start <- ends[1]
 ```
@@ -493,30 +493,36 @@ start <- ends[1]
 Tras definir la célula inicial, ordenamos las células a lo largo del pseudotiempo.
 
 ```{r}
+# Ordenamos las células en el pseudotiempo con la función `cell_order()` del
+# paquete SLICER
 pseudotime_order_slicer <- cell_order(slicer_traj_graph, start)
+
+# Detectamos ramas
 branches <- assign_branches(slicer_traj_graph, start)
+
+# creamos dataframe con las ramas, los estadios celulares y el pseudotiempo
 pseudotime_slicer <- data.frame(TimePoint = cellLabels,
                                 pseudotime = NA,
                                 State = branches)
 
+# Añadimos a la columna pseudotime del dataframe anterior el orden de las
+# células en el pseudotiempo
 pseudotime_slicer$pseudotime[pseudotime_order_slicer] <-  1:length(pseudotime_order_slicer)
-
-deng_SCE$pseudotime_slicer <- pseudotime_slicer$pseudotime
 ```
 
 
-We can again compare the inferred pseudotime to the known sampling timepoints. SLICER does not provide
-a pseudotime value per se, just an ordering of cells.
+Hecho esto, ahora podemos comparar el pseudotiempo inferido por SLICER con las etapas del desarrollo ya conocidas. SLICER no devuelve un pseudotiempo _per se_, sino simplemente el orden final de las células.
 
 
 ```{r}
-ggplot(as.data.frame(colData(deng_SCE)),
-aes(x = pseudotime_slicer,
-y = cell_type2, colour = cell_type2)) +
-geom_quasirandom(groupOnX = FALSE) +
-scale_color_tableau() + theme_classic() +
-xlab("SLICER pseudotime (cell ordering)") + ylab("Timepoint") +
-theme_classic()
+# Añadimos al objeto `deng_SCE` el pseudotiempo del dataframe anterior para
+# comparar los resultados con los métodos anteriores y la verdad experimental
+deng_SCE$pseudotime_slicer <- pseudotime_slicer$pseudotime
+
+# Graficamos el resultado
+ggplot(as.data.frame(colData(deng_SCE)), aes(x = pseudotime_slicer, y = cell_type2, colour = cell_type2)) + 
+  geom_quasirandom(groupOnX = F) + xlab(" \"Pseudotiempo\" (orden celular) ") + ylab("etapa de desarrollo") +
+  theme_classic() + ggtitle("Células ordenadas según SLICER") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
 
