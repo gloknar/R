@@ -532,17 +532,50 @@ Al igual que los métodos ya probados hasta ahora, SLICER ordena bien las primer
 <details>
 <summary> __Ejercicio 2.2: ¿Cómo cambian los resultados del LLE en función del valor de `k`? ¿Y qué pasa al cambiar el nº de vecinos cercanos en la función `conn_knn_graph()`?__ </summary>
 
-<br>
-
 __Solución__: 
 
-* Manteniendo el k del LLE a 60 y variando k en `conn_knn_graph()`, vemos que a mayor nº de vecinos cercanos, la trayectoria se perfila cada vez más, si bien el ordenamiento final de las células se mantiene igual. Nótese que para valores muy bajos de vecinos (k = 1~3), el comando `assign_branches` devuelve el error `Error in 1:num_branches : Argumento NA/NaN`
+* Manteniendo el parámetro `k = 60` del LLE  y variando el parámetro `k` del comando `conn_knn_graph()`, vemos que a mayor nº de vecinos cercanos, la trayectoria se perfila cada vez más, si bien el ordenamiento final de las células se mantiene igual. Nótese que para valores muy bajos de vecinos (k = 1~3), el comando `assign_branches` devuelve el error `Error in 1:num_branches : Argumento NA/NaN`
 
-*  Manteniendo el k del grafo a 10 y variando el k del LLE,
-
-
+* Manteniendo el parámetro `k = 10` del grafo y variando el parámetro `k` del LLE, vemos que para valores extremos de `k`, a SLICER le cuesta ordenar las células. SLICER ordena exitosamente las células tempranas con un `k = 30`, mientras que con `k = 55` intenta separar las blastómeras (aunque sin mucho éxito). Nótese que para valores muy bajos de vecinos (k < 10), el comando `assign_branches` devuelve el error `Error in if (mean_dist < min_dist) { : valor ausente donde TRUE/FALSE es necesario` (Si se observa la función con F2, se aprecia que se omitieron algunos casos en la sección de condicionales).
 
 
+<br>
+
+![__Grafo con k = 1; LLE con k fijo en 60__](./Cosas accesorias Informe 2/resultados slicer/solucion1.png)
+
+<br>
+
+![__Grafo con k = 5; LLE con k fijo en 60__](./Cosas accesorias Informe 2/resultados slicer/solucion2.png)
+
+<br>
+
+![__Grafo con k = 30; LLE con k fijo en 60__](./Cosas accesorias Informe 2/resultados slicer/solucion3.png)
+
+***
+
+<br>
+
+![__Orden celular con LLE con k = 10; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion4.png)
+
+<br>
+
+![__Orden celular con LLE con k = 30; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion5.png)
+
+<br>
+
+![__Orden celular con LLE con k = 50; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion6.png)
+
+<br>
+
+![__Orden celular con LLE con k = 55; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion7.png)
+
+<br>
+
+![__Orden celular con LLE con k = 100; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion8.png)
+
+<br>
+
+![__Orden celular con LLE con k = 150; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion9.png)
 
 </details>
 
@@ -556,7 +589,10 @@ __Solución__:
 
 # Ouija
 
-saee
+Ouija (http://kieranrcampbell.github.io/ouija/) takes a different approach from the pseudotime estimation
+methods we have looked at so far. Earlier methods have all been “unsupervised”, which is to say that apart
+from perhaps selecting informative genes we do not supply the method with any prior information about
+how we expect certain genes or the trajectory as a whole to behave.
 
 
 
