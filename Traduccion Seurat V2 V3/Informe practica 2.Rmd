@@ -536,57 +536,9 @@ Al igual que los métodos ya probados hasta ahora, SLICER ordena bien las primer
 
 __Solución__: 
 
-* LLE con k bajos pasa esto
+* Manteniendo el k del LLE a 60 y variando k en `conn_knn_graph()`, vemos que a mayor nº de vecinos cercanos, la trayectoria se perfila cada vez más, si bien el ordenamiento final de las células se mantiene igual. Nótese que para valores muy bajos de vecinos (k = 1~3), el comando `assign_branches` devuelve el error `Error in 1:num_branches : Argumento NA/NaN`
 
-* LLE con k altos pasa esto otro.
-
-* A `conn_knn_graph()` le pasa esto o lo otro al variar k
-
-
-
-
-__LLE con K = 5, grafo a K = 10__
-
-```{r}
-set.seed(1)
-k <- 5
-
-slicer_traj_lle <- lle(t(log_deng[slicer_genes,]), m = 2, k)$Y
-
-reducedDim(deng_SCE, type = "LLE") <- slicer_traj_lle
-
-plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2") +
-                xlab("Componente de LLE 1") + ylab("Componente de LLE 2") +
-                ggtitle("Embebimiento lineal local (LLE) de las células - SLICER") + 
-                theme(plot.title =  element_text(hjust = 0.5))
-
-
-# Grafo con k = 10
-slicer_traj_graph <- conn_knn_graph(slicer_traj_lle, k = 10)
-
-plot(slicer_traj_graph, main = "Fully connected kNN graph from SLICER")
-
-
-ends <- find_extreme_cells(traj_graph = slicer_traj_graph, embedding = slicer_traj_lle)
-start <- ends[1]
-
-pseudotime_order_slicer <- cell_order(slicer_traj_graph, start)
-
-branches <- assign_branches(slicer_traj_graph, start)
-
-pseudotime_slicer <- data.frame(TimePoint = cellLabels,
-                                pseudotime = NA,
-                                State = branches)
-
-pseudotime_slicer$pseudotime[pseudotime_order_slicer] <-  1:length(pseudotime_order_slicer)
-
-deng_SCE$pseudotime_slicer <- pseudotime_slicer$pseudotime
-
-# Graficamos el resultado
-ggplot(as.data.frame(colData(deng_SCE)), aes(x = pseudotime_slicer, y = cell_type2, colour = cell_type2)) + 
-  geom_quasirandom(groupOnX = F) + xlab(" \"Pseudotiempo\" (orden celular) ") + ylab("etapa de desarrollo") +
-  theme_classic() + ggtitle("LLE con k = 5; grafo con k = 10") + theme(plot.title = element_text(hjust = 0.5))
-```
+*  Manteniendo el k del grafo a 10 y variando el k del LLE,
 
 
 
