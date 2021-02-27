@@ -660,13 +660,38 @@ Podemos contruir el modelo de `ouija` con:
 * El _Automatic Differentiation Variational Bayes_, ADVI o simplemente VI. Consiste en inferencia aproximada en la cual se minimiza la divergencia Kullback-Leibler o KL (una medida de distancia asimétrica y distinta de la euclídea; no es lo mismo medir la distancia _forwards KL_ que la distancia _backwards KL_) a una distribución aproximada.
 
 
+En general, HMC infere de manera más precisa la trayectoria y devuelve una varianza posterior aproximadamente correcta para todos los parámetros. No obstante, ADVI es _significativamente_ más rápido que HMC y aunque pueda infraestimar la varianza _a posteriori_, el autor de `ouija` comenta que en ocasiones ADVI puede devolver resultados igual de buenos que los obtenidos con HMC, en cuanto a descubrimiento de pseudotiempos posteriores se refiere.
 
 
-In general, HMC will provide more accurate inference with approximately correct posterior variance for all
-parameters. However, VB is orders of magnitude quicker than HMC and while it may underestimate posterior
-variance, the Ouija authors suggest that anecdotally it often performs as well as HMC for discovering
-posterior pseudotimes.
 
+To help the Ouija model, we provide it with prior information about the strength of switches for up- and
+down-regulated genes. By setting switch strength to -10 for down-regulated genes and 10 for up-regulated
+genes with a prior strength standard deviation of 0.5 we are telling the model that we are confident about
+the expected behaviour of these genes across the differentiation process.
+
+```{r}
+options(mc.cores = parallel::detectCores())
+response_type <- c(rep("switch", length(ouija_markers_down) +
+length(ouija_markers_up)),
+rep("transient", length(ouija_markers_transient)))
+switch_strengths <- c(rep(-10, length(ouija_markers_down)),
+rep(10, length(ouija_markers_up)))
+switch_strength_sd <- c(rep(0.5, length(ouija_markers_down)),
+rep(0.5, length(ouija_markers_up)))
+garbage <- capture.output(
+oui_vb <- ouija(deng_SCE[ouija_markers,],
+single_cell_experiment_assay = "logcounts",
+response_type = response_type,
+switch_strengths = switch_strengths,
+switch_strength_sd = switch_strength_sd,
+inference_type = "vb")
+)
+print(oui_vb)
+
+
+
+plot_expression(oui_vb)
+```
 
 
 ***
