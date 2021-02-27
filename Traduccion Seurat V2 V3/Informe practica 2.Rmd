@@ -55,7 +55,7 @@ En muchas situaciones, uno estudia un proceso en el cual las células cambian co
 En su lugar, debemos muestrear en múltiples puntos del tiempo y así obtener "fotografías" de los perfiles de expresión génicos. Puesto que algunas células se diferenciarán más rápido que otras, cada fotografía puede contener células en diversas etapas del desarrollo. __Usamos métodos estadísticos para ordenar las células a lo largo de una o más trayectorias las cuales representan las trayectorias del desarrollo subyacentes, este ordenamiento se conoce como "pseudotiempo".__
 
 
-En esta práctica nos centraremos en 4 herramientas para ordenar las células según su grado de desarrollo en el pseudotiempo: TSCAN, SLICER, destiny y ouija. Para ilustrar su uso, emplearemos el dataset del desarrollo embrionario en ratón de [Deng _et al._, 2014](https://science.sciencemag.org/content/343/6167/193). Dicho dataset cuenta con 268 células provenientes de la fase temprana del desarrollo embrional y extraídas en 10 puntos de tiempo. En este caso no hace falta alinear las células a la trayectoria del pseudotiempo dado que están ya etiquetadas con información sobre la trayectoria embrionaria. Por tanto, las etiquetas son la _ground truth_ o verdad experimental sobre la cual podemos comparar el rendimiento obtenido por los susodichos métodos.
+En esta práctica nos centraremos en 4 herramientas para ordenar las células según su grado de desarrollo en el pseudotiempo: `TSCAN`, `SLICER`, `destiny` y `Ouija.` Para ilustrar su uso, emplearemos el dataset del desarrollo embrionario en ratón de [Deng _et al._, 2014](https://science.sciencemag.org/content/343/6167/193). Dicho dataset cuenta con 268 células provenientes de la fase temprana del desarrollo embrional y extraídas en 10 puntos de tiempo. En este caso no hace falta alinear las células a la trayectoria del pseudotiempo dado que están ya etiquetadas con información sobre la trayectoria embrionaria. Por tanto, las etiquetas son la _ground truth_ o verdad experimental sobre la cual podemos comparar el rendimiento obtenido por los susodichos métodos.
 
 Una revisión más o menos reciente de [Cannoodt _et al._](https://onlinelibrary.wiley.com/doi/full/10.1002/eji.201646347) publicada en 2016 nos aporta un resumen detallado de los distintos algoritmos empleados para la inferencia de trayectoria en scRNA-seq. Dicha revisión cubre:
 
@@ -153,7 +153,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
 
 Aplicando dicho algoritmo básico, y tal y como muestra el gráfico anterior, vemos que a la primera dimensión le cuesta un poco diferenciar algunos tipos celulares, pero en general ordena bien las células según su estapa de desarrollo.
 
-En las siguientes secciones veremos qué rendimiento desempeñan los algoritmos previamente citados ( _i.e._ TSCAN y sucedáneos).
+En las siguientes secciones veremos qué rendimiento desempeñan los algoritmos previamente citados ( _i.e._ `TSCAN` y sucedáneos).
 
 
 
@@ -351,7 +351,7 @@ pseudotime_order_tscan <- as.character(dengorderTSCAN$sample_name)
 deng_SCE$pseudotime_order_tscan <- NA
 deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengorderTSCAN$Pseudotime
 
-# Graficamos el pseudotiempo final de TSCAN
+# Graficamos el pseudotiempo final de `TSCAN`
 ggplot(as.data.frame(colData(deng_SCE)), 
        aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
        geom_quasirandom(groupOnX = F) + theme_classic() +
@@ -437,7 +437,7 @@ Al igual que otros métodos, usar la 1ª componente de difusión a modo de pseud
 # SLICER
 
 
-SLICER es un algoritmo para construir trayectorias que describen cambios en la expresión génica durante un proceso biológico secuencial (al igual que Monocle y TSCAN). SLICER está diseñado para capturar cambios de expresión génica no lineales, seleccionar automáticamente aquellos genes que participen en el proceso biológico y detectar _branches_/caminos alternativos y _loops_ en la trayectoria ([Welch _et al._, 2016](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0975-3)). El paquete de SLICER está disponible en [GitHub](https://github.com/jw156605/SLICER) y se puede instalar mediante `devtools`.
+SLICER es un algoritmo para construir trayectorias que describen cambios en la expresión génica durante un proceso biológico secuencial (al igual que `Monocle` y `TSCAN`). SLICER está diseñado para capturar cambios de expresión génica no lineales, seleccionar automáticamente aquellos genes que participen en el proceso biológico y detectar _branches_/caminos alternativos y _loops_ en la trayectoria ([Welch _et al._, 2016](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0975-3)). El paquete de SLICER está disponible en [GitHub](https://github.com/jw156605/SLICER) y se puede instalar mediante `devtools`.
 
 
 Usamos la función `select_genes` de SLICER para seleccionar automáticamente los genes que se usarán para construir la trayectoria celular. La función usa la "neighbourhood variance" para identificar los genes que varían suavemente (en lugar de aquellos que fluctúan aleatoriamente) en las células estudiadas. A continuación, determinamos el nº de vecinos cercanos o _nearest neighbours_ (parámetro `k`) que provee un _embedding_ o embebimiento lo más parecido a una trayectoria. Finalmente estimamos el _embedding_ local lineal (LLE) de las células. 
@@ -587,13 +587,58 @@ __Solución__:
 
 
 
-# Ouija
+# ouija
 
-Ouija (http://kieranrcampbell.github.io/ouija/) takes a different approach from the pseudotime estimation
-methods we have looked at so far. Earlier methods have all been “unsupervised”, which is to say that apart
-from perhaps selecting informative genes we do not supply the method with any prior information about
-how we expect certain genes or the trajectory as a whole to behave.
 
+`ouija` (viñeta online: http://kieranrcampbell.github.io/ouija/) infiere la trayectoria de manera distinta a como lo han hecho los paquetes previamente presentados. Mientras que `TSCAN`, `destiny` y `SLICER` eran métodos no supervisados y no tenían en cuenta las etiquetas asignadas por el investigador, `ouija` es un algoritmo probabilístico capaz de inferir el pseudotiempo a partir de un pequeño panel de genes marcadores. En concreto, este algoritmo:
+
+* Infiere el pseudotiempo a partir de un nº reducido de biomarcadores, llevando la atención del investigador a dichos genes.
+
+* Proporciona estimaciones de los parámetros (incluye incertidumbre), lo que permite interpretar patrones de regulación génica. 
+
+* Posee un test para hipótesis Bayesiana para encontrar a lo largo de la trayectoria genes regulados antes que otros.     
+
+* Identifica estados metaestables a lo largo de la trayectoria, _i.e._ tipos celulares discretos.
+
+
+
+<br>
+
+En `ouija` podemos modelar los genes de varias maneras:
+
+* Que se sobre o infraexpresen de manera monotónica ( _i.e._ su expresión a lo largo del tiempo es exclusivamente al alza o a la baja, respectivamente). Esto se conoce como comportamiento _switch-like_.
+
+* Que se sobre o infraexpresen de manera aguda ( _i.e._ la expresión del gen alcanza brevemente y de manera rápida un máximo/mínimo). Esto se conoce como comportamiento transitorio.
+
+Por defecto, `ouija` asume que todos los genes usan el modelo monotónico, aunque el autor asegura que no pasa nada, pues modelar un gen transitorio como uno monotónico tiene un efecto mínimo en los resultados finales.
+
+
+
+<br>
+
+Proporcionaremos a `ouija` los siguientes biomarcadores (junto con la etapa del desarrollo en la que se sobreexpresan):
+
+* Etapa inicial: Dazl, Rnf17, Sycp3, Nanog, Pou5f1, Fgf8, Egfr, Bmp5, Bmp15
+
+* Etapa intermedia: Zscan4b, Foxa1, Prdm14, Sox21
+
+* Etapa tardía: Creb3, Gpx4, Krt8, Elf5, Eomes, Cdx2, Tdgf1, Gdf3
+
+En nuestro caso particular con el dataset de Deng podemos hacer un poco de trampas y comprobar que nuestros genes marcadores seleccionados son realmente biomarcadores de las distintas etapas del desarrollo aquí estudiadas.
+
+
+```{r}
+ouija_markers_up <- c("Creb3", "Gpx4", "Krt8", "Elf5", "Eomes", "Cdx2", "Tdgf1", "Gdf3") # Son los genes de la etapa tardía 
+
+ouija_markers_down <- c("Dazl", "Rnf17", "Sycp3", "Pou5f1", "Fgf8", "Egfr", "Bmp5", "Bmp15") # Son los genes de la etapa inicial, excepto Nanog
+
+ouija_markers_transient <- c("Zscan4b", "Foxa1", "Prdm14", "Sox21") # Son los genes de la etapa intermedia
+
+ouija_markers <- c(ouija_markers_up, ouija_markers_down, ouija_markers_transient)
+
+plotExpression(deng_SCE, features = ouija_markers, x = "cell_type2", colour_by = "cell_type2") + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
 
 
 
