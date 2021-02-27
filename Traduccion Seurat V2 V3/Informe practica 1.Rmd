@@ -436,7 +436,7 @@ head(cluster1_5.markers, n = 5)
 Podemos visualizar los biomarcadores de los clusters con:
 
 ```{r}
-VlnPlot(cm, features = "BMP6")
+VlnPlot(cm, features = "BMP6") + theme(axis.text.x = element_text(angle = 0, hjust = .5))
 
 FeaturePlot(cm, features = "IL6R", reduction = "umap", pt.size = 2)
 ```
