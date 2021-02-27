@@ -627,7 +627,7 @@ Proporcionaremos a `ouija` los siguientes biomarcadores (junto con la etapa del 
 En nuestro caso particular con el dataset de Deng podemos hacer un poco de trampas y comprobar que nuestros genes marcadores seleccionados son realmente biomarcadores de las distintas etapas del desarrollo aquí estudiadas.
 
 
-```{r}
+```{r, fig.height = 9.5}
 ouija_markers_up <- c("Creb3", "Gpx4", "Krt8", "Elf5", "Eomes", "Cdx2", "Tdgf1", "Gdf3") # Son los genes de la etapa tardía 
 
 ouija_markers_down <- c("Dazl", "Rnf17", "Sycp3", "Pou5f1", "Fgf8", "Egfr", "Bmp5", "Bmp15") # Son los genes de la etapa inicial, excepto Nanog
@@ -641,6 +641,31 @@ plotExpression(deng_SCE, features = ouija_markers, x = "cell_type2", colour_by =
 ```
 
 
+
+Para computar el pseudotiempo, basta con llamar a `ouija` y pasarle los modelos de genes esperados. Como ya se dijo en el párrafo anterior, el paquete modela por defecto los genes de manera monotónica (cosa que haremos a continuación). El input que espera `ouija` es cualquiera de las 3 opciones siguientes:
+
+* Una matriz de célula(fila) x gen(columna) con valores de expresión génica no negativos.
+
+* Una matriz de conteos logarítmica, producto de aplicar el comando `logcounts()` a un objeto de tipo `SingleCellExperiment`.
+
+* Un objeto de tipo `ExpressionSet`.
+
+
+Podemos añadir información conocida _a priori_ respecto a la sobre o infraexpresión de los genes implicados en el proceso biológico estudiado, además de incluir conocimiento previo sobre el tipo de modelo que sigue cada gen (monotónico/transitorio).
+
+Podemos contruir el modelo de `ouija` con:
+
+* El método de Monte Carlo Hamiltoniano o Monte Carlo Híbrido ( _Hamiltonian Monte Carlo_ o HMC). Consiste en inferencia completa con el método de Monte Carlo basado en Cadenas de Markov ( _Monte Carlo Markov Chain_ o MCMC) en la cual se usa la información del gradiente de la _log-posterior_ (logaritmo de la probabilidad _a posteriori_) para guiar el paseo aleatorio en el espacio del parámetro.
+
+* El _Automatic Differentiation Variational Bayes_, ADVI o simplemente VI. Consiste en inferencia aproximada en la cual se minimiza la divergencia Kullback-Leibler o KL (una medida de distancia asimétrica y distinta de la euclídea; no es lo mismo medir la distancia _forwards KL_ que la distancia _backwards KL_) a una distribución aproximada.
+
+
+
+
+In general, HMC will provide more accurate inference with approximately correct posterior variance for all
+parameters. However, VB is orders of magnitude quicker than HMC and while it may underestimate posterior
+variance, the Ouija authors suggest that anecdotally it often performs as well as HMC for discovering
+posterior pseudotimes.
 
 
 
