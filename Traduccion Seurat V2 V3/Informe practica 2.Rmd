@@ -443,7 +443,7 @@ SLICER es un algoritmo para construir trayectorias que describen cambios en la e
 Usamos la función `select_genes` de SLICER para seleccionar automáticamente los genes que se usarán para construir la trayectoria celular. La función usa la "neighbourhood variance" para identificar los genes que varían suavemente (en lugar de aquellos que fluctúan aleatoriamente) en las células estudiadas. A continuación, determinamos el nº de vecinos cercanos o _nearest neighbours_ (parámetro `k`) que provee un _embedding_ o embebimiento lo más parecido a una trayectoria. Finalmente estimamos el _embedding_ local lineal (LLE) de las células. 
 
 
-```{r}
+```{r, warning = F}
 set.seed(1)
 # Para seleccionar los genes en SLICER, usamos la matriz logarítmica traspuesta.
 # Ídem para seleccionar k
@@ -690,7 +690,7 @@ oui_vb <- ouija(x = deng_SCE[ouija_markers,],
                 response_type = response_type,
                 switch_strengths = switch_strengths,
                 switch_strength_sd = switch_strength_sd,
-                inference_type = "vb",
+                inference_type = "vb", # "vb" = ADVI
                 single_cell_experiment_assay = "logcounts")
 
 print(oui_vb)
@@ -708,18 +708,84 @@ garbage <- capture.output(
                   switch_strengths = switch_strengths,
                   switch_strength_sd = switch_strength_sd,
                   inference_type = "vb",
-                  single_cell_experiment_assay = "logcounts"))
+                  single_cell_experiment_assay = "logcounts")
+)
 print(oui_monsieur)
 ```
 
 
-We can plot the gene expression over pseudotime along with the maximum a posteriori (MAP) estimates of
-the mean function (the sigmoid or Gaussian transient function) using the `plot_expression()` function.
 
+Podemos graficar la expresión génica a lo largo del pseudotiempo junto con las estimaciones de la función media-MAP ( _maximum a posteriori_) usando el comando `plot_expression()` del paquete `ouija`. 
+
+```{r, fig.height= 7}
+plot_expression(oui_vb) + theme_classic()
+```
+
+También podemos visualizar cuándo suceden en la trayectoria los comportamientos de regulación génica, ya sea en forma de switch time o el peak time (para genes monotónicos o transitorios) usando los comandos `plot_switch_times` y `plot_transient_times`.
+
+
+
+```{r, warning=F}
+plot_switch_times(oui_vb) + theme_classic()
+
+plot_peak_times(oui_vb) + theme_classic()
+```
+
+
+Para identificar estados celulares metaestables usando matrices de consistencia:
+
+```{r, warning = F}
+# Visualizamos la matriz de consistencia
+plot_consistency(oui_vb)
+
+# Guardamos la matriz de consistencia en el objeto `cmo` y agrupamos las células
+cmo <- consistency_matrix(oui_vb)
+cell_classifications <- cluster_consistency(cmat = cmo)
+
+# Generamos el pseudotiempo
+map_pst <- map_pseudotime(oui_vb)
+
+# Agrupamos la clasificación celular y el pseudotiempo MAP en un dataframe y lo
+# graficamos
+ouija_pseudotime <- data.frame(map_pst, cell_classifications)
+ggplot(ouija_pseudotime, aes(x = map_pst, y = cell_classifications)) + 
+  geom_point() + xlab("Pseudotiempo MAP") + ylab("Clasificación celular") + 
+  theme_classic()
+
+
+
+
+deng_SCE$pseudotime_ouija <- ouija_pseudotime$map_pst
+deng_SCE$ouija_cell_class <- ouija_pseudotime$cell_classifications
+
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = pseudotime_ouija, y = cell_type2, colour = cell_type2)) +
+       geom_quasirandom(groupOnX = F) + theme_classic() +
+       scale_color_calc() + xlab("Pseudotiempo MAP") +
+       ylab("estado de desarrollo") + ggtitle("Ordenamiento celular según ouija") + 
+       theme(plot.title = element_text(hjust = 0.5))
+```
+
+Al igual que el primer gráfico que generamos con `TSCAN`, `ouija` nos ha devuelto el pseudotiempo ordenado al revés, pero insistimos en que esto no es un problema. `ouija` ha ordenado bien en general los tipos celulares, aunque cabe destacar que el algoritmo puede ser sensible a la elección de biomarcadores y la información _a priori_ proporcionada al mismo. ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las _a priori_?
+
+
+<details>
+<summary>Ejercicio</summary>
+</details>
+
+
+Ouija identifica en este caso 4 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4/8/16 cell”,
+“blast1” and “blast2”.
 
 ```{r}
-plot_expression(oui_vb)
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = as.factor(ouija_cell_class), y = pseudotime_ouija, colour = cell_type2)) +
+       geom_boxplot() + coord_flip() + scale_color_tableau() +
+       theme_classic() + xlab("Pseudotiempo MAP") +
+       ylab("Clasificación celular por ouija")
+       
 ```
+
 
 
 ***
