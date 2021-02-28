@@ -346,7 +346,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Informe práctica 2</h1>
 <h4 class="author">Adam Casas</h4>
-<h4 class="date">Compilado: 27 de febrero del 2021</h4>
+<h4 class="date">Compilado: 28 de febrero del 2021</h4>
 
 </div>
 
@@ -739,10 +739,10 @@ div.tocify {
 <p>Podemos contruir el modelo de <code>ouija</code> con:</p>
 <ul>
 <li><p>El método de Monte Carlo Hamiltoniano o Monte Carlo Híbrido ( <em>Hamiltonian Monte Carlo</em> o HMC). Consiste en inferencia completa con el método de Monte Carlo basado en Cadenas de Markov ( <em>Monte Carlo Markov Chain</em> o MCMC) en la cual se usa la información del gradiente de la <em>log-posterior</em> (logaritmo de la probabilidad <em>a posteriori</em>) para guiar el paseo aleatorio en el espacio del parámetro.</p></li>
-<li><p>El <em>Automatic Differentiation Variational Bayes</em>, ADVI o simplemente VI. Consiste en inferencia aproximada en la cual se minimiza la divergencia Kullback-Leibler o KL (una medida de distancia asimétrica y distinta de la euclídea; no es lo mismo medir la distancia <em>forwards KL</em> que la distancia <em>backwards KL</em>) a una distribución aproximada.</p></li>
+<li><p>El método de <em>Automatic Differentiation Variational Bayes</em>, ADVI o simplemente VI. Consiste en inferencia aproximada en la cual se minimiza la divergencia Kullback-Leibler o KL (una medida de distancia asimétrica y distinta de la euclídea; no es lo mismo medir la distancia <em>forwards KL</em> que la distancia <em>backwards KL</em>) a una distribución aproximada.</p></li>
 </ul>
-<p>En general, HMC infere de manera más precisa la trayectoria y devuelve una varianza posterior aproximadamente correcta para todos los parámetros. No obstante, ADVI es <em>significativamente</em> más rápido que HMC y aunque pueda infraestimar la varianza <em>a posteriori</em>, el autor de <code>ouija</code> comenta que en ocasiones ADVI puede devolver resultados igual de buenos que los obtenidos con HMC, en cuanto a descubrimiento de pseudotiempos posteriores se refiere.</p>
-<p>To help the Ouija model, we provide it with prior information about the strength of switches for up- and down-regulated genes. By setting switch strength to -10 for down-regulated genes and 10 for up-regulated genes with a prior strength standard deviation of 0.5 we are telling the model that we are confident about the expected behaviour of these genes across the differentiation process.</p>
+<p>En general, el método de HMC infere de manera más precisa la trayectoria y devuelve una varianza posterior aproximadamente correcta para todos los parámetros. No obstante, el ADVI es <em>significativamente</em> más rápido que HMC y aunque pueda infraestimar la varianza <em>a posteriori</em>, el autor de <code>ouija</code> comenta que en ocasiones ADVI puede devolver resultados igual de buenos que los obtenidos con HMC, en cuanto a descubrimiento de pseudotiempos posteriores se refiere.</p>
+<p>Para ayudar al modelo de <code>ouija</code>, vamos a proporcionarle información <em>a priori</em> sobre el comportamiento de nuestros genes sobre e infraexpresados. Al seleccionar la switch strength en +-10 (-10 para genes infraexpresados y +10 para genes sobreexpresados) y la prior strength standard deviation en 0.5, le estamos indicando al modelo que estamos muy seguros sobre el comportamiento esperado de estos genes a lo largo del proceso biológico estudiado (desarrollo embrionario en este caso).</p>
 <div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">mc.cores =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>())</span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>response_type <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">&quot;switch&quot;</span>, <span class="fu">length</span>(ouija_markers_down) <span class="sc">+</span></span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(ouija_markers_up)),</span>

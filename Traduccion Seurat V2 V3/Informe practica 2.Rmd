@@ -657,27 +657,45 @@ Podemos contruir el modelo de `ouija` con:
 
 * El método de Monte Carlo Hamiltoniano o Monte Carlo Híbrido ( _Hamiltonian Monte Carlo_ o HMC). Consiste en inferencia completa con el método de Monte Carlo basado en Cadenas de Markov ( _Monte Carlo Markov Chain_ o MCMC) en la cual se usa la información del gradiente de la _log-posterior_ (logaritmo de la probabilidad _a posteriori_) para guiar el paseo aleatorio en el espacio del parámetro.
 
-* El _Automatic Differentiation Variational Bayes_, ADVI o simplemente VI. Consiste en inferencia aproximada en la cual se minimiza la divergencia Kullback-Leibler o KL (una medida de distancia asimétrica y distinta de la euclídea; no es lo mismo medir la distancia _forwards KL_ que la distancia _backwards KL_) a una distribución aproximada.
+* El método de _Automatic Differentiation Variational Bayes_, ADVI o simplemente VI. Consiste en inferencia aproximada en la cual se minimiza la divergencia Kullback-Leibler o KL (una medida de distancia asimétrica y distinta de la euclídea; no es lo mismo medir la distancia _forwards KL_ que la distancia _backwards KL_) a una distribución aproximada.
 
 
-En general, HMC infere de manera más precisa la trayectoria y devuelve una varianza posterior aproximadamente correcta para todos los parámetros. No obstante, ADVI es _significativamente_ más rápido que HMC y aunque pueda infraestimar la varianza _a posteriori_, el autor de `ouija` comenta que en ocasiones ADVI puede devolver resultados igual de buenos que los obtenidos con HMC, en cuanto a descubrimiento de pseudotiempos posteriores se refiere.
+En general, el método de HMC infere de manera más precisa la trayectoria y devuelve una varianza posterior aproximadamente correcta para todos los parámetros. No obstante, el ADVI es _significativamente_ más rápido que HMC y aunque pueda infraestimar la varianza _a posteriori_, el autor de `ouija` comenta que en ocasiones ADVI puede devolver resultados igual de buenos que los obtenidos con HMC, en cuanto a descubrimiento de pseudotiempos posteriores se refiere.
 
 
+Para ayudar al modelo de `ouija`, vamos a proporcionarle información _a priori_ sobre el comportamiento de nuestros genes sobre e infraexpresados. Al seleccionar la switch strength en +-10 (-10 para genes infraexpresados y +10 para genes sobreexpresados) y la prior strength standard deviation en 0.5, le estamos indicando al modelo que estamos muy seguros sobre el comportamiento esperado de estos genes a lo largo del proceso biológico estudiado (desarrollo embrionario en este caso).
 
-To help the Ouija model, we provide it with prior information about the strength of switches for up- and
-down-regulated genes. By setting switch strength to -10 for down-regulated genes and 10 for up-regulated
-genes with a prior strength standard deviation of 0.5 we are telling the model that we are confident about
-the expected behaviour of these genes across the differentiation process.
 
 ```{r}
+# Tipo de respuesta de cada gen
+response_type <- c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up)),
+                   rep("transient", length(ouija_markers_transient)))
+
+# c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up))) equivale a 
+# c(rep("switch", length(ouija_markers_down)), rep("switch, length(ouija_markers_up)))
+
+
+switch_strengths <- c(rep(-10, length(ouija_markers_down)), 
+                      rep(10, length(ouija_markers_up)))
+
+
+switch_strength_sd <- c(rep(0.5, length(ouija_markers_down)), 
+                         rep(0.5, length(ouija_markers_up)))
+
+
+# El comando `ouija()` recomienda usar la siguiente línea de código para
+# paralelizar en local su computación:
 options(mc.cores = parallel::detectCores())
-response_type <- c(rep("switch", length(ouija_markers_down) +
-length(ouija_markers_up)),
-rep("transient", length(ouija_markers_transient)))
-switch_strengths <- c(rep(-10, length(ouija_markers_down)),
-rep(10, length(ouija_markers_up)))
-switch_strength_sd <- c(rep(0.5, length(ouija_markers_down)),
-rep(0.5, length(ouija_markers_up)))
+
+honhon <- ouija(x = deng_SCE[ouija_markers,],
+                response_type = response_type,
+                switch_strengths = switch_strengths,
+                switch_strength_sd = switch_strength_sd,
+                inference_type = "vb",
+                single_cell_experiment_assay = "logcounts")
+
+print(honhon)
+
 garbage <- capture.output(
 oui_vb <- ouija(deng_SCE[ouija_markers,],
 single_cell_experiment_assay = "logcounts",
