@@ -670,15 +670,14 @@ Para ayudar al modelo de `ouija`, vamos a proporcionarle información _a priori_
 # Tipo de respuesta de cada gen
 response_type <- c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up)),
                    rep("transient", length(ouija_markers_transient)))
-
 # c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up))) equivale a 
 # c(rep("switch", length(ouija_markers_down)), rep("switch, length(ouija_markers_up)))
 
-
+# Certeza del comportamiento de nuestros biomarcadores
 switch_strengths <- c(rep(-10, length(ouija_markers_down)), 
                       rep(10, length(ouija_markers_up)))
 
-
+# Desviación estándar de dicha certeza
 switch_strength_sd <- c(rep(0.5, length(ouija_markers_down)), 
                          rep(0.5, length(ouija_markers_up)))
 
@@ -687,27 +686,38 @@ switch_strength_sd <- c(rep(0.5, length(ouija_markers_down)),
 # paralelizar en local su computación:
 options(mc.cores = parallel::detectCores())
 
-honhon <- ouija(x = deng_SCE[ouija_markers,],
+oui_vb <- ouija(x = deng_SCE[ouija_markers,],
                 response_type = response_type,
                 switch_strengths = switch_strengths,
                 switch_strength_sd = switch_strength_sd,
                 inference_type = "vb",
                 single_cell_experiment_assay = "logcounts")
 
-print(honhon)
+print(oui_vb)
+```
+
+
+```{r, echo = F, eval = F}
+# Con `capture.output` evitamos que imprima por consola toda la verbose. Es
+# equivalente a `verbose = F` en comandos que carecen de dicho parámetro, como
+# es el caso de `ouija()`
 
 garbage <- capture.output(
-oui_vb <- ouija(deng_SCE[ouija_markers,],
-single_cell_experiment_assay = "logcounts",
-response_type = response_type,
-switch_strengths = switch_strengths,
-switch_strength_sd = switch_strength_sd,
-inference_type = "vb")
-)
-print(oui_vb)
+  oui_monsieur <- ouija(x = deng_SCE[ouija_markers,],
+                  response_type = response_type,
+                  switch_strengths = switch_strengths,
+                  switch_strength_sd = switch_strength_sd,
+                  inference_type = "vb",
+                  single_cell_experiment_assay = "logcounts"))
+print(oui_monsieur)
+```
 
 
+We can plot the gene expression over pseudotime along with the maximum a posteriori (MAP) estimates of
+the mean function (the sigmoid or Gaussian transient function) using the `plot_expression()` function.
 
+
+```{r}
 plot_expression(oui_vb)
 ```
 
