@@ -770,9 +770,10 @@ Al igual que el primer gráfico que generamos con `TSCAN`, `ouija` nos ha devuel
 
 
 <details>
-<summary>Ejercicio</summary>
+<summary> __Ejercicio__</summary>
 </details>
 
+<br>
 
 Ouija identifica en este caso 4 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4/8/16 cell”,
 “blast1” and “blast2”.
