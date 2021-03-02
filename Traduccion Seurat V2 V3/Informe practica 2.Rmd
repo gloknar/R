@@ -786,7 +786,6 @@ ggplot(as.data.frame(colData(deng_SCE)),
        ylab("Clasificación celular por ouija")
 ```
 
-
 Un análisis típico es averiguar el orden de regulación de los genes. Por ejemplo, ¿se sobreexpresa el gen A antes que el gen B? ¿Alcanza el gen C su máximo/mínimo de expresión antes de que el gen D comience a infraexpresarse?
 
 `ouija` responde a estas preguntas en términos de un test de hipótesis bayesiana de si la diferencia en los tiempos de regulación (either switch time or peak time) es significativamente distinto de 0. Esto se comprueba con el comando `gene_regulation`.
@@ -796,14 +795,74 @@ gene_regs <- gene_regulation(oui_vb)
 head(gene_regs)
 ```
 
+¿Qué conclusiones puedes derivar de la tabla de regulación génica?
+
+***
+
+<br>
 
 
+# Comparación de métodos
+
+¿Cómo se comparan las trayectorias inferidas por TSCAN, destiny, SLICER y ouija?
+
+
+
+TSCAN y destiny nos dan la trayectoria al revés, por lo tanto lo ajustaremos para hacer las comparaciones
+
+
+
+```{r}
+# Obtenemos con regex los pseudotiempos y los agrupamos en un dataframe
+df_pseudotime <- as.data.frame(
+  colData(deng_SCE)[,grep("pseudotime", colnames(colData(deng_SCE)))]
+)
+
+# Renombramos las columnas con regex
+colnames(df_pseudotime) <- gsub("pseudotime_", "", colnames(df_pseudotime))
+
+# Añadimos el orden mediante la 1ª CP del PCA (invertida)
+df_pseudotime$PC1 <- -deng_SCE$PC1
+
+# Invertimos el orden de TSCAN y destiny... (y ouija?)
+df_pseudotime$order_tscan <- -df_pseudotime$order_tscan
+df_pseudotime$diffusionmap <- -df_pseudotime$diffusionmap
+df_pseudotime$ouija <- -df_pseudotime$ouija
+
+
+cor(df_pseudotime)
+corrplot.mixed(cor(df_pseudotime, use = "na.or.complete"), order = "hclust",
+         tl.col = "black", mar = c(0,0,3.1,0), main = "Matriz de correlación para los resultados del pseudotiempo")
+```
+
+Aquí vemos que ouija, TSCAN y SLICER dan trayectorias muy correlacionadas con la 1ª CP. destiny está menos correlacionado con estos métodos.
+
+<br>
+
+<details> 
+<summary> __Ejercicio 2.3: Compara los métodos en mayor profundidad. ¿Dónde y cómo difieren?__</summary>
+
+WIP
+
+</details>
 
 
 ***
 
 <br>
 
+# Expresión de los genes en el tiempo
+
+
+Each package also enables the visualization of expression through pseudotime. Following individual genes
+is very helpful for identifying genes that play an important role in the differentiation process. We illustrate
+the procedure using the Rhoa gene.
+
+
+
+***
+
+<br>
 
 # sessionInfo()
 
