@@ -440,7 +440,7 @@ Al igual que otros métodos, usar la 1ª componente de difusión a modo de pseud
 SLICER es un algoritmo para construir trayectorias que describen cambios en la expresión génica durante un proceso biológico secuencial (al igual que `Monocle` y `TSCAN`). SLICER está diseñado para capturar cambios de expresión génica no lineales, seleccionar automáticamente aquellos genes que participen en el proceso biológico y detectar _branches_/caminos alternativos y _loops_ en la trayectoria ([Welch _et al._, 2016](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0975-3)). El paquete de SLICER está disponible en [GitHub](https://github.com/jw156605/SLICER) y se puede instalar mediante `devtools`.
 
 
-Usamos la función `select_genes` de SLICER para seleccionar automáticamente los genes que se usarán para construir la trayectoria celular. La función usa la "neighbourhood variance" para identificar los genes que varían suavemente (en lugar de aquellos que fluctúan aleatoriamente) en las células estudiadas. A continuación, determinamos el nº de vecinos cercanos o _nearest neighbours_ (parámetro `k`) que provee un _embedding_ o embebimiento lo más parecido a una trayectoria. Finalmente estimamos el _embedding_ local lineal (LLE) de las células. 
+Usamos la función `select_genes` de SLICER para seleccionar automáticamente los genes que se usarán para construir la trayectoria celular. La función usa la "neighbourhood variance" para identificar los genes que varían suavemente (en lugar de aquellos que fluctúan aleatoriamente) en las células estudiadas. A continuación, determinamos el nº de vecinos cercanos o _nearest neighbours_ (parámetro `k`) que provee un _embedding_ o embebimiento (construcción en un espacio de dimensiones reducidas) lo más parecido a una trayectoria. Finalmente estimamos el embebimiento localmente lineal (LLE) de las células. 
 
 
 ```{r, warning = F}
@@ -463,10 +463,10 @@ reducedDim(deng_SCE, type = "LLE") <- slicer_traj_lle
 reducedDimNames(deng_SCE)
 
 
-# Graficamos el espacio de dimensionalidad reducida
+# Graficamos el espacio de dimensionalidad reducida LLE
 plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2") +
                 xlab("Componente de LLE 1") + ylab("Componente de LLE 2") +
-                ggtitle("Embebimiento lineal local (LLE) de las células - SLICER") + 
+                ggtitle("Embebimiento localmente lineal (LLE) de las células - SLICER") + 
                 theme(plot.title =  element_text(hjust = 0.5))
 ```
 
