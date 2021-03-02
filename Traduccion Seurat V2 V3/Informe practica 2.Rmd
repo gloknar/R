@@ -740,7 +740,7 @@ plot_consistency(oui_vb)
 
 # Guardamos la matriz de consistencia en el objeto `cmo` y agrupamos las células
 cmo <- consistency_matrix(oui_vb)
-cell_classifications <- cluster_consistency(cmat = cmo)
+cell_classifications <- cluster_consistency(cmat = cmo, n_clusters = 2:9)
 
 # Generamos el pseudotiempo
 map_pst <- map_pseudotime(oui_vb)
@@ -755,7 +755,7 @@ ggplot(ouija_pseudotime, aes(x = map_pst, y = cell_classifications)) +
 
 
 
-deng_SCE$pseudotime_ouija <- ouija_pseudotime$map_pst
+deng_SCE$pseudotime_ouija <- ouija_pseudotime$map_pst # Multiplícalo por -1 para invertir el orden
 deng_SCE$ouija_cell_class <- ouija_pseudotime$cell_classifications
 
 ggplot(as.data.frame(colData(deng_SCE)), 
@@ -766,7 +766,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        theme(plot.title = element_text(hjust = 0.5))
 ```
 
-Al igual que el primer gráfico que generamos con `TSCAN`, `ouija` nos ha devuelto el pseudotiempo ordenado al revés, pero insistimos en que esto no es un problema. `ouija` ha ordenado bien en general los tipos celulares, aunque cabe destacar que el algoritmo puede ser sensible a la elección de biomarcadores y la información _a priori_ proporcionada al mismo. ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las _a priori_?
+Al igual que el primer gráfico que generamos con `TSCAN`, `ouija` nos ha devuelto el pseudotiempo ordenado al revés, pero esto se puede solucionar multiplicando la columna `deng_SCE$pseudotime_ouija` por $-1$. `ouija` ha ordenado bien en general los tipos celulares, aunque cabe destacar que el algoritmo puede ser sensible a la elección de biomarcadores y la información _a priori_ proporcionada al mismo. ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las _a priori_?
 
 
 <details>
@@ -775,7 +775,7 @@ Al igual que el primer gráfico que generamos con `TSCAN`, `ouija` nos ha devuel
 
 <br>
 
-Ouija identifica en este caso 4 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4/8/16 cell”,
+`ouija` identifica en este caso 4 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4/8/16 cell”,
 “blast1” and “blast2”.
 
 ```{r}
@@ -784,8 +784,19 @@ ggplot(as.data.frame(colData(deng_SCE)),
        geom_boxplot() + coord_flip() + scale_color_tableau() +
        theme_classic() + xlab("Pseudotiempo MAP") +
        ylab("Clasificación celular por ouija")
-       
 ```
+
+
+Un análisis típico es averiguar el orden de regulación de los genes. Por ejemplo, ¿se sobreexpresa el gen A antes que el gen B? ¿Alcanza el gen C su máximo/mínimo de expresión antes de que el gen D comience a infraexpresarse?
+
+`ouija` responde a estas preguntas en términos de un test de hipótesis bayesiana de si la diferencia en los tiempos de regulación (either switch time or peak time) es significativamente distinto de 0. Esto se comprueba con el comando `gene_regulation`.
+
+```{r}
+gene_regs <- gene_regulation(oui_vb)
+head(gene_regs)
+```
+
+
 
 
 
