@@ -151,7 +151,27 @@ ggplot(as.data.frame(colData(deng_SCE)),
        scale_colour_calc()
 ```
 
-Aplicando dicho algoritmo básico, y tal y como muestra el gráfico anterior, vemos que a la primera dimensión le cuesta un poco diferenciar algunos tipos celulares, pero en general ordena bien las células según su estapa de desarrollo.
+Aplicando dicho algoritmo básico, y tal y como muestra el gráfico anterior, vemos que a la primera dimensión le cuesta un poco diferenciar algunos tipos celulares, pero en general ordena bien las células según su estapa de desarrollo. Nótese que aunque los resultados estén al revés, esto se puede solucionar fácilmente invirtiendo el eje X
+
+```{r, echo = F, eval = F}
+# Para invertir el eje X hay dos opciones, que yo sepa:
+# Una es multiplicar la columna de interés por -1, tal que así:
+deng_SCE$PC1 <- -deng_SCE$PC1
+
+# Y la otra opción es añadir el comando scale_x_reverse() de ggplot:
+ggplot()... + scale_x_reverse()
+```
+
+```{r}
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = PC1, y = cell_type2, colour = cell_type2)) + 
+       geom_quasirandom(groupOnX = F) + theme_classic() + 
+       theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("Células ordenadas por la 1ªCP") + 
+       xlab("Primera componente principal") + ylab("Etapa de desarrollo") + 
+       scale_colour_calc() + scale_x_reverse()
+```
+
 
 En las siguientes secciones veremos qué rendimiento desempeñan los algoritmos previamente citados ( _i.e._ `TSCAN` y sucedáneos).
 
@@ -208,7 +228,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("Células ordenadas según TSCAN") +
        xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
-       scale_colour_calc()
+       scale_colour_calc() + scale_x_reverse()
 ```
 
 
@@ -246,7 +266,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("TSCAN, 2 clusters") +
        xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
-       scale_colour_calc()
+       scale_colour_calc() + scale_x_reverse()
 ```
 
 <br>
@@ -274,7 +294,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("TSCAN, 3 clusters") +
        xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
-       scale_colour_calc()
+       scale_colour_calc() + scale_x_reverse()
 ```
 
 <br>
@@ -302,7 +322,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("TSCAN, 8 clusters") +
        xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
-       scale_colour_calc()
+       scale_colour_calc() + scale_x_reverse()
 ```
 
 <br>
@@ -330,7 +350,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("TSCAN, 9 clusters") +
        xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
-       scale_colour_calc()
+       scale_colour_calc() + scale_x_reverse()
 ```
 
 <br>
@@ -358,7 +378,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("TSCAN, 10 clusters") +
        xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
-       scale_colour_calc()
+       scale_colour_calc() + scale_x_reverse()
 ```
 
 </details>
@@ -421,7 +441,7 @@ deng_SCE$pseudotime_diffusionmap <- rank(eigenvectors(dm)[,1])
 ggplot(as.data.frame(colData(deng_SCE)), aes(x = pseudotime_diffusionmap, y = cell_type2, colour = cell_type2)) +
        geom_quasirandom(groupOnX = FALSE) + scale_color_calc() + theme_classic() + 
        theme(plot.title = element_text(hjust = 0.5)) + xlab("Pseudotiempo del mapa de difusión (1ª componente)") + 
-       ylab("Etapa de desarrollo") + ggtitle("Células ordenadas según destiny")
+       ylab("Etapa de desarrollo") + ggtitle("Células ordenadas según destiny") + scale_x_reverse()
 ```
 
 Al igual que otros métodos, usar la 1ª componente de difusión a modo de pseudotiempo nos ayuda a ordenar las células tempranas, pero no puede distinguir las células en etapas más avanzadas del desarrollo (embrión con 8 o más células).
@@ -718,7 +738,7 @@ print(oui_monsieur)
 Podemos graficar la expresión génica a lo largo del pseudotiempo junto con las estimaciones de la función media-MAP ( _maximum a posteriori_) usando el comando `plot_expression()` del paquete `ouija`. 
 
 ```{r, fig.height= 7}
-plot_expression(oui_vb) + theme_classic()
+plot_expression(oui_vb) + theme_classic() + scale_x_reverse()
 ```
 
 También podemos visualizar cuándo suceden en la trayectoria los comportamientos de regulación génica, ya sea en forma de switch time o el peak time (para genes monotónicos o transitorios) usando los comandos `plot_switch_times` y `plot_transient_times`.
@@ -726,9 +746,9 @@ También podemos visualizar cuándo suceden en la trayectoria los comportamiento
 
 
 ```{r, warning=F}
-plot_switch_times(oui_vb) + theme_classic()
+plot_switch_times(oui_vb) + theme_classic() + scale_x_reverse()
 
-plot_peak_times(oui_vb) + theme_classic()
+plot_peak_times(oui_vb) + theme_classic() + scale_x_reverse()
 ```
 
 
@@ -750,7 +770,7 @@ map_pst <- map_pseudotime(oui_vb)
 ouija_pseudotime <- data.frame(map_pst, cell_classifications)
 ggplot(ouija_pseudotime, aes(x = map_pst, y = cell_classifications)) + 
   geom_point() + xlab("Pseudotiempo MAP") + ylab("Clasificación celular") + 
-  theme_classic()
+  theme_classic() + scale_x_reverse()
 
 
 
@@ -763,7 +783,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        geom_quasirandom(groupOnX = F) + theme_classic() +
        scale_color_calc() + xlab("Pseudotiempo MAP") +
        ylab("estado de desarrollo") + ggtitle("Ordenamiento celular según ouija") + 
-       theme(plot.title = element_text(hjust = 0.5))
+       theme(plot.title = element_text(hjust = 0.5)) + scale_x_reverse()
 ```
 
 Al igual que el primer gráfico que generamos con `TSCAN`, `ouija` nos ha devuelto el pseudotiempo ordenado al revés, pero esto se puede solucionar multiplicando la columna `deng_SCE$pseudotime_ouija` por $-1$. `ouija` ha ordenado bien en general los tipos celulares, aunque cabe destacar que el algoritmo puede ser sensible a la elección de biomarcadores y la información _a priori_ proporcionada al mismo. ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las _a priori_?
