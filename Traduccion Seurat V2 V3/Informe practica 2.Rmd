@@ -850,7 +850,6 @@ df_pseudotime$diffusionmap <- -df_pseudotime$diffusionmap
 df_pseudotime$ouija <- -df_pseudotime$ouija
 
 
-cor(df_pseudotime)
 corrplot.mixed(cor(df_pseudotime, use = "na.or.complete"), order = "hclust",
          tl.col = "black", mar = c(0,0,3.1,0), main = "Matriz de correlación para los resultados del pseudotiempo")
 ```
@@ -871,13 +870,51 @@ WIP
 
 <br>
 
-# Expresión de los genes en el tiempo
+# Expresión génica temporal: `scater`
 
 
-Each package also enables the visualization of expression through pseudotime. Following individual genes
-is very helpful for identifying genes that play an important role in the differentiation process. We illustrate
-the procedure using the Rhoa gene.
+Los paquetes estudiados cuentan con herramientas para visualizar la expresión génica a lo largo del pseudotiempo. Seguir el rastro de genes individuales resulta útil para identificar aquellos genes que tengan un rol importante en el proceso de diferenciación celular estudiado. Ilustraremos el procedimiento usando el gen Rhoa, el cual participa en procesos de transducción de señales intracelulares ([fuente](https://www.genecards.org/cgi-bin/carddisp.pl?gene=RHOA)).
 
+
+Hemos añadido el pseudotiempo computado por cada algoritmo estudiado al bolsillo `colData` del objeto `deng_SCE`. Por tanto, podemos usar el paquete `scater` para investigar de manera visual la relación entre expresión génica, poblaciones celulares y pseudotiempo. El paquete `scater` es especialmente útil en el caso de paquetes como `SLICER`, los cuales carecen de herramientas para graficar.
+
+
+PCA:
+```{r}
+plotExpression(deng_SCE, "Rhoa", x = "PC1", colour_by = "cell_type2", show_smooth = T, show_violin = F)
+```
+
+
+TSCAN:
+```{r}
+plotExpression(deng_SCE, "Rhoa", x = "pseudotime_order_tscan", colour_by = "cell_type2", show_smooth = T, show_violin = F)
+```
+
+Mapa de difusión:
+```{r}
+plotExpression(deng_SCE, "Rhoa", x = "pseudotime_diffusionmap", colour_by = "cell_type2", show_smooth = T, show_violin = F)
+```
+
+
+SLICER:
+```{r}
+plotExpression(deng_SCE, "Rhoa", x = "pseudotime_slicer", colour_by = "cell_type2", show_smooth = T, show_violin = F)
+```
+
+
+Ouija:
+```{r}
+plotExpression(deng_SCE, "Rhoa", x = "pseudotime_ouija", colour_by = "cell_type2", show_smooth = T, show_violin = F)
+```
+
+<br>
+
+<details> 
+<summary> __Ejercicio 2.5?: ¿Qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo, para nuestro dataset?__</summary>
+
+WIP
+
+</details>
 
 
 ***
