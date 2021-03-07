@@ -379,32 +379,29 @@ Al igual que `TSCAN` y el PCA, usar la 1ª componente de difusión a modo de pse
 
 # SLICER
 
+`SLICER` es un algoritmo para construir trayectorias que describen cambios en la expresión génica durante un proceso biológico secuencial (al igual que `Monocle` y `TSCAN`). `SLICER` está diseñado para capturar cambios de expresión génica no lineales, seleccionar automáticamente aquellos genes que participen en el proceso biológico y detectar _branches_/caminos alternativos y _loops_ en la trayectoria ([Welch _et al._, 2016](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0975-3)). El paquete de `SLICER` está disponible en [GitHub](https://github.com/jw156605/SLICER) y se puede instalar mediante las utilidades del paquete `devtools`.
 
-SLICER es un algoritmo para construir trayectorias que describen cambios en la expresión génica durante un proceso biológico secuencial (al igual que `Monocle` y `TSCAN`). SLICER está diseñado para capturar cambios de expresión génica no lineales, seleccionar automáticamente aquellos genes que participen en el proceso biológico y detectar _branches_/caminos alternativos y _loops_ en la trayectoria ([Welch _et al._, 2016](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0975-3)). El paquete de SLICER está disponible en [GitHub](https://github.com/jw156605/SLICER) y se puede instalar mediante `devtools`.
-
-
-Usamos la función `select_genes` de SLICER para seleccionar automáticamente los genes que se usarán para construir la trayectoria celular. La función usa la "neighbourhood variance" para identificar los genes que varían suavemente (en lugar de aquellos que fluctúan aleatoriamente) en las células estudiadas. A continuación, determinamos el nº de vecinos cercanos o _nearest neighbours_ (parámetro `k`) que provee un _embedding_ o embebimiento (construcción en un espacio de dimensiones reducidas) lo más parecido a una trayectoria. Finalmente estimamos el embebimiento localmente lineal (LLE) de las células. 
+Emplearemos la función `select_genes` de `SLICER` para seleccionar automáticamente los genes que se usarán para construir la trayectoria celular. Dicha función usa la "neighbourhood variance" para identificar los genes que varían suavemente (en lugar de aquellos que fluctúan aleatoriamente) en las células estudiadas. A continuación, determinaremos mediante el comando `select_k` el nº de vecinos cercanos o _nearest neighbours_ que devuelva un _embedding_ o embebimiento (construcción en un espacio de dimensionalidad reducida) lo más parecido a una trayectoria. Finalmente estimaremos el embebimiento localmente lineal (LLE) de las células mediante el comando `lle` del paquete homónimo. 
 
 
 ```{r, warning = F}
-set.seed(1)
-# Para seleccionar los genes en SLICER, usamos la matriz logarítmica traspuesta.
-# Ídem para seleccionar k
+# Para seleccionar los genes en SLICER, usamos la matriz de conteos logarítmica
+# traspuesta. Ídem para seleccionar k
 slicer_genes <- select_genes(t(log_deng))
 k <- select_k(t(log_deng[slicer_genes,]), kmin = 30, kmax = 60)
-
 
 # La librería `lle` permite usar el comando homónimo para calcular el LLE o
 # Locally Linear Embedding.
 library("lle")
-slicer_traj_lle <- lle(t(log_deng[slicer_genes,]), m = 2, k)$Y # Importante usar esta notación, si no, no funciona conn_knn_graph()
-
+slicer_traj_lle <- lle(t(log_deng[slicer_genes,]), m = 2, k)$Y # Importante usar esta notación, si no, no funciona el comando `conn_knn_graph()`
 
 # Añadimos los resultados de la técnica de reducción de la dimensionalidad al
-# objeto original deng_SCE
-reducedDim(deng_SCE, type = "LLE") <- slicer_traj_lle
-reducedDimNames(deng_SCE)
+# objeto `SCE`
+reducedDim(x = deng_SCE, type = "LLE") <- slicer_traj_lle
 
+# Con el siguiente comando comprobamos que el LLE esté disponible para la
+# función `reducedDim()`
+reducedDimNames(deng_SCE)
 
 # Graficamos el espacio de dimensionalidad reducida LLE
 plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2") +
@@ -413,27 +410,26 @@ plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2") +
                 theme(plot.title =  element_text(hjust = 0.5))
 ```
 
-
-Ahora que hemos calculado el LLE, podemos construir un grafo basado en k-nearest neighbours (k-NN) que sea completamente conectado ( _fully connected_, como se suele decir en MLPs). Este gráfico muestra un círculo naranja por cada célula, con la ID de la célula representada en azul encima del círculo. Mostramos a continuación el grafo obtenido con k = 10 vecinos.
+Ahora que hemos calculado el LLE, podemos construir un grafo basado en k-nearest neighbours (k-NN) que sea completamente conectado ( _fully connected_, como se suele decir en el ámbito de los MLPs) mediante el comando `conn_knn_graph`. En el grafo a continuación se representan las células como círculos naranjas con sus IDs en azul. Mostramos a continuación el grafo obtenido con 10 vecinos.
 
 
 ```{r}
-# Construimos el grafo con la función `conn_knn_graph()`
+# Construimos el grafo con k = 10 vecinos
 slicer_traj_graph <- conn_knn_graph(slicer_traj_lle, k = 10)
 
 # Graficamos
 plot(slicer_traj_graph, main = "Grafo k-NN completamente conectado de SLICER")
 ```
 
-A partir del grafo podemos identificar las células distales (de los extremos), las cuales serán candidatas para el comienzo y el fin de la trayectoria.
+A partir del grafo podemos identificar las células distales (de los extremos), las cuales serán candidatas para el comienzo y el fin de la trayectoria. Esto se lleva a cabo a través de la función `find_extreme_cells`.
 
 ```{r}
-# Encontramos células distales con el comando `find_extreme_cells()`
+# Encontramos las células distales del grafo
 ends <- find_extreme_cells(traj_graph = slicer_traj_graph, embedding = slicer_traj_lle)
 start <- ends[1]
 ```
 
-Tras definir la célula inicial, ordenamos las células a lo largo del pseudotiempo.
+Tras definir la célula inicial y la final, ordenamos las células a lo largo del pseudotiempo.
 
 ```{r}
 # Ordenamos las células en el pseudotiempo con la función `cell_order()` del
@@ -454,12 +450,12 @@ pseudotime_slicer$pseudotime[pseudotime_order_slicer] <-  1:length(pseudotime_or
 ```
 
 
-Hecho esto, ahora podemos comparar el pseudotiempo inferido por SLICER con las etapas del desarrollo ya conocidas. SLICER no devuelve un pseudotiempo _per se_, sino simplemente el orden final de las células.
+Hecho esto, ahora podemos comparar el pseudotiempo inferido por `SLICER` con las etapas del desarrollo ya conocidas. `SLICER` no devuelve un pseudotiempo _per se_, sino simplemente el orden final de las células.
 
 
 ```{r}
-# Añadimos al objeto `deng_SCE` el pseudotiempo del dataframe anterior para
-# comparar los resultados con los métodos anteriores y la verdad experimental
+# Añadimos al objeto `SCE` el pseudotiempo del dataframe anterior para comparar
+# los resultados con los métodos anteriores y la verdad experimental
 deng_SCE$pseudotime_slicer <- pseudotime_slicer$pseudotime
 
 # Graficamos el resultado
@@ -468,18 +464,19 @@ ggplot(as.data.frame(colData(deng_SCE)), aes(x = pseudotime_slicer, y = cell_typ
   theme_classic() + ggtitle("Células ordenadas según SLICER") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
-
-Al igual que los métodos ya probados hasta ahora, SLICER ordena bien las primeras etapas de desarrollo, aunque ha invertido el orden de las etapas "16cell" y "8cell". Pese a ello, logra separar un poco mejor las blastómeras tardías del resto de blastómeras.
+Al igual que los métodos ya probados hasta ahora, `SLICER` ordena relativamente bien las primeras etapas del desarrollo, aunque ha invertido el orden de las etapas "16cell" y "8cell". Pese a ello, logra separar un poco mejor las blastómeras tardías del resto de blastómeras.
 
 
 <details>
 <summary> __Ejercicio 2.2: ¿Cómo cambian los resultados del LLE en función del valor de `k`? ¿Y qué pasa al cambiar el nº de vecinos cercanos en la función `conn_knn_graph()`?__ </summary>
 
+<br>
+
 __Solución__: 
 
-* Manteniendo el parámetro `k = 60` del LLE  y variando el parámetro `k` del comando `conn_knn_graph()`, vemos que a mayor nº de vecinos cercanos, la trayectoria se perfila cada vez más, si bien el ordenamiento final de las células se mantiene igual. Nótese que para valores muy bajos de vecinos (k = 1~3), el comando `assign_branches` devuelve el error `Error in 1:num_branches : Argumento NA/NaN`
+* Manteniendo el parámetro `k = 60` del LLE  y variando el parámetro `k` del comando `conn_knn_graph()`, vemos que __a mayor nº de vecinos cercanos, la trayectoria se perfila cada vez más en el grafo, si bien el ordenamiento final de las células se mantiene igual__. Nótese que para valores muy bajos de vecinos (k = 1~3), el comando `assign_branches` devuelve el error `Error in 1:num_branches : Argumento NA/NaN`
 
-* Manteniendo el parámetro `k = 10` del grafo y variando el parámetro `k` del LLE, vemos que para valores extremos de `k`, a SLICER le cuesta ordenar las células. SLICER ordena exitosamente las células tempranas con un `k = 30`, mientras que con `k = 55` intenta separar las blastómeras (aunque sin mucho éxito). Nótese que para valores muy bajos de vecinos (k < 10), el comando `assign_branches` devuelve el error `Error in if (mean_dist < min_dist) { : valor ausente donde TRUE/FALSE es necesario` (Si se observa la función con F2, se aprecia que se omitieron algunos casos en la sección de condicionales).
+* Manteniendo el parámetro `k = 10` del grafo y variando el parámetro `k` del LLE, vemos que para valores extremos de `k`, a SLICER le cuesta ordenar las células. __SLICER ordena exitosamente las células tempranas con un `k = 30`__, mientras que con `k = 55` intenta separar las blastómeras (aunque sin mucho éxito). Nótese que para valores muy bajos de vecinos (k < 10), el comando `assign_branches` devuelve el error `Error in if (mean_dist < min_dist) { : valor ausente donde TRUE/FALSE es necesario` (Si se observa la función con F2, se aprecia que se omitieron algunos casos en la sección de condicionales).
 
 
 <br>
@@ -493,8 +490,6 @@ __Solución__:
 <br>
 
 ![__Grafo con k = 30; LLE con k fijo en 60__](./Cosas accesorias Informe 2/resultados slicer/solucion3.png)
-
-***
 
 <br>
 
