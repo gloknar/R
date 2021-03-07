@@ -223,14 +223,17 @@ deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengo
 ```
 
 
+Con el siguiente código podemos comprobar qué cluster asigna TSCAN a cada estadio celular. En este caso, el clúster nº 10 corresponde a células en fase "late2cell".
+
+```{r}
+cellLabels[dengclust$clusterid == 10]
+```
+
+
 
 Ahora visualizamos la trayectoria inferida por `TSCAN` y el pseudotiempo asignado a cada estadio celular:
 
 ```{r}
-# El último cúster (nº 10), o sea el último tramo del pseudotiempo según TSCAN,
-# corresponde a células en fase "late2cell"
-cellLabels[dengclust$clusterid == 10]
-
 # Graficamos el pseudotiempo final de TSCAN
 ggplot(as.data.frame(colData(deng_SCE)), 
        aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
@@ -241,8 +244,11 @@ ggplot(as.data.frame(colData(deng_SCE)),
        scale_colour_calc()
 ```
 
+Al igual que el PCA, `TSCAN` nos devuelve la trayectoria al revés. Vamos a invertirla.
+
 
 ```{r}
+# Invertimos la trayectoria para ponerla en el sentido correcto
 deng_SCE$pseudotime_order_tscan <- -deng_SCE$pseudotime_order_tscan
 
 ggplot(as.data.frame(colData(deng_SCE)), 
@@ -253,7 +259,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
        scale_colour_calc() + labs(title = "Células ordenadas según TSCAN (orden correcto)")
 ```
 
-Observamos que al igual que el PCA, `TSCAN` nos devuelve la trayectoria al revés, y es más, dicha trayectoria es similar a la obtenida en el PCA. Ello se debe a que TSCAN es un método de inferencia de trayectoria basado en el PCA. En vista del gráfico obtenido, no podemos asegurar que `TSCAN` funcione mejor que el ordenamiento que hicimos mediante las coordenadas de la 1ª componente principal.
+Observamos que la trayectoria inferida por `TSCAN` es similar a la obtenida en el PCA, y por tanto no podemos asegurar que `TSCAN` funcione mejor que el ordenamiento que hicimos mediante las coordenadas de la 1ª componente principal. Ello se debe a que `TSCAN` es un método de inferencia de trayectoria basado en el PCA.
 
 
 <details>
@@ -286,9 +292,6 @@ for (i in c(2:9)) {
   # Tienes que usar explícitamente print(ggplot()) si usas gráficos de ggplot2
   # dentro de un bucle for
 }
-
-
-
 ```
 
 </details>
