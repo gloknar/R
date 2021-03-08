@@ -527,14 +527,13 @@ __Solución__:
 
 # ouija
 
-
-`ouija` (viñeta online: http://kieranrcampbell.github.io/ouija/) infiere la trayectoria de manera distinta a como lo han hecho los paquetes previamente presentados. Mientras que `TSCAN`, `destiny` y `SLICER` eran métodos no supervisados y no tenían en cuenta las etiquetas asignadas por el investigador, `ouija` es un algoritmo probabilístico capaz de inferir el pseudotiempo a partir de un pequeño panel de genes marcadores. En concreto, este algoritmo:
+`ouija` (viñeta online: http://kieranrcampbell.github.io/ouija/) infiere la trayectoria de manera distinta a como lo han hecho los paquetes previamente presentados. Mientras que el PCA, `TSCAN`, `destiny` y `SLICER` eran métodos no supervisados y no tenían en cuenta las etiquetas asignadas por el investigador, `ouija` es un algoritmo probabilístico capaz de inferir el pseudotiempo a partir de un pequeño panel de genes marcadores. En concreto, este algoritmo:
 
 * Infiere el pseudotiempo a partir de un nº reducido de biomarcadores, llevando la atención del investigador a dichos genes.
 
 * Proporciona estimaciones de los parámetros (incluye incertidumbre), lo que permite interpretar patrones de regulación génica. 
 
-* Posee un test para hipótesis Bayesiana para encontrar a lo largo de la trayectoria genes regulados antes que otros.     
+* Incluye un test para hipótesis Bayesiana para encontrar a lo largo de la trayectoria genes regulados antes que otros.     
 
 * Identifica estados metaestables a lo largo de la trayectoria, _i.e._ tipos celulares discretos.
 
@@ -544,7 +543,7 @@ __Solución__:
 
 En `ouija` podemos modelar los genes de varias maneras:
 
-* Que se sobre o infraexpresen de manera monotónica ( _i.e._ su expresión a lo largo del tiempo es exclusivamente al alza o a la baja, respectivamente). Esto se conoce como comportamiento _switch-like_.
+* Que se sobre o infraexpresen de manera monotónica ( _i.e._ su expresión a lo largo del tiempo sea exclusivamente al alza o a la baja, respectivamente). Esto se conoce como comportamiento _switch-like_.
 
 * Que se sobre o infraexpresen de manera aguda ( _i.e._ la expresión del gen alcanza brevemente y de manera rápida un máximo/mínimo). Esto se conoce como comportamiento transitorio.
 
@@ -726,7 +725,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
 
 Un análisis típico es averiguar el orden de regulación de los genes. Por ejemplo, ¿se sobreexpresa el gen A antes que el gen B? ¿Alcanza el gen C su máximo/mínimo de expresión antes de que el gen D comience a infraexpresarse?
 
-`ouija` responde a estas preguntas en términos de un test de hipótesis bayesiana de si la diferencia en los tiempos de regulación (either switch time or peak time) es significativamente distinto de 0. Esto se comprueba con el comando `gene_regulation`.
+`ouija` responde a estas preguntas en términos de un test de hipótesis Bayesiana de si la diferencia en los tiempos de regulación (either switch time or peak time) es significativamente distinto de 0. Esto se comprueba con el comando `gene_regulation`.
 
 ```{r}
 gene_regs <- gene_regulation(oui_vb)
