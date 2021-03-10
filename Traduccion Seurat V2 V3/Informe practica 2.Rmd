@@ -684,7 +684,7 @@ Se aprecia que igual que en el gráfico anterior, la trayectoria está invertida
 # comandos `plot_switch_times()` y `plot_peak_times()` hacen un flip de las
 # coordenadas con `coord_flip()`
 
-# Solucion guarra
+# Solucion temporal y mejorable
 oui_vb$fit@sim$samples[[1]]$k.1 <- -oui_vb$fit@sim$samples[[1]]$k.1
 oui_vb$fit@sim$samples[[1]]$k.2 <- -oui_vb$fit@sim$samples[[1]]$k.2
 oui_vb$fit@sim$samples[[1]]$k.3 <- -oui_vb$fit@sim$samples[[1]]$k.3
