@@ -680,8 +680,8 @@ plot_peak_times(oui_vb)
 Se aprecia que igual que en el gráfico anterior, la trayectoria está invertida. Además, el gráfico que devuelve `plot_switch_times()` indica la regulación al revés (Fgf8 se desactiva, no se activa; Elf5 se sobreexpresa al final, no se desactiva). Procedemos a corregir ambos gráficos inviertiendo el eje X y la leyenda:
 
 ```{r, warning=F}
-# En este caso tenemos que usar scale_y_reverse(), debido a que internamente los
-# comandos `plot_switch_times()` y `plot_peak_times()` hacen un flip de las
+# En este caso tenemos que usar `scale_y_reverse()`, debido a que internamente
+# los comandos `plot_switch_times()` y `plot_peak_times()` hacen un flip de las
 # coordenadas con `coord_flip()`
 
 # Solucion temporal y mejorable
@@ -702,7 +702,38 @@ oui_vb$fit@sim$samples[[1]]$k.14 <- -oui_vb$fit@sim$samples[[1]]$k.14
 oui_vb$fit@sim$samples[[1]]$k.15 <- -oui_vb$fit@sim$samples[[1]]$k.15
 oui_vb$fit@sim$samples[[1]]$k.16 <- -oui_vb$fit@sim$samples[[1]]$k.16
 
-plot_switch_times(oui = oui_vb) + theme_classic() + scale_y_reverse()
+extract(oui_vb$fit, pars = "k")
+
+# nombre
+names(oui_vb$fit@sim$samples[[1]])[22]
+
+# contenido
+oui_vb$fit@sim$samples[[1]][22]
+
+# Indices que contienen k.1-k.16 en objeto oui_vb$fit
+indices <- grep("k.", names(oui_vb$fit@sim$samples[[1]]))
+
+for (i in indices) {
+  oui_vb$fit@sim$samples[[1]][[i]] <- -oui_vb$fit@sim$samples[[1]][[i]]
+}
+
+oui_vb$fit@sim$samples[[1]][22]
+
+
+
+
+A1 <- NULL
+A2 <- NULL
+for (i in 1:2) { print(get(paste("oui_vb$fit@sim$samples[[1]]$k.", i, sep=""))) }
+
+
+for (i in c(1:2)) { print("oui_vb$fit@sim$samples[[1]]$k.", i) }
+paste("oui_vb$fit@sim$samples[[1]]$k.", i, sep = "")
+
+oui_vb$fit@sim$samples[[1]]$k.1
+
+plot_switch_times(oui = oui_vb) + theme_classic() + scale_y_reverse() + scale_fill_gradient2(name = "Regulation", 
+    low = vpal[5], high = vpal[1])
 
 
 
