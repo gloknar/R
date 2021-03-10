@@ -410,8 +410,7 @@ plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2") +
                 theme(plot.title =  element_text(hjust = 0.5))
 ```
 
-Ahora que hemos calculado el LLE, podemos construir un grafo basado en k-nearest neighbours (k-NN) que sea completamente conectado ( _fully connected_, como se suele decir en el ámbito de los MLPs) mediante el comando `conn_knn_graph`. En el grafo a continuación se representan las células como círculos naranjas con sus IDs en azul. Mostramos a continuación el grafo obtenido con 10 vecinos.
-
+Ahora que hemos calculado el LLE, podemos construir un grafo basado en _k-nearest neighbours_ (k-NN) que sea completamente conectado ( _fully connected_, como se suele decir en el ámbito de los MLPs) mediante el comando `conn_knn_graph`. En el grafo a continuación se representan las células como círculos naranjas con sus IDs en azul. Mostramos a continuación el grafo obtenido con 10 vecinos.
 
 ```{r}
 # Construimos el grafo con k = 10 vecinos
@@ -429,14 +428,14 @@ ends <- find_extreme_cells(traj_graph = slicer_traj_graph, embedding = slicer_tr
 start <- ends[1]
 ```
 
-Tras definir la célula inicial y la final, ordenamos las células a lo largo del pseudotiempo.
+Tras definir la célula inicial y la final, ambas contenidas en el objeto `ends`, procedemos a ordenar las células a lo largo de la trayectoria. Para ello, primero ordenamos las células con el comando `cell_order` y acto seguido detectamos las ramas de la trayectoria con `assign_branches` (este comando es muy sensible a la elección de los parámetros `k` del LLE y del grafo, en el sentido de que puede devolver un error fácilmente. Para más información, véase la solución del ejercicio 2.2).
 
 ```{r}
 # Ordenamos las células en el pseudotiempo con la función `cell_order()` del
-# paquete SLICER
+# paquete `SLICER`
 pseudotime_order_slicer <- cell_order(slicer_traj_graph, start)
 
-# Detectamos ramas
+# Detectamos ramas/caminos alternativos
 branches <- assign_branches(slicer_traj_graph, start)
 
 # creamos dataframe con las ramas, los estadios celulares y el pseudotiempo
@@ -450,7 +449,7 @@ pseudotime_slicer$pseudotime[pseudotime_order_slicer] <-  1:length(pseudotime_or
 ```
 
 
-Hecho esto, ahora podemos comparar el pseudotiempo inferido por `SLICER` con las etapas del desarrollo ya conocidas. `SLICER` no devuelve un pseudotiempo _per se_, sino simplemente el orden final de las células.
+Hecho esto, ahora podemos comparar la trayectoria inferida por `SLICER` con las etapas del desarrollo ya conocidas. `SLICER` no devuelve un pseudotiempo _per se_, sino simplemente el orden final de las células.
 
 
 ```{r}
@@ -464,7 +463,7 @@ ggplot(as.data.frame(colData(deng_SCE)), aes(x = pseudotime_slicer, y = cell_typ
   theme_classic() + ggtitle("Células ordenadas según SLICER") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
-Al igual que los métodos ya probados hasta ahora, `SLICER` ordena relativamente bien las primeras etapas del desarrollo, aunque ha invertido el orden de las etapas "16cell" y "8cell". Pese a ello, logra separar un poco mejor las blastómeras tardías del resto de blastómeras.
+Al igual que los métodos ya probados hasta ahora, `SLICER` ordena relativamente bien las primeras etapas del desarrollo, aunque ha invertido el orden de las etapas `16cell` y `8cell` (e ídem para las etapas `zy` y `early2cell`). Pese a ello, logra separar un poco mejor las blastómeras tardías del resto de blastómeras.
 
 
 <details>
@@ -658,15 +657,47 @@ Podemos graficar la expresión génica a lo largo del pseudotiempo junto con las
 plot_expression(oui_vb) + theme_classic()
 ```
 
+
+Nótese que genes tempranos como Zscan4b (expresado en los estadios de 2 y 4 células) aparecen sobreexpresados al final del pseudotiempo, lo que nos indica que el gráfico tiene el eje X invertido. Vamos a solucionarlo:
+
+```{r, fig.height= 7}
+plot_expression(oui_vb) + theme_classic() + scale_x_reverse()
+```
+
+
+Ahora podemos observar en el gráfico la expresión de cada gen a lo largo del proceso de desarrollo embrionario. Por ejemplo, el gen Elf5 comienza a expresarse en las estapas finales (blastocisto).
+
+<br>
+
 También podemos visualizar cuándo suceden en la trayectoria los comportamientos de regulación génica, ya sea en forma de switch time o el peak time (para genes monotónicos o transitorios) usando los comandos `plot_switch_times` y `plot_transient_times`.
 
 
+```{r, warning=F}
+plot_switch_times(oui_vb)
+plot_peak_times(oui_vb)
+```
+
+Se aprecia que igual que en el gráfico anterior, la trayectoria está invertida. Además, el gráfico que devuelve `plot_switch_times()` indica la regulación al revés (Fgf8 se desactiva, no se activa; elf5 se sobreexpresa al final, no se desactiva). Procedemos a corregir ambos gráficos inviertiendo el eje X y la leyenda:
 
 ```{r, warning=F}
-plot_switch_times(oui_vb) + theme_classic()
+# En este caso tenemos que usar scale_y_reverse(), seguramente porque
+# internamiente los comandos `plot_switch_times()` y `plot_peak_times()` hacen
+# un flip de las coordenadas
 
-plot_peak_times(oui_vb) + theme_classic()
+# La leyenda está al revés
+plot_switch_times(oui = oui_vb) + theme_classic() + 
+  scale_y_reverse() + theme(legend.position = "top")
+
+data(oui)
+View(oui_vb)
+oui_vb$fit@inits$k <- -oui_vb$fit@inits$k # Esto deberia funcionar...
+jajaja <- extract(oui_vb$fit, "k")$k
+jajaja <- -jajaja
+View(oui_vb$fit)
+
+plot_peak_times(oui_vb) + theme_classic() + scale_y_reverse(limits = c(1,0))
 ```
+
 
 
 Para identificar estados celulares metaestables usando matrices de consistencia:
