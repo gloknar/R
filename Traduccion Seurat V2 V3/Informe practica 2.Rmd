@@ -677,27 +677,38 @@ plot_switch_times(oui_vb)
 plot_peak_times(oui_vb)
 ```
 
-Se aprecia que igual que en el gráfico anterior, la trayectoria está invertida. Además, el gráfico que devuelve `plot_switch_times()` indica la regulación al revés (Fgf8 se desactiva, no se activa; elf5 se sobreexpresa al final, no se desactiva). Procedemos a corregir ambos gráficos inviertiendo el eje X y la leyenda:
+Se aprecia que igual que en el gráfico anterior, la trayectoria está invertida. Además, el gráfico que devuelve `plot_switch_times()` indica la regulación al revés (Fgf8 se desactiva, no se activa; Elf5 se sobreexpresa al final, no se desactiva). Procedemos a corregir ambos gráficos inviertiendo el eje X y la leyenda:
 
 ```{r, warning=F}
-# En este caso tenemos que usar scale_y_reverse(), seguramente porque
-# internamiente los comandos `plot_switch_times()` y `plot_peak_times()` hacen
-# un flip de las coordenadas
+# En este caso tenemos que usar scale_y_reverse(), debido a que internamente los
+# comandos `plot_switch_times()` y `plot_peak_times()` hacen un flip de las
+# coordenadas con `coord_flip()`
 
-# La leyenda está al revés
-plot_switch_times(oui = oui_vb) + theme_classic() + 
-  scale_y_reverse() + theme(legend.position = "top")
+# Solucion guarra
+oui_vb$fit@sim$samples[[1]]$k.1 <- -oui_vb$fit@sim$samples[[1]]$k.1
+oui_vb$fit@sim$samples[[1]]$k.2 <- -oui_vb$fit@sim$samples[[1]]$k.2
+oui_vb$fit@sim$samples[[1]]$k.3 <- -oui_vb$fit@sim$samples[[1]]$k.3
+oui_vb$fit@sim$samples[[1]]$k.4 <- -oui_vb$fit@sim$samples[[1]]$k.4
+oui_vb$fit@sim$samples[[1]]$k.5 <- -oui_vb$fit@sim$samples[[1]]$k.5
+oui_vb$fit@sim$samples[[1]]$k.6 <- -oui_vb$fit@sim$samples[[1]]$k.6
+oui_vb$fit@sim$samples[[1]]$k.7 <- -oui_vb$fit@sim$samples[[1]]$k.7
+oui_vb$fit@sim$samples[[1]]$k.8 <- -oui_vb$fit@sim$samples[[1]]$k.8
+oui_vb$fit@sim$samples[[1]]$k.9 <- -oui_vb$fit@sim$samples[[1]]$k.9
+oui_vb$fit@sim$samples[[1]]$k.10 <- -oui_vb$fit@sim$samples[[1]]$k.10
+oui_vb$fit@sim$samples[[1]]$k.11 <- -oui_vb$fit@sim$samples[[1]]$k.11
+oui_vb$fit@sim$samples[[1]]$k.12 <- -oui_vb$fit@sim$samples[[1]]$k.12
+oui_vb$fit@sim$samples[[1]]$k.13 <- -oui_vb$fit@sim$samples[[1]]$k.13
+oui_vb$fit@sim$samples[[1]]$k.14 <- -oui_vb$fit@sim$samples[[1]]$k.14
+oui_vb$fit@sim$samples[[1]]$k.15 <- -oui_vb$fit@sim$samples[[1]]$k.15
+oui_vb$fit@sim$samples[[1]]$k.16 <- -oui_vb$fit@sim$samples[[1]]$k.16
 
-data(oui)
-View(oui_vb)
-oui_vb$fit@inits$k <- -oui_vb$fit@inits$k # Esto deberia funcionar...
-jajaja <- extract(oui_vb$fit, "k")$k
-jajaja <- -jajaja
-View(oui_vb$fit)
+plot_switch_times(oui = oui_vb) + theme_classic() + scale_y_reverse()
 
+
+
+###########
 plot_peak_times(oui_vb) + theme_classic() + scale_y_reverse(limits = c(1,0))
 ```
-
 
 
 Para identificar estados celulares metaestables usando matrices de consistencia:
