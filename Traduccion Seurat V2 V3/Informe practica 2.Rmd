@@ -735,7 +735,7 @@ plot_switch_times2 <- function (oui) {
     shape = 21, size = 3) + ylab("Switch point") + scale_fill_gradient2(name = "Regulation", 
     low = vpal[1], high = vpal[5]) + scale_color_gradient2(name = "Regulation", 
     low = vpal[1], high = vpal[5]) + theme(legend.position = "top") + scale_y_reverse() +
-    theme_classic() # Añadimos `scale_y_reverse()` y `theme_classic()`
+    theme_classic()  # Añadimos `scale_y_reverse()` y `theme_classic()`
 }
 
 library(viridis)
@@ -775,7 +775,10 @@ oui_vb$fit@sim$samples[[1]]$k.15 <- -oui_vb$fit@sim$samples[[1]]$k.15
 oui_vb$fit@sim$samples[[1]]$k.16 <- -oui_vb$fit@sim$samples[[1]]$k.16
 
 # Graficamos los switch times de los genes monotónicos (switch-like)
-plot_switch_times(oui = oui_vb) + theme_classic() + scale_y_reverse()
+plot_switch_times(oui = oui_vb) + theme_classic() + scale_y_reverse() + 
+  scale_x_discrete(limits = rev) 
+# Opcionalmente, podemos usar `scale_x_discrete(limits = rev)` para invertir el
+# orden del eje x, que muestra factores (ergo no podemos usar `scale_x_reverse`)
 
 
 
@@ -811,7 +814,7 @@ Finalmente, optamos por una 4ª solución: usar `lapply`, pues es mucho más efi
 
 </details>
 
-```{r, warning=F}
+```{r, warning = F}
 # Con `grep` obtenemos los índices de los k.1-k.16 y los visualizamos con
 # `print()`
 indices <- grep("k.", names(oui_vb$fit@sim$samples[[1]])); print(c(min(indices), max(indices)))
@@ -823,7 +826,6 @@ oui_vb$fit@sim$samples[[1]][c(22:37)] <- lapply(oui_vb$fit@sim$samples[[1]][c(22
 
 # Graficamos los switch times de los genes monotónicos (switch-like)
 plot_switch_times(oui = oui_vb) + theme_classic() + scale_y_reverse()
-
 
 # Graficamos los peak times de los genes transitorios
 plot_peak_times(oui_vb) + theme_classic() + scale_y_reverse(limits = c(1,0))
