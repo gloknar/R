@@ -565,7 +565,7 @@ En nuestro caso particular con el dataset de Deng podemos hacer un poco de tramp
 
 ```{r, fig.height = 9.5}
 # Genes de la etapa inicial(excepto Nanog). Comienzan activos y se desactivan a
-# medida que progresa el pseudotiempo.
+# medida que progresa el pseudotiempo (de ahí lo de "down").
 ouija_markers_down <- c("Dazl", "Rnf17", "Sycp3", "Pou5f1", "Fgf8", "Egfr", "Bmp5", "Bmp15") 
 
 # Genes de la etapa intermedia. Comienzan inactivos, se activan un rato y
@@ -574,7 +574,7 @@ ouija_markers_down <- c("Dazl", "Rnf17", "Sycp3", "Pou5f1", "Fgf8", "Egfr", "Bmp
 ouija_markers_transient <- c("Zscan4b", "Foxa1", "Prdm14", "Sox21") 
 
 # Genes de la etapa tardía. Comienzan inactivos y se activan a medida que
-# progresa el pseudotiempo.
+# progresa el pseudotiempo (de ahí lo de "up").
 ouija_markers_up <- c("Creb3", "Gpx4", "Krt8", "Elf5", "Eomes", "Cdx2", "Tdgf1", "Gdf3") 
 
 
@@ -614,8 +614,10 @@ Para ayudar al modelo de `ouija`, vamos a proporcionarle información _a priori_
 # Tipo de respuesta de cada gen
 response_type <- c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up)),
                    rep("transient", length(ouija_markers_transient)))
+
 # c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up))) equivale a 
 # c(rep("switch", length(ouija_markers_down)), rep("switch, length(ouija_markers_up)))
+
 
 # Certeza del comportamiento de nuestros biomarcadores
 switch_strengths <- c(rep(-10, length(ouija_markers_down)), 
@@ -696,11 +698,11 @@ Se aprecia que igual que en el gráfico anterior, la trayectoria está invertida
 
 
 <details>
-<summary>Compendio de soluciones para corregir los valores de regulación génica de `plot_switch_times`<summary>
+<summary> __Compendio de soluciones para corregir los valores de regulación génica de `plot_switch_times`__</summary>
 
 <br>
 
-Mientras que para invertir el eje x de nuestros gráficos, basta con llamar a la función `scale_y_reverse` ( y no `scale_x_reverse` dado que las funciones de graficado `plot_switch_times` y `plot_peak_times` usan internamente `coord_flip`), para invertir los valores de la regulación génica no es tan fácil.
+Mientras que para invertir el eje x de nuestros gráficos, basta con llamar a la función `scale_y_reverse` (y no `scale_x_reverse` dado que las funciones de graficado `plot_switch_times` y `plot_peak_times` usan internamente `coord_flip`), para invertir los valores de la regulación génica no es tan fácil.
 
 La función de graficado `plot_switch_times` obtiene los valores de regulación génica de los objetos k.1-k.16 de la lista `oui_vb$fit@sim$samples[[1]]` (i.e. `oui_vb$fit@sim$samples[[1]]$k.1`, `oui_vb$fit@sim$samples[[1]]$k.2`...), ubicada dentro del objeto `oui_vb`. A continuación ofrecemos 3 soluciones:
 
@@ -754,6 +756,7 @@ plot_switch_times2(oui_vb)
 # Solucion manual. Modificamos manualmente cada uno de los 16 objetos de interés
 # de la lista `oui_vb$fit@sim$samples[[1]]`
 
+
 oui_vb$fit@sim$samples[[1]]$k.1 <- -oui_vb$fit@sim$samples[[1]]$k.1
 oui_vb$fit@sim$samples[[1]]$k.2 <- -oui_vb$fit@sim$samples[[1]]$k.2
 oui_vb$fit@sim$samples[[1]]$k.3 <- -oui_vb$fit@sim$samples[[1]]$k.3
@@ -783,7 +786,7 @@ plot_switch_times(oui = oui_vb) + theme_classic() + scale_y_reverse()
 ################################################################
 
 
-# Solución con bucle for. Automatizamos con un bucle for los pasos realizados en
+# Solución con bucle `for`. Automatizamos con un bucle `for` los pasos realizados en
 # la solución 2
 
 
@@ -803,6 +806,8 @@ plot_switch_times(oui = oui_vb) + theme_classic() + scale_y_reverse()
 
 
 Finalmente, optamos por una 4ª solución: usar `lapply`, pues es mucho más eficiente que usar bucles `for` en R (ver siguiente chunk)
+
+<br>
 
 </details>
 
