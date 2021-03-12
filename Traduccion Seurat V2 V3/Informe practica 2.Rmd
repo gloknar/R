@@ -888,7 +888,7 @@ deng_SCE$ouija_cell_class <- ouija_pseudotime$cell_classifications
 ggplot(as.data.frame(colData(deng_SCE)), 
        aes(x = as.factor(ouija_cell_class), y = pseudotime_ouija, colour = cell_type2)) +
        geom_boxplot() + coord_flip() + scale_color_tableau() +
-       theme_classic() + theme(plot.title = element_text(size = 10, hjust = 0.40)) +
+       theme_classic() + theme(plot.title = element_text(size = 10, hjust = 0.35)) +
        ggtitle("Estados celulares metaestables y su correspondencia con la verdad experimental (orden correcto)") + 
        xlab("Estado celular metaestable") + ylab("Pseudotiempo MAP")
 ```
@@ -921,11 +921,13 @@ ggplot(as.data.frame(colData(deng_SCE)),
 <details>
 <summary> __Ejercicio 2.3: ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las _a priori_?__</summary>
 
+<br>
+
 xefe
 
 </details>
 
-
+<br>
 
 
 
