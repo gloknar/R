@@ -677,7 +677,8 @@ plot_expression(oui_vb) + theme_classic()
 Nótese que genes tempranos como Zscan4b (expresado en los estadios de 2 y 4 células) aparecen sobreexpresados al final del pseudotiempo, lo que nos indica que el gráfico tiene el eje X invertido. Vamos a solucionarlo:
 
 ```{r, fig.height= 7}
-plot_expression(oui_vb) + theme_classic() + scale_x_reverse()
+plot_expression(oui_vb) + theme_classic() + 
+  scale_x_reverse() + xlab("Ouija pseudotime (corrected)")
 ```
 
 
@@ -831,10 +832,13 @@ oui_vb$fit@sim$samples[[1]][c(22:37)] <- lapply(oui_vb$fit@sim$samples[[1]][c(22
 
 
 # Graficamos los switch times de los genes monotónicos (switch-like)
-plot_switch_times(oui = oui_vb) + theme_classic() + scale_y_reverse()
+plot_switch_times(oui = oui_vb) + theme_classic() + 
+  theme(legend.position ="top") + scale_y_reverse() + 
+  ylab("Switch point (corrected)")
 
 # Graficamos los peak times de los genes transitorios
-plot_peak_times(oui_vb) + theme_classic() + scale_y_reverse(limits = c(1,0))
+plot_peak_times(oui_vb) + theme_classic() + 
+  scale_y_reverse(limits = c(1,0)) + ylab("Peak time (corrected)")
 ```
 
 
@@ -865,7 +869,7 @@ map_pst <- map_pseudotime(oui_vb) *-1
 ouija_pseudotime <- data.frame(map_pst, cell_classifications)
 
 ggplot(ouija_pseudotime, aes(x = map_pst, y = cell_classifications)) + 
-       geom_point() + xlab("Pseudotiempo MAP") + ylab("Clasificación celular") + 
+       geom_point() + xlab("Pseudotiempo MAP") + ylab("Estado celular metaestable") + 
        theme_classic() + theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle("Estados celulares metaestables a lo largo del pseudotiempo (orden correcto)")
 ```
@@ -882,14 +886,16 @@ deng_SCE$ouija_cell_class <- ouija_pseudotime$cell_classifications
 # Graficamos. Nótese que invertimos el pseudotiempo (`pseudotime_ouija`) en el
 # chunk anterior
 ggplot(as.data.frame(colData(deng_SCE)), 
-       aes(x = as.factor(ouija_cell_class), y = , colour = cell_type2)) +
+       aes(x = as.factor(ouija_cell_class), y = pseudotime_ouija, colour = cell_type2)) +
        geom_boxplot() + coord_flip() + scale_color_tableau() +
-       theme_classic() + theme(plot.title = element_text(hjust = 0.5)) +
+       theme_classic() + theme(plot.title = element_text(size = 10, hjust = 0.40)) +
        ggtitle("Estados celulares metaestables y su correspondencia con la verdad experimental (orden correcto)") + 
-       xlab("Pseudotiempo MAP") + ylab("Clasificación celular por ouija")
+       xlab("Estado celular metaestable") + ylab("Pseudotiempo MAP")
 ```
-`ouija` identifica en este caso 5 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4/8/16 cell”,
-“blast1” and “blast2”.
+
+<br>
+
+`ouija` identifica en este caso 5 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4cell”, "8/16 cell/early blast", “mid blast” and “late blast”.
 
 <br>
 
@@ -906,11 +912,17 @@ ggplot(as.data.frame(colData(deng_SCE)),
        theme(plot.title = element_text(hjust = 0.5))
 ```
 
-`ouija` ha ordenado bien en general los tipos celulares, aunque cabe destacar que el algoritmo puede ser sensible a la elección de biomarcadores y la información _a priori_ proporcionada al mismo. ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las _a priori_?
+
+<br>
+
+`ouija` ha ordenado bien en general los tipos celulares, aunque cabe destacar que el algoritmo puede ser sensible a la elección de biomarcadores y la información _a priori_ proporcionada al mismo.
 
 
 <details>
-<summary> __Ejercicio__</summary>
+<summary> __Ejercicio 2.3: ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las _a priori_?__</summary>
+
+xefe
+
 </details>
 
 
@@ -972,7 +984,7 @@ Aquí vemos que ouija, TSCAN y SLICER dan trayectorias muy correlacionadas con l
 <br>
 
 <details> 
-<summary> __Ejercicio 2.3: Compara los métodos en mayor profundidad. ¿Dónde y cómo difieren?__</summary>
+<summary> __Ejercicio 2.4: Compara los métodos en mayor profundidad. ¿Dónde y cómo difieren?__</summary>
 
 WIP
 
