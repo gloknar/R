@@ -284,15 +284,15 @@ for (i in c(2:9)) {
   dengorderTSCAN <- TSCANorder(dengclust, orderonly = F)
   
   # Añadimos al objeto `SCE` el pseudotiempo calculado por `TSCAN`
-  deng_SCE$pseudotime_order_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengorderTSCAN$Pseudotime
+  deng_SCE$exercise_tscan[as.numeric(dengorderTSCAN$sample_name)] <- dengorderTSCAN$Pseudotime
   
   # Graficamos la trayectoria final
   print(ggplot(as.data.frame(colData(deng_SCE)), 
-       aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
+       aes(x = exercise_tscan, y = cell_type2, colour = cell_type2)) +
        geom_quasirandom(groupOnX = F) + theme_classic() +
        theme(plot.title = element_text(hjust = 0.5)) +
        ggtitle(paste("Trayectoria inferida con", i, "clusters"))) +
-       xlab("Pseudotiempo") + ylab("Etapa de desarrollo") +
+       xlab(paste("Pseudotiempo")) + ylab("Etapa de desarrollo") +
        scale_colour_calc()
   # Tienes que usar explícitamente print(ggplot()) si usas gráficos de ggplot2
   # dentro de un bucle for
@@ -967,28 +967,26 @@ Ajustaremos el pseudotiempo de los diversos métodos para que todos estén en el
 
 
 ```{r}
-# Obtenemos con regex los pseudotiempos y los agrupamos en un dataframe
+# Obtenemos con `grep` (RegEx) los pseudotiempos inferidos por `Tscan`,
+# `destiny`, `SLICER` y `ouija` y los agrupamos en un dataframe
 df_pseudotime <- as.data.frame(
   colData(deng_SCE)[,grep("pseudotime", colnames(colData(deng_SCE)))]
 )
 
-# Renombramos las columnas con regex
-colnames(df_pseudotime) <- gsub("pseudotime_", "", colnames(df_pseudotime))
-
-# Añadimos el orden mediante la 1ª CP del PCA (invertida)
+# Añadimos también la trayectoria inferida con el PCA
 df_pseudotime$PC1 <- deng_SCE$PC1
 
-# Invertimos el orden de TSCAN y destiny... (y ouija?)
-# df_pseudotime$order_tscan <- df_pseudotime$order_tscan
-# df_pseudotime$diffusionmap <- df_pseudotime$diffusionmap
-# df_pseudotime$ouija <- df_pseudotime$ouija
+# Renombramos las columnas con RegEx
+colnames(df_pseudotime) <- gsub("pseudotime_", "", colnames(df_pseudotime))
 
 
-corrplot.mixed(cor(df_pseudotime, use = "na.or.complete"), order = "hclust",
-         tl.col = "black", mar = c(0,0,3.1,0), main = "Matriz de correlación para los resultados del pseudotiempo")
+corrplot.mixed(cor(df_pseudotime, use = "na.or.complete"), 
+               order = "hclust", tl.col = "black", 
+               main = "Matriz de correlación para los resultados del pseudotiempo",
+               mar = c(0,0,3.1,0))
 ```
 
-Aquí vemos que ouija, TSCAN y SLICER dan trayectorias muy correlacionadas con la 1ª CP. destiny está menos correlacionado con estos métodos.
+Aquí vemos que `ouija`, `TSCAN` y `SLICER` dan trayectorias fuertemente correlacionadas con la 1ª CP. La trayectoria computada por `destiny` está menos correlacionada con el resto de métodos.
 
 <br>
 
