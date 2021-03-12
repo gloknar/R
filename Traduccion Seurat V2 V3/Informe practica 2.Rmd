@@ -155,6 +155,21 @@ ggplot(as.data.frame(colData(deng_SCE)),
 
 Aplicando dicho algoritmo básico, y tal y como muestra el gráfico anterior, vemos que a la primera dimensión le cuesta un poco diferenciar algunos tipos celulares, pero en general ordena bien las células según su estapa de desarrollo. Nótese que aunque los resultados estén al revés, esto se puede solucionar fácilmente invirtiendo el eje X.
 
+```{r}
+# Invertimos el pseudotiempo (1ª componente principal)
+deng_SCE$PC1 <- deng_SCE$PC1 * (-1)
+
+# Graficamos la trayectoria final inferida (corregida)
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = PC1, y = cell_type2, colour = cell_type2)) + 
+       geom_quasirandom(groupOnX = F) + theme_classic() + 
+       theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("Células ordenadas por la 1ªCP (orden correcto)") + 
+       xlab("Primera componente principal") + ylab("Etapa de desarrollo") + 
+       scale_colour_calc()
+```
+
+
 ```{r, echo = F, eval = F}
 # Para invertir el eje X hay 3 opciones, que yo sepa: Una es multiplicar la
 # columna de interés por -1, tal que así:
@@ -167,17 +182,6 @@ ggplot()... + scale_x_reverse()
 ggplot()... + xlim(-80,120)
 ```
 
-```{r}
-deng_SCE$PC1 <- deng_SCE$PC1 * (-1)
-
-ggplot(as.data.frame(colData(deng_SCE)), 
-       aes(x = PC1, y = cell_type2, colour = cell_type2)) + 
-       geom_quasirandom(groupOnX = F) + theme_classic() + 
-       theme(plot.title = element_text(hjust = 0.5)) +
-       ggtitle("Células ordenadas por la 1ªCP (orden correcto)") + 
-       xlab("Primera componente principal") + ylab("Etapa de desarrollo") + 
-       scale_colour_calc()
-```
 
 
 En las siguientes secciones veremos qué rendimiento desempeñan los algoritmos previamente citados ( _i.e._ `TSCAN` y sucedáneos).
@@ -251,6 +255,7 @@ Al igual que el PCA, `TSCAN` nos devuelve la trayectoria al revés. Vamos a inve
 # Invertimos la trayectoria para ponerla en el sentido correcto
 deng_SCE$pseudotime_order_tscan <- -deng_SCE$pseudotime_order_tscan
 
+# Graficamos la trayectoria final inferida (corregida)
 ggplot(as.data.frame(colData(deng_SCE)), 
        aes(x = pseudotime_order_tscan, y = cell_type2, colour = cell_type2)) +
        geom_quasirandom(groupOnX = F) + theme_classic() +
@@ -358,9 +363,10 @@ ggplot(as.data.frame(colData(deng_SCE)), aes(x = pseudotime_diffusionmap, y = ce
 ```
 
 ```{r}
+# Invertimos el pseudotiempo
 deng_SCE$pseudotime_diffusionmap <- -deng_SCE$pseudotime_diffusionmap
 
-# Graficamos la trayectoria final inferida
+# Graficamos la trayectoria final inferida (corregida)
 ggplot(as.data.frame(colData(deng_SCE)), aes(x = pseudotime_diffusionmap, y = cell_type2, colour = cell_type2)) +
        geom_quasirandom(groupOnX = FALSE) + scale_color_calc() + theme_classic() + 
        theme(plot.title = element_text(hjust = 0.5)) + xlab("Pseudotiempo del mapa de difusión (1ª componente)") + 
@@ -815,7 +821,7 @@ Finalmente, optamos por una 4ª solución: usar `lapply`, pues es mucho más efi
 </details>
 
 ```{r, warning = F}
-# Con `grep` obtenemos los índices de los k.1-k.16 y los visualizamos con
+# Con `grep` (RegEx) obtenemos los índices de los k.1-k.16 y los visualizamos con
 # `print()`
 indices <- grep("k.", names(oui_vb$fit@sim$samples[[1]])); print(c(min(indices), max(indices)))
 
@@ -836,59 +842,82 @@ Ahora tanto la trayectoria como los valores de regulación se muestran correctam
 
 
 
-Para identificar estados celulares metaestables usando matrices de consistencia:
+<br>
+
+Adicionalmente, con `ouija` podemos detectar estados celulares metaestables usando matrices de consistencia. Para ello, primero tenemos que computar la matriz de consistencia con el comando `consistency_matrix`, y acto seguido agrupar las células con `cluster_consistency`. Tras ello, podemos computar el pseudotiempo con el comando `map_pseudotime` y visualizar cómo se suceden dichos estados celulares a lo largo del pseudotiempo. Nótese que comprobé posteriormente que `ouija` también nos devuelve el pseudotiempo al revés, así que lo corregiremos aquí para ahorrarnos futuros quebraderos de cabeza.
 
 ```{r, warning = F}
-# Visualizamos la matriz de consistencia
+# Visualizamos la matriz de consistencia (opcional)
 plot_consistency(oui_vb)
 
 # Guardamos la matriz de consistencia en el objeto `cmo` y agrupamos las células
 cmo <- consistency_matrix(oui_vb)
 cell_classifications <- cluster_consistency(cmat = cmo, n_clusters = 2:9)
 
-# Generamos el pseudotiempo
-map_pst <- map_pseudotime(oui_vb)
+# Hemos detectado 5 estados celulares metaestables
+levels(as.factor(cell_classifications))
 
-# Agrupamos la clasificación celular y el pseudotiempo MAP en un dataframe y lo
-# graficamos
+
+# Computamos el pseudotiempo en el orden correcto, lo añadimos a un dataframe
+# con los estados celulares metaestables y graficamos dicho dataframe
+map_pst <- map_pseudotime(oui_vb) *-1
+
 ouija_pseudotime <- data.frame(map_pst, cell_classifications)
+
 ggplot(ouija_pseudotime, aes(x = map_pst, y = cell_classifications)) + 
-  geom_point() + xlab("Pseudotiempo MAP") + ylab("Clasificación celular") + 
-  theme_classic()
+       geom_point() + xlab("Pseudotiempo MAP") + ylab("Clasificación celular") + 
+       theme_classic() + theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("Estados celulares metaestables a lo largo del pseudotiempo (orden correcto)")
+```
 
 
+Ahora que hemos identificado 5 estados celulares metaestables, procedemos a identificarlos mediante su comparación con la verdad experimental:
 
-
-deng_SCE$pseudotime_ouija <- ouija_pseudotime$map_pst # Multiplícalo por -1 para invertir el orden
+```{r}
+# Añadimos el pseudotiempo y los estados celulares metaestables computados en el
+# chunk anterior al objeto `SCE` para poder graficarlos
+deng_SCE$pseudotime_ouija <- ouija_pseudotime$map_pst
 deng_SCE$ouija_cell_class <- ouija_pseudotime$cell_classifications
 
+# Graficamos. Nótese que invertimos el pseudotiempo (`pseudotime_ouija`) en el
+# chunk anterior
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = as.factor(ouija_cell_class), y = , colour = cell_type2)) +
+       geom_boxplot() + coord_flip() + scale_color_tableau() +
+       theme_classic() + theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("Estados celulares metaestables y su correspondencia con la verdad experimental (orden correcto)") + 
+       xlab("Pseudotiempo MAP") + ylab("Clasificación celular por ouija")
+```
+`ouija` identifica en este caso 5 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4/8/16 cell”,
+“blast1” and “blast2”.
+
+<br>
+
+
+Finalmente procedemos a visualizar la trayectoria inferida por `ouija`:
+
+```{r, warning = F}
+# Graficamos la trayectoria final inferida
 ggplot(as.data.frame(colData(deng_SCE)), 
        aes(x = pseudotime_ouija, y = cell_type2, colour = cell_type2)) +
        geom_quasirandom(groupOnX = F) + theme_classic() +
        scale_color_calc() + xlab("Pseudotiempo MAP") +
-       ylab("estado de desarrollo") + ggtitle("Ordenamiento celular según ouija") + 
+       ylab("estado de desarrollo") + ggtitle("Ordenamiento celular según ouija (orden correcto)") + 
        theme(plot.title = element_text(hjust = 0.5))
 ```
 
-Al igual que el primer gráfico que generamos con `TSCAN`, `ouija` nos ha devuelto el pseudotiempo ordenado al revés, pero esto se puede solucionar multiplicando la columna `deng_SCE$pseudotime_ouija` por $-1$. `ouija` ha ordenado bien en general los tipos celulares, aunque cabe destacar que el algoritmo puede ser sensible a la elección de biomarcadores y la información _a priori_ proporcionada al mismo. ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las _a priori_?
+`ouija` ha ordenado bien en general los tipos celulares, aunque cabe destacar que el algoritmo puede ser sensible a la elección de biomarcadores y la información _a priori_ proporcionada al mismo. ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las _a priori_?
 
 
 <details>
 <summary> __Ejercicio__</summary>
 </details>
 
-<br>
 
-`ouija` identifica en este caso 4 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4/8/16 cell”,
-“blast1” and “blast2”.
 
-```{r}
-ggplot(as.data.frame(colData(deng_SCE)), 
-       aes(x = as.factor(ouija_cell_class), y = pseudotime_ouija, colour = cell_type2)) +
-       geom_boxplot() + coord_flip() + scale_color_tableau() +
-       theme_classic() + xlab("Pseudotiempo MAP") +
-       ylab("Clasificación celular por ouija")
-```
+
+
+
 
 Un análisis típico es averiguar el orden de regulación de los genes. Por ejemplo, ¿se sobreexpresa el gen A antes que el gen B? ¿Alcanza el gen C su máximo/mínimo de expresión antes de que el gen D comience a infraexpresarse?
 
