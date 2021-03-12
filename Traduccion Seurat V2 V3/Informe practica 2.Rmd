@@ -895,7 +895,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
 
 <br>
 
-`ouija` identifica en este caso 5 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4cell”, "8/16 cell/early blast", “mid blast” and “late blast”.
+`ouija` identifica en este caso 5 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4cell”, "8/16cell/early blast", “mid blast” and “late blast”.
 
 <br>
 
@@ -919,11 +919,21 @@ ggplot(as.data.frame(colData(deng_SCE)),
 
 
 <details>
-<summary> __Ejercicio 2.3: ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las _a priori_?__</summary>
+<summary> __Ejercicio 2.3: ¿Cómo cambian los resultados al elegir otros biomarcadores o cambiar las probabilidades _a priori_?__</summary>
 
 <br>
 
-xefe
+__Solución__: 
+
+* bla bla bla
+
+* Bla bla bla
+
+
+
+<br>
+
+desarrollo aquí
 
 </details>
 
@@ -951,12 +961,9 @@ head(gene_regs)
 
 # Comparación de métodos
 
-¿Cómo se comparan las trayectorias inferidas por TSCAN, destiny, SLICER y ouija?
+¿Cómo se comparan las trayectorias inferidas por el PCA, `TSCAN`, `destiny`, `SLICER` y `ouija`?
 
-
-
-TSCAN y destiny nos dan la trayectoria al revés, por lo tanto lo ajustaremos para hacer las comparaciones
-
+Ajustaremos el pseudotiempo de los diversos métodos para que todos estén en el mismo sentido, y poder así realizar las comparaciones pertinentes
 
 
 ```{r}
@@ -969,12 +976,12 @@ df_pseudotime <- as.data.frame(
 colnames(df_pseudotime) <- gsub("pseudotime_", "", colnames(df_pseudotime))
 
 # Añadimos el orden mediante la 1ª CP del PCA (invertida)
-df_pseudotime$PC1 <- -deng_SCE$PC1
+df_pseudotime$PC1 <- deng_SCE$PC1
 
 # Invertimos el orden de TSCAN y destiny... (y ouija?)
-df_pseudotime$order_tscan <- -df_pseudotime$order_tscan
-df_pseudotime$diffusionmap <- -df_pseudotime$diffusionmap
-df_pseudotime$ouija <- -df_pseudotime$ouija
+# df_pseudotime$order_tscan <- df_pseudotime$order_tscan
+# df_pseudotime$diffusionmap <- df_pseudotime$diffusionmap
+# df_pseudotime$ouija <- df_pseudotime$ouija
 
 
 corrplot.mixed(cor(df_pseudotime, use = "na.or.complete"), order = "hclust",
