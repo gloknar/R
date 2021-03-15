@@ -964,6 +964,8 @@ plot_expression(oui_vb) + theme_classic() +
 ```
 
 
+<br>
+
 En el gráfico observamos que Zscan4b alcanza su máximo de expresión antes que Sox21, pero, ¿es esa diferencia significativa o se debe al azar)? Según la tabla, esa diferencia es efectivamente significativa. Podemos afirmar con un 95% de confianza que Zscan4b alcanza su máximo de expresión antes que lo hace Sox21.
 
 ```{r, echo = F}
@@ -971,6 +973,7 @@ gene_regs[190,]
 ```
 
 
+<br>
 
 Si comparamos dos genes monotónicos de la etapa temprana, Dazl y Egfr, el segundo se deactiva antes que el primero. 
 
@@ -979,6 +982,7 @@ gene_regs[45,]
 ```
 
 
+<br>
 
 Por otro lado, en el gráfico parece que Egfr y Bmp5 se activan a la vez. Tras consultar la tabla, lo confirmamos con respaldo estadístico. Un resultado de este tipo podría indicarnos que dichos genes se coexpresan y que participan en la misma etapa de desarrollo.
 
