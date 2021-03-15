@@ -864,7 +864,7 @@ levels(as.factor(cell_classifications))
 
 # Computamos el pseudotiempo en el orden correcto, lo añadimos a un dataframe
 # con los estados celulares metaestables y graficamos dicho dataframe
-map_pst <- map_pseudotime(oui_vb) *-1
+map_pst <- map_pseudotime(oui_vb) * (-1)
 
 ouija_pseudotime <- data.frame(map_pst, cell_classifications)
 
@@ -912,7 +912,6 @@ ggplot(as.data.frame(colData(deng_SCE)),
        theme(plot.title = element_text(hjust = 0.5))
 ```
 
-
 <br>
 
 `ouija` ha ordenado bien en general los tipos celulares, aunque cabe destacar que el algoritmo puede ser sensible a la elección de biomarcadores y la información _a priori_ proporcionada al mismo.
@@ -943,16 +942,52 @@ desarrollo aquí
 
 
 
-Un análisis típico es averiguar el orden de regulación de los genes. Por ejemplo, ¿se sobreexpresa el gen A antes que el gen B? ¿Alcanza el gen C su máximo/mínimo de expresión antes de que el gen D comience a infraexpresarse?
+Un análisis típico en inferencia de trayectorias es averiguar el orden de regulación de los genes. Por ejemplo, ¿se activa el gen A antes que el gen B? ¿Alcanza el gen C su máximo de expresión antes de que el gen D se desactive?
 
-`ouija` responde a estas preguntas en términos de un test de hipótesis Bayesiana de si la diferencia en los tiempos de regulación (either switch time or peak time) es significativamente distinto de 0. Esto se comprueba con el comando `gene_regulation`.
+`ouija` responde a estas preguntas en términos de un test de hipótesis Bayesiana de si la diferencia en los tiempos de regulación, ya sea _switch time_ o _peak time_, es significativamente distinta de 0. Esto se comprueba con el comando `gene_regulation`.
 
 ```{r}
 gene_regs <- gene_regulation(oui_vb)
 head(gene_regs)
 ```
 
-¿Qué conclusiones puedes derivar de la tabla de regulación génica?
+<details>
+<summary> __Ejercicio 2.4: ¿Qué conclusiones puedes derivar de la tabla de regulación génica?__ </summary>
+
+<br>
+
+La tabla anterior nos confirma mediante el susodicho test estadístico la información previamente obtenida en el gráfico de expresión génica a lo largo del pseudotiempo (comando `plot_expression`).
+
+```{r, fig.height= 7, echo = F}
+plot_expression(oui_vb) + theme_classic() + 
+  scale_x_reverse() + xlab("Ouija pseudotime (corrected)")
+```
+
+
+En el gráfico observamos que Zscan4b alcanza su máximo de expresión antes que Sox21, pero, ¿es esa diferencia significativa o se debe al azar)? Según la tabla, esa diferencia es efectivamente significativa. Podemos afirmar con un 95% de confianza que Zscan4b alcanza su máximo de expresión antes que lo hace Sox21.
+
+```{r, echo = F}
+gene_regs[190,]
+```
+
+
+
+Si comparamos dos genes monotónicos de la etapa temprana, Dazl y Egfr, el segundo se deactiva antes que el primero. 
+
+```{r, echo = F}
+gene_regs[45,]
+```
+
+
+
+Por otro lado, en el gráfico parece que Egfr y Bmp5 se activan a la vez. Tras consultar la tabla, lo confirmamos con respaldo estadístico. Un resultado de este tipo podría indicarnos que dichos genes se coexpresan y que participan en la misma etapa de desarrollo.
+
+```{r, echo = F}
+gene_regs[55,]
+```
+
+
+</details>
 
 ***
 
@@ -961,13 +996,11 @@ head(gene_regs)
 
 # Comparación de métodos
 
-¿Cómo se comparan las trayectorias inferidas por el PCA, `TSCAN`, `destiny`, `SLICER` y `ouija`?
-
-Ajustaremos el pseudotiempo de los diversos métodos para que todos estén en el mismo sentido, y poder así realizar las comparaciones pertinentes
+¿Cómo se comparan las trayectorias inferidas por el PCA, `TSCAN`, `destiny`, `SLICER` y `ouija`? Para responder a esta pregunta, analizaremos su matriz de correlación. Dado que en los apartados previos hemos ido ajustando el pseudotiempo de los diversos métodos para que todos tuviesen el mismo sentido (i.e. el pseudotiempo progresa de izquierda a derecha, estando el zigoto en el comienzo y el blastocisto al final del mismo), no es necesario realizar más modificaciones.
 
 
 ```{r}
-# Obtenemos con `grep` (RegEx) los pseudotiempos inferidos por `Tscan`,
+# Obtenemos con `grep` (RegEx) los pseudotiempos inferidos por `TSCAN`,
 # `destiny`, `SLICER` y `ouija` y los agrupamos en un dataframe
 df_pseudotime <- as.data.frame(
   colData(deng_SCE)[,grep("pseudotime", colnames(colData(deng_SCE)))]
@@ -979,19 +1012,19 @@ df_pseudotime$PC1 <- deng_SCE$PC1
 # Renombramos las columnas con RegEx
 colnames(df_pseudotime) <- gsub("pseudotime_", "", colnames(df_pseudotime))
 
-
+# Graficamos la matriz de correlación
 corrplot.mixed(cor(df_pseudotime, use = "na.or.complete"), 
                order = "hclust", tl.col = "black", 
                main = "Matriz de correlación para los resultados del pseudotiempo",
-               mar = c(0,0,3.1,0))
+               mar = c(0,0,2,0))
 ```
 
-Aquí vemos que `ouija`, `TSCAN` y `SLICER` dan trayectorias fuertemente correlacionadas con la 1ª CP. La trayectoria computada por `destiny` está menos correlacionada con el resto de métodos.
+Aquí vemos que `ouija`, `TSCAN` y `SLICER` dan trayectorias fuertemente correlacionadas con la 1ª CP (R > 0.9). La trayectoria computada por `destiny` está menos correlacionada con el resto de métodos (0.65 < R < 0.8).
 
 <br>
 
 <details> 
-<summary> __Ejercicio 2.4: Compara los métodos en mayor profundidad. ¿Dónde y cómo difieren?__</summary>
+<summary> __Ejercicio 2.5: Compara los métodos en mayor profundidad. ¿Dónde y cómo difieren?__</summary>
 
 WIP
 
@@ -1042,7 +1075,7 @@ plotExpression(deng_SCE, "Rhoa", x = "pseudotime_ouija", colour_by = "cell_type2
 <br>
 
 <details> 
-<summary> __Ejercicio 2.5?: ¿Qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo, para nuestro dataset?__</summary>
+<summary> __Ejercicio 2.6?: ¿Qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo, para nuestro dataset?__</summary>
 
 WIP
 
