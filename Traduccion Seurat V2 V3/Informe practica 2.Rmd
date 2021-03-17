@@ -929,10 +929,170 @@ __Solución__:
 * Bla bla bla
 
 
-
 <br>
 
-desarrollo aquí
+eeeeeee
+
+```{r, fig.height = 9.5, eval = F}
+# Genes de la etapa inicial(excepto Nanog). Comienzan activos y se desactivan a
+# medida que progresa el pseudotiempo (de ahí lo de "down").
+ouija_markers_down <- c("Dazl", "Rnf17", "Sycp3", "Pou5f1", "Fgf8", "Egfr", "Bmp5", "Bmp15") 
+
+# Genes de la etapa intermedia. Comienzan inactivos, se activan un rato y
+# vuelven a desactivarse hacia el final de la trayectoria. Presentan una
+# activación transitoria
+ouija_markers_transient <- c("Zscan4b", "Foxa1", "Prdm14", "Sox21") 
+
+# Genes de la etapa tardía. Comienzan inactivos y se activan a medida que
+# progresa el pseudotiempo (de ahí lo de "up").
+ouija_markers_up <- c("Creb3", "Gpx4", "Krt8", "Elf5", "Eomes", "Cdx2", "Tdgf1", "Gdf3") 
+
+
+ouija_markers <- c(ouija_markers_up, ouija_markers_down, ouija_markers_transient)
+
+plotExpression(deng_SCE, features = ouija_markers, x = "cell_type2", colour_by = "cell_type2") + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+
+
+
+
+
+eeeeeeee
+
+```{r, eval = F}
+# Tipo de respuesta de cada gen
+response_type <- c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up)),
+                   rep("transient", length(ouija_markers_transient)))
+
+# c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up))) equivale a 
+# c(rep("switch", length(ouija_markers_down)), rep("switch, length(ouija_markers_up)))
+
+
+# Certeza del comportamiento de nuestros biomarcadores
+switch_strengths <- c(rep(-10, length(ouija_markers_down)), 
+                      rep(10, length(ouija_markers_up)))
+
+# Desviación estándar de dicha certeza
+switch_strength_sd <- c(rep(0.5, length(ouija_markers_down)), 
+                         rep(0.5, length(ouija_markers_up)))
+
+
+# El comando `ouija()` recomienda usar la siguiente línea de código para
+# paralelizar en local su computación:
+options(mc.cores = parallel::detectCores())
+
+oui_vb <- ouija(x = deng_SCE[ouija_markers,],
+                response_type = response_type,
+                switch_strengths = switch_strengths,
+                switch_strength_sd = switch_strength_sd,
+                inference_type = "vb", # "vb" = ADVI
+                single_cell_experiment_assay = "logcounts")
+
+print(oui_vb)
+```
+
+
+
+
+eeeeee
+
+```{r, fig.height= 7, eval = F}
+plot_expression(oui_vb) + theme_classic() + 
+  scale_x_reverse() + xlab("Ouija pseudotime (corrected)")
+```
+
+
+
+eeeeee
+
+```{r, warning = F, eval = F}
+# Con `grep` (RegEx) obtenemos los índices de los k.1-k.16 y los visualizamos con
+# `print()`
+indices <- grep("k.", names(oui_vb$fit@sim$samples[[1]])); print(c(min(indices), max(indices)))
+
+# Multiplicamos sus valores por -1 para obtener la regulación génica en el
+# sentido correcto
+oui_vb$fit@sim$samples[[1]][c(22:37)] <- lapply(oui_vb$fit@sim$samples[[1]][c(22:37)], function(x) x*-1)
+
+
+# Graficamos los switch times de los genes monotónicos (switch-like)
+plot_switch_times(oui = oui_vb) + theme_classic() + 
+  theme(legend.position ="top") + scale_y_reverse() + 
+  ylab("Switch point (corrected)")
+
+# Graficamos los peak times de los genes transitorios
+plot_peak_times(oui_vb) + theme_classic() + 
+  scale_y_reverse(limits = c(1,0)) + ylab("Peak time (corrected)")
+```
+
+
+
+
+eeeeeee
+
+
+
+```{r, warning = F, eval = F}
+# Visualizamos la matriz de consistencia (opcional)
+plot_consistency(oui_vb)
+
+# Guardamos la matriz de consistencia en el objeto `cmo` y agrupamos las células
+cmo <- consistency_matrix(oui_vb)
+cell_classifications <- cluster_consistency(cmat = cmo, n_clusters = 2:9)
+
+# Hemos detectado 5 estados celulares metaestables
+levels(as.factor(cell_classifications))
+
+
+# Computamos el pseudotiempo en el orden correcto, lo añadimos a un dataframe
+# con los estados celulares metaestables y graficamos dicho dataframe
+map_pst <- map_pseudotime(oui_vb) * (-1)
+
+ouija_pseudotime <- data.frame(map_pst, cell_classifications)
+
+ggplot(ouija_pseudotime, aes(x = map_pst, y = cell_classifications)) + 
+       geom_point() + xlab("Pseudotiempo MAP") + ylab("Estado celular metaestable") + 
+       theme_classic() + theme(plot.title = element_text(hjust = 0.5)) +
+       ggtitle("Estados celulares metaestables a lo largo del pseudotiempo (orden correcto)")
+```
+
+
+
+
+eeeeeeeeeee
+
+```{r, eval = F}
+# Añadimos el pseudotiempo y los estados celulares metaestables computados en el
+# chunk anterior al objeto `SCE` para poder graficarlos
+deng_SCE$pseudotime_ouija <- ouija_pseudotime$map_pst
+deng_SCE$ouija_cell_class <- ouija_pseudotime$cell_classifications
+
+# Graficamos. Nótese que invertimos el pseudotiempo (`pseudotime_ouija`) en el
+# chunk anterior
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = as.factor(ouija_cell_class), y = pseudotime_ouija, colour = cell_type2)) +
+       geom_boxplot() + coord_flip() + scale_color_tableau() +
+       theme_classic() + theme(plot.title = element_text(size = 10, hjust = 0.35)) +
+       ggtitle("Estados celulares metaestables y su correspondencia con la verdad experimental (orden correcto)") + 
+       xlab("Estado celular metaestable") + ylab("Pseudotiempo MAP")
+```
+
+
+
+eeeeeeeee
+
+```{r, warning = F, eval = F}
+# Graficamos la trayectoria final inferida
+ggplot(as.data.frame(colData(deng_SCE)), 
+       aes(x = pseudotime_ouija, y = cell_type2, colour = cell_type2)) +
+       geom_quasirandom(groupOnX = F) + theme_classic() +
+       scale_color_calc() + xlab("Pseudotiempo MAP") +
+       ylab("estado de desarrollo") + ggtitle("Ordenamiento celular según ouija (orden correcto)") + 
+       theme(plot.title = element_text(hjust = 0.5))
+```
+
 
 </details>
 
@@ -960,8 +1120,19 @@ __Solución:__
 La tabla anterior nos confirma mediante el susodicho test a pares la información previamente obtenida en los gráficos de expresión génica a lo largo del pseudotiempo (comandos `plot_expression`,`plot_switch_times` y `plot_peak_times`).
 
 ```{r, fig.height= 7, echo = F}
+# Tenemos que deshacer el cambio hecho en el chunk 29 (invertir sentido de
+# regulación génica del gráfico `plot_switch_times`) para que las líneas rojas
+# (= estimación del MAP) del `plot_expression` sigan las nubes de puntos (=
+# células)
+oui_vb$fit@sim$samples[[1]][c(22:37)] <- lapply(oui_vb$fit@sim$samples[[1]][c(22:37)], function(x) x*-1)
+
+# Graficamos correctamente la expresión génica a lo largo del pseudotiempo
 plot_expression(oui_vb) + theme_classic() + 
   scale_x_reverse() + xlab("Ouija pseudotime (corrected)")
+
+# Deshacemos el cambio del chunk anterior para poder visualizar bien el gráfico de
+# `plot_switch_times` del chunk 36
+oui_vb$fit@sim$samples[[1]][c(22:37)] <- lapply(oui_vb$fit@sim$samples[[1]][c(22:37)], function(x) x*-1)
 ```
 
 
@@ -979,7 +1150,7 @@ gene_regs[190,]
 
 <br>
 
-Si comparamos dos genes monotónicos de la etapa temprana, Egfr y Dazl, el primero se activa antes que el segundo. 
+Si comparamos dos genes monotónicos de la etapa temprana, Egfr y Dazl, el primero se desactiva/infraexpresa antes que el segundo. 
 
 ```{r, echo = F, message = F}
 plot_switch_times(oui_vb) + xlim(c("Dazl", "Egfr")) + 
@@ -994,8 +1165,12 @@ gene_regs[45,]
 Por otro lado, en el gráfico parece que Egfr y Bmp5 se activan a la vez. Tras consultar la tabla, lo confirmamos con respaldo estadístico. Un resultado de este tipo podría indicarnos que dichos genes se coexpresan y que participan en la misma etapa de desarrollo.
 
 ```{r, echo = F}
+plot_switch_times(oui_vb) + xlim(c("Bmp5", "Egfr")) + 
+  scale_y_reverse() + ylab("Pseudotiempo (corregido)")
+
 gene_regs[55,]
 ```
+
 
 
 </details>
@@ -1038,7 +1213,7 @@ Aquí vemos que `ouija`, `TSCAN` y `SLICER` dan trayectorias fuertemente correla
 
 <br>
 
-WIP
+Ver las figuras 1 y 2 del apartado 1- Introducción al pseudotiempo (revisión de Canoodt et al.)
 
 </details>
 
