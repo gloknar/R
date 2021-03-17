@@ -924,7 +924,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
 
 __Solución__: 
 
-* bla bla bla
+* Efectivamente, el algoritmo es sensible a las probabilidades _a priori_ de los genes. Resulta muy beneficial para el algoritmo tener muy claro el funcionamiento de los biomarcadores que le proporciones y elegir en consecuencia unos valores de _a prioris_ elevados y de signo correcto ( _i.e._ poner las _a priori_ de los genes monotónicos down en positivo, y viceversa para los genes up confunde al algoritmo y no puede clasificar correctamente las células ni averiguar cuándo se expresan o se silencian los genes).
 
 * Bla bla bla
 
@@ -936,7 +936,7 @@ eeeeeee
 ```{r, fig.height = 9.5, eval = F}
 # Genes de la etapa inicial(excepto Nanog). Comienzan activos y se desactivan a
 # medida que progresa el pseudotiempo (de ahí lo de "down").
-ouija_markers_down <- c("Dazl", "Rnf17", "Sycp3", "Pou5f1", "Fgf8", "Egfr", "Bmp5", "Bmp15") 
+ouija_markers_down <- c("Hoxa7", "Hoxa1", "Hoxd4", "Hoxb2", "Fgf8", "Egfr", "Bmp5", "Bmp15") 
 
 # Genes de la etapa intermedia. Comienzan inactivos, se activan un rato y
 # vuelven a desactivarse hacia el final de la trayectoria. Presentan una
@@ -952,6 +952,10 @@ ouija_markers <- c(ouija_markers_up, ouija_markers_down, ouija_markers_transient
 
 plotExpression(deng_SCE, features = ouija_markers, x = "cell_type2", colour_by = "cell_type2") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+# Mirar: https://www.nature.com/scitable/topicpage/hox-genes-in-development-the-hox-code-41402/#
+# rownames(log_deng)
+# grep("Hox", rownames(log_deng), value = T)
 ```
 
 
@@ -971,8 +975,8 @@ response_type <- c(rep("switch", length(ouija_markers_down) + length(ouija_marke
 
 
 # Certeza del comportamiento de nuestros biomarcadores
-switch_strengths <- c(rep(-10, length(ouija_markers_down)), 
-                      rep(10, length(ouija_markers_up)))
+switch_strengths <- c(rep(10, length(ouija_markers_down)), 
+                      rep(-10, length(ouija_markers_up)))
 
 # Desviación estándar de dicha certeza
 switch_strength_sd <- c(rep(0.5, length(ouija_markers_down)), 
@@ -989,8 +993,6 @@ oui_vb <- ouija(x = deng_SCE[ouija_markers,],
                 switch_strength_sd = switch_strength_sd,
                 inference_type = "vb", # "vb" = ADVI
                 single_cell_experiment_assay = "logcounts")
-
-print(oui_vb)
 ```
 
 
