@@ -956,7 +956,8 @@ head(gene_regs)
 
 <br>
 
-La tabla anterior nos confirma mediante el susodicho test estadístico la información previamente obtenida en el gráfico de expresión génica a lo largo del pseudotiempo (comando `plot_expression`).
+__Solución:__
+La tabla anterior nos confirma mediante el susodicho test a pares la información previamente obtenida en el gráfico de expresión génica a lo largo del pseudotiempo (comando `plot_expression`).
 
 ```{r, fig.height= 7, echo = F}
 plot_expression(oui_vb) + theme_classic() + 
@@ -975,7 +976,7 @@ gene_regs[190,]
 
 <br>
 
-Si comparamos dos genes monotónicos de la etapa temprana, Dazl y Egfr, el segundo se deactiva antes que el primero. 
+Si comparamos dos genes monotónicos de la etapa temprana, Dazl y Egfr, el segundo se activa antes que el primero. 
 
 ```{r, echo = F}
 gene_regs[45,]
@@ -1025,10 +1026,11 @@ corrplot.mixed(cor(df_pseudotime, use = "na.or.complete"),
 
 Aquí vemos que `ouija`, `TSCAN` y `SLICER` dan trayectorias fuertemente correlacionadas con la 1ª CP (R > 0.9). La trayectoria computada por `destiny` está menos correlacionada con el resto de métodos (0.65 < R < 0.8).
 
-<br>
 
 <details> 
 <summary> __Ejercicio 2.5: Compara los métodos en mayor profundidad. ¿Dónde y cómo difieren?__</summary>
+
+<br>
 
 WIP
 
