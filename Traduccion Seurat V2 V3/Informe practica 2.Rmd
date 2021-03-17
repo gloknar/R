@@ -957,7 +957,7 @@ head(gene_regs)
 <br>
 
 __Solución:__
-La tabla anterior nos confirma mediante el susodicho test a pares la información previamente obtenida en el gráfico de expresión génica a lo largo del pseudotiempo (comando `plot_expression`).
+La tabla anterior nos confirma mediante el susodicho test a pares la información previamente obtenida en los gráficos de expresión génica a lo largo del pseudotiempo (comandos `plot_expression`,`plot_switch_times` y `plot_peak_times`).
 
 ```{r, fig.height= 7, echo = F}
 plot_expression(oui_vb) + theme_classic() + 
@@ -967,18 +967,24 @@ plot_expression(oui_vb) + theme_classic() +
 
 <br>
 
-En el gráfico observamos que Zscan4b alcanza su máximo de expresión antes que Sox21, pero, ¿es esa diferencia significativa o se debe al azar)? Según la tabla, esa diferencia es efectivamente significativa. Podemos afirmar con un 95% de confianza que Zscan4b alcanza su máximo de expresión antes que lo hace Sox21.
+Tanto en el gráfico superior como en el inferior, observamos que Zscan4b alcanza su máximo de expresión antes que Sox21, pero, ¿es esa diferencia significativa o se debe al azar)? Según la tabla, esa diferencia es efectivamente significativa. Podemos afirmar con un 95% de confianza que Zscan4b alcanza su máximo de expresión antes que lo hace Sox21.
 
-```{r, echo = F}
+```{r, echo = F, message = F}
+plot_peak_times(oui_vb) + scale_y_reverse(limits = c(1,0)) + 
+  ylab("Pseudotiempo (corregido)")
+
 gene_regs[190,]
 ```
 
 
 <br>
 
-Si comparamos dos genes monotónicos de la etapa temprana, Dazl y Egfr, el segundo se activa antes que el primero. 
+Si comparamos dos genes monotónicos de la etapa temprana, Egfr y Dazl, el primero se activa antes que el segundo. 
 
-```{r, echo = F}
+```{r, echo = F, message = F}
+plot_switch_times(oui_vb) + xlim(c("Dazl", "Egfr")) + 
+  scale_y_reverse() + ylab("Pseudotiempo (corregido)")
+
 gene_regs[45,]
 ```
 
