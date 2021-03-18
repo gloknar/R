@@ -192,7 +192,7 @@ En las siguientes secciones veremos qué rendimiento desempeñan los algoritmos 
 
 <br>
 
-# TSCAN
+# `TSCAN`
 
 `TSCAN` combina el clustering con el análisis de pseudotiempo. El clustering de las células que ejerce el comando `exprmclust` se basa en `mclust` ([Scrucca _et al._, 2016](https://journal.r-project.org/archive/2016/RJ-2016-021/RJ-2016-021.pdf)), el cual modela varias distribuciones normales. Tras el agrupamiento, se construye un árbol del menor tamaño posible ( _minimum-spanning-tree_ o MST) que conecta los clusters entre sí. La rama principal del árbol será la que conecte el mayor nº de clusters, y es la rama que se usa para determinar el pseudotiempo.
 
@@ -383,7 +383,7 @@ Al igual que `TSCAN` y el PCA, usar la 1ª componente de difusión a modo de pse
 
 
 
-# SLICER
+# `SLICER`
 
 `SLICER` es un algoritmo para construir trayectorias que describen cambios en la expresión génica durante un proceso biológico secuencial (al igual que `Monocle` y `TSCAN`). `SLICER` está diseñado para capturar cambios de expresión génica no lineales, seleccionar automáticamente aquellos genes que participen en el proceso biológico y detectar _branches_/caminos alternativos y _loops_ en la trayectoria ([Welch _et al._, 2016](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0975-3)). El paquete de `SLICER` está disponible en [GitHub](https://github.com/jw156605/SLICER) y se puede instalar mediante las utilidades del paquete `devtools`.
 
@@ -530,7 +530,7 @@ __Solución__:
 
 
 
-# ouija
+# `ouija`
 
 `ouija` (viñeta online: http://kieranrcampbell.github.io/ouija/) infiere la trayectoria de manera distinta a como lo han hecho los paquetes previamente presentados. Mientras que el PCA, `TSCAN`, `destiny` y `SLICER` eran métodos no supervisados y no tenían en cuenta las etiquetas asignadas por el investigador, `ouija` es un algoritmo probabilístico capaz de inferir el pseudotiempo a partir de un pequeño panel de genes marcadores. En concreto, este algoritmo:
 
@@ -924,176 +924,9 @@ ggplot(as.data.frame(colData(deng_SCE)),
 
 __Solución__: 
 
-* Efectivamente, el algoritmo es sensible a las probabilidades _a priori_ de los genes. Resulta muy beneficial para el algoritmo tener muy claro el funcionamiento de los biomarcadores que le proporciones y elegir en consecuencia unos valores de _a prioris_ elevados y de signo correcto ( _i.e._ poner las _a priori_ de los genes monotónicos down en positivo, y viceversa para los genes up confunde al algoritmo y no puede clasificar correctamente las células ni averiguar cuándo se expresan o se silencian los genes).
+* Efectivamente, el algoritmo es sensible a las probabilidades _a priori_ de los genes. Resulta muy beneficial para el algoritmo tener muy claro el funcionamiento de los biomarcadores que le proporciones y elegir en consecuencia unos valores de probabilidades _a prioris_ elevados (estás muy seguro de su funcionamiento) y de signo correcto (si un gen tiende a activarse, ponle una probabilidad _a priori_ > 0, y viceversa para genes que se desactivan). De no elegir correctamente los biomarcadores y sus probabilidades _a priori_, `ouija` no podrá inferir correctamente la trayectoria, ni podrá afirmar con precisión el orden en el que se activan/desactivan algunos genes.  
 
-* Bla bla bla
-
-
-<br>
-
-eeeeeee
-
-```{r, fig.height = 9.5, eval = F}
-# Genes de la etapa inicial(excepto Nanog). Comienzan activos y se desactivan a
-# medida que progresa el pseudotiempo (de ahí lo de "down").
-ouija_markers_down <- c("Hoxa7", "Hoxa1", "Hoxd4", "Hoxb2", "Fgf8", "Egfr", "Bmp5", "Bmp15") 
-
-# Genes de la etapa intermedia. Comienzan inactivos, se activan un rato y
-# vuelven a desactivarse hacia el final de la trayectoria. Presentan una
-# activación transitoria
-ouija_markers_transient <- c("Zscan4b", "Foxa1", "Prdm14", "Sox21") 
-
-# Genes de la etapa tardía. Comienzan inactivos y se activan a medida que
-# progresa el pseudotiempo (de ahí lo de "up").
-ouija_markers_up <- c("Creb3", "Gpx4", "Krt8", "Elf5", "Eomes", "Cdx2", "Tdgf1", "Gdf3") 
-
-
-ouija_markers <- c(ouija_markers_up, ouija_markers_down, ouija_markers_transient)
-
-plotExpression(deng_SCE, features = ouija_markers, x = "cell_type2", colour_by = "cell_type2") + 
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
-# Mirar: https://www.nature.com/scitable/topicpage/hox-genes-in-development-the-hox-code-41402/#
-# rownames(log_deng)
-# grep("Hox", rownames(log_deng), value = T)
-```
-
-
-
-
-
-
-eeeeeeee
-
-```{r, eval = F}
-# Tipo de respuesta de cada gen
-response_type <- c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up)),
-                   rep("transient", length(ouija_markers_transient)))
-
-# c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up))) equivale a 
-# c(rep("switch", length(ouija_markers_down)), rep("switch, length(ouija_markers_up)))
-
-
-# Certeza del comportamiento de nuestros biomarcadores
-switch_strengths <- c(rep(10, length(ouija_markers_down)), 
-                      rep(-10, length(ouija_markers_up)))
-
-# Desviación estándar de dicha certeza
-switch_strength_sd <- c(rep(0.5, length(ouija_markers_down)), 
-                         rep(0.5, length(ouija_markers_up)))
-
-
-# El comando `ouija()` recomienda usar la siguiente línea de código para
-# paralelizar en local su computación:
-options(mc.cores = parallel::detectCores())
-
-oui_vb <- ouija(x = deng_SCE[ouija_markers,],
-                response_type = response_type,
-                switch_strengths = switch_strengths,
-                switch_strength_sd = switch_strength_sd,
-                inference_type = "vb", # "vb" = ADVI
-                single_cell_experiment_assay = "logcounts")
-```
-
-
-
-
-eeeeee
-
-```{r, fig.height= 7, eval = F}
-plot_expression(oui_vb) + theme_classic() + 
-  scale_x_reverse() + xlab("Ouija pseudotime (corrected)")
-```
-
-
-
-eeeeee
-
-```{r, warning = F, eval = F}
-# Con `grep` (RegEx) obtenemos los índices de los k.1-k.16 y los visualizamos con
-# `print()`
-indices <- grep("k.", names(oui_vb$fit@sim$samples[[1]])); print(c(min(indices), max(indices)))
-
-# Multiplicamos sus valores por -1 para obtener la regulación génica en el
-# sentido correcto
-oui_vb$fit@sim$samples[[1]][c(22:37)] <- lapply(oui_vb$fit@sim$samples[[1]][c(22:37)], function(x) x*-1)
-
-
-# Graficamos los switch times de los genes monotónicos (switch-like)
-plot_switch_times(oui = oui_vb) + theme_classic() + 
-  theme(legend.position ="top") + scale_y_reverse() + 
-  ylab("Switch point (corrected)")
-
-# Graficamos los peak times de los genes transitorios
-plot_peak_times(oui_vb) + theme_classic() + 
-  scale_y_reverse(limits = c(1,0)) + ylab("Peak time (corrected)")
-```
-
-
-
-
-eeeeeee
-
-
-
-```{r, warning = F, eval = F}
-# Visualizamos la matriz de consistencia (opcional)
-plot_consistency(oui_vb)
-
-# Guardamos la matriz de consistencia en el objeto `cmo` y agrupamos las células
-cmo <- consistency_matrix(oui_vb)
-cell_classifications <- cluster_consistency(cmat = cmo, n_clusters = 2:9)
-
-# Hemos detectado 5 estados celulares metaestables
-levels(as.factor(cell_classifications))
-
-
-# Computamos el pseudotiempo en el orden correcto, lo añadimos a un dataframe
-# con los estados celulares metaestables y graficamos dicho dataframe
-map_pst <- map_pseudotime(oui_vb) * (-1)
-
-ouija_pseudotime <- data.frame(map_pst, cell_classifications)
-
-ggplot(ouija_pseudotime, aes(x = map_pst, y = cell_classifications)) + 
-       geom_point() + xlab("Pseudotiempo MAP") + ylab("Estado celular metaestable") + 
-       theme_classic() + theme(plot.title = element_text(hjust = 0.5)) +
-       ggtitle("Estados celulares metaestables a lo largo del pseudotiempo (orden correcto)")
-```
-
-
-
-
-eeeeeeeeeee
-
-```{r, eval = F}
-# Añadimos el pseudotiempo y los estados celulares metaestables computados en el
-# chunk anterior al objeto `SCE` para poder graficarlos
-deng_SCE$pseudotime_ouija <- ouija_pseudotime$map_pst
-deng_SCE$ouija_cell_class <- ouija_pseudotime$cell_classifications
-
-# Graficamos. Nótese que invertimos el pseudotiempo (`pseudotime_ouija`) en el
-# chunk anterior
-ggplot(as.data.frame(colData(deng_SCE)), 
-       aes(x = as.factor(ouija_cell_class), y = pseudotime_ouija, colour = cell_type2)) +
-       geom_boxplot() + coord_flip() + scale_color_tableau() +
-       theme_classic() + theme(plot.title = element_text(size = 10, hjust = 0.35)) +
-       ggtitle("Estados celulares metaestables y su correspondencia con la verdad experimental (orden correcto)") + 
-       xlab("Estado celular metaestable") + ylab("Pseudotiempo MAP")
-```
-
-
-
-eeeeeeeee
-
-```{r, warning = F, eval = F}
-# Graficamos la trayectoria final inferida
-ggplot(as.data.frame(colData(deng_SCE)), 
-       aes(x = pseudotime_ouija, y = cell_type2, colour = cell_type2)) +
-       geom_quasirandom(groupOnX = F) + theme_classic() +
-       scale_color_calc() + xlab("Pseudotiempo MAP") +
-       ylab("estado de desarrollo") + ggtitle("Ordenamiento celular según ouija (orden correcto)") + 
-       theme(plot.title = element_text(hjust = 0.5))
-```
+* Respecto a la selección de otros biomarcadores, parece ser que `ouija` puede seguir infiriendo correctamente la trayectoria.
 
 
 </details>
@@ -1103,10 +936,9 @@ ggplot(as.data.frame(colData(deng_SCE)),
 
 
 
-
 Un análisis típico en inferencia de trayectorias es averiguar el orden de regulación de los genes. Por ejemplo, ¿se activa el gen A antes que el gen B? ¿Alcanza el gen C su máximo de expresión antes de que el gen D se desactive?
 
-`ouija` responde a estas preguntas en términos de un test de hipótesis Bayesiana de si la diferencia en los tiempos de regulación, ya sea _switch time_ o _peak time_, es significativamente distinta de 0. Esto se comprueba con el comando `gene_regulation`.
+`ouija` responde a estas preguntas en términos de un test a pares de hipótesis Bayesiana de si la diferencia en los tiempos de regulación, ya sea _switch time_ o _peak time_, es significativamente distinta de 0. Esto se comprueba con el comando `gene_regulation`.
 
 ```{r}
 gene_regs <- gene_regulation(oui_vb)
