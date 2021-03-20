@@ -926,7 +926,7 @@ __Solución__:
 
 * Efectivamente, el algoritmo es sensible a las probabilidades _a priori_ de los genes. Resulta muy beneficial para el algoritmo tener muy claro el funcionamiento de los biomarcadores que le proporciones y elegir en consecuencia unos valores de probabilidades _a prioris_ elevados (estás muy seguro de su funcionamiento) y de signo correcto (si un gen tiende a activarse, ponle una probabilidad _a priori_ > 0, y viceversa para genes que se desactivan). De no elegir correctamente los biomarcadores y sus probabilidades _a priori_, `ouija` no podrá inferir correctamente la trayectoria, ni podrá afirmar con precisión el orden en el que se activan/desactivan algunos genes.  
 
-* Respecto a la selección de otros biomarcadores, parece ser que `ouija` puede seguir infiriendo correctamente la trayectoria.
+* Respecto a la selección de otros biomarcadores, parece ser que `ouija` puede seguir infiriendo correctamente la trayectoria al seleccionar otros biomarcadores como los de la familia Hox (genes arquitecto, orquestran el desarrollo embrionario).
 
 
 </details>
@@ -972,7 +972,7 @@ oui_vb$fit@sim$samples[[1]][c(22:37)] <- lapply(oui_vb$fit@sim$samples[[1]][c(22
 
 <br>
 
-Tanto en el gráfico superior como en el inferior, observamos que Zscan4b alcanza su máximo de expresión antes que Sox21, pero, ¿es esa diferencia significativa o se debe al azar)? Según la tabla, esa diferencia es efectivamente significativa. Podemos afirmar con un 95% de confianza que Zscan4b alcanza su máximo de expresión antes que lo hace Sox21.
+Tanto en el gráfico superior como en el inferior, observamos que Zscan4b alcanza su máximo de expresión antes que Sox21, pero, ¿es esa diferencia significativa o se debe al azar)? Según la tabla, esa diferencia es efectivamente significativa. Podemos afirmar con un 95% de confianza que Zscan4b alcanza su máximo de expresión antes que lo hace Sox21. Un resultado así podría indicarnos que la activación de Sox21 podría depender del producto génico de Zscan4b.
 
 ```{r, echo = F, message = F}
 plot_peak_times(oui_vb) + scale_y_reverse(limits = c(1,0)) + 
@@ -984,7 +984,7 @@ gene_regs[190,]
 
 <br>
 
-Si comparamos dos genes monotónicos de la etapa temprana, Egfr y Dazl, el primero se desactiva/infraexpresa antes que el segundo. 
+Si comparamos dos genes monotónicos de la etapa temprana, Egfr y Dazl, el primero se desactiva/infraexpresa antes que el segundo. Un resultado de este tipo podría indicar que el silenciamiento de Dazl depende de que Egfr se desactive primero ( _i.e._ ¿inhibición por producto génico?).
 
 ```{r, echo = F, message = F}
 plot_switch_times(oui_vb) + xlim(c("Dazl", "Egfr")) + 
