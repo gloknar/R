@@ -875,7 +875,7 @@ ggplot(ouija_pseudotime, aes(x = map_pst, y = cell_classifications)) +
 ```
 
 
-Ahora que hemos identificado 5 estados celulares metaestables, procedemos a identificarlos mediante su comparación con la verdad experimental:
+Ahora que hemos identificado 5 estados celulares metaestables, procedemos a identificarlos mediante su comparación con la verdad experimental (curiosamente, Pedro decetó sólo 4):
 
 ```{r}
 # Añadimos el pseudotiempo y los estados celulares metaestables computados en el
@@ -1048,6 +1048,41 @@ Aquí vemos que `ouija`, `TSCAN` y `SLICER` dan trayectorias fuertemente correla
 <br>
 
 Ver las figuras 1 y 2 del apartado 1- Introducción al pseudotiempo (revisión de Canoodt et al.)
+
+
+SLICER [44] is a KNN-based TI method that is able to infer branched trajectories
+while requiring little input from the end user. It uses an alpha-hull to
+estimate the k parameter for locally linear embedding dimensionality reduction.
+Locally linear embedding is used to compute the KNN graph, and to find the most
+“extreme” cells (Fig. 2). The user then has to specify which of these extreme
+cells is a starting cell, and from that cell the shortest path to all other
+cells is determined. The geodesic entropy is used to find branches; high values
+thereof indicate the existence of a branching point. SLICER helps the end user
+by automatically estimating its parameters and by determining good candidate
+starting cells. Allowing the end user to select a starting cell through visual
+inspection introduces a minimal bias effect in the results (Fig. 3). As for now,
+it is the only technique to offer fully branched TI with minimal bias in the
+outputted results, which can also scale well to thousands of genes and cells.
+
+
+
+
+Another MST-based method is TSCAN [42], which is conceptually very similar to
+Monocle and Waterfall. TSCAN also uses PCA to reduce the dimensionality, but
+uses Mclust, a clustering algorithm that models the datasets as a mixture of
+normal distributions, to cluster the cells while automatically determining the
+number of clusters using the Bayesian information criterion (Fig. 2). It
+calculates an MST through the cluster centers from which a trajectory is
+inferred by determining the longest connected path through the tree. Finally,
+all the cells are projected to the nearest point on the trajectory, creating the
+final ordering. TSCAN is also one of the few completely unsupervised methods, as
+it automatically determines both start and end cell clusters like Monocle does,
+while avoiding any prior filtering in the gene dimension. It has a high ease of
+use, as all of its parameters are automatically determined (Fig. 3). Like
+Monocle, it also finds the longest path in an MST, but does so more reliably
+since the cells were first grouped into clusters. However, similar to Waterfall,
+slight changes in center locations might have a large impact on the trajectory
+found
 
 </details>
 
