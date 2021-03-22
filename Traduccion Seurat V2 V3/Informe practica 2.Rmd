@@ -399,7 +399,7 @@ k <- select_k(t(log_deng[slicer_genes,]), kmin = 30, kmax = 60)
 # La librería `lle` permite usar el comando homónimo para calcular el LLE o
 # Locally Linear Embedding.
 library("lle")
-slicer_traj_lle <- lle(t(log_deng[slicer_genes,]), m = 2, k)$Y # Importante usar esta notación, si no, no funciona el comando `conn_knn_graph()`
+slicer_traj_lle <- lle(t(log_deng[slicer_genes,]), m = 3, k)$Y # Importante usar esta notación, si no, no funciona el comando `conn_knn_graph()`
 
 # Añadimos los resultados de la técnica de reducción de la dimensionalidad al
 # objeto `SCE`
@@ -416,14 +416,34 @@ plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2") +
                 theme(plot.title =  element_text(hjust = 0.5))
 ```
 
+> SLICER was initially developed with single cell RNA-seq in mind, but we have also found that it can give good results when applied to other types of data, including bulk RNA-seq, single cell qPCR data, and single cell epigenomic data.
+
+> A key assumption of SLICER is that a possibly branching, intrinsically one-dimensional process is the dominant source of variation among samples. It is important to think carefully about whether this assumption is reasonable for any given dataset.
+
 Ahora que hemos calculado el LLE, podemos construir un grafo basado en _k-nearest neighbours_ (k-NN) que sea completamente conectado ( _fully connected_, como se suele decir en el ámbito de los MLPs) mediante el comando `conn_knn_graph`. En el grafo a continuación se representan las células como círculos naranjas con sus IDs en azul. Mostramos a continuación el grafo obtenido con 10 vecinos.
 
 ```{r}
 # Construimos el grafo con k = 10 vecinos
-slicer_traj_graph <- conn_knn_graph(slicer_traj_lle, k = 10)
+slicer_traj_graph <- conn_knn_graph(slicer_traj_lle, k = 5)
 
 # Graficamos
 plot(slicer_traj_graph, main = "Grafo k-NN completamente conectado de SLICER")
+
+
+#####################################################################
+# Library
+library(plotly)
+
+# Data: volcano is provided by plotly
+
+# Plot
+p <- plot_ly(z = volcano, type = "surface")
+p 
+
+# save the widget
+# library(htmlwidgets)
+# saveWidget(p, file=paste0( getwd(), "/HtmlWidget/3dSurface.html"))
+
 ```
 
 A partir del grafo podemos identificar las células distales (de los extremos), las cuales serán candidatas para el comienzo y el fin de la trayectoria. Esto se lleva a cabo a través de la función `find_extreme_cells`.
@@ -1083,6 +1103,27 @@ Monocle, it also finds the longest path in an MST, but does so more reliably
 since the cells were first grouped into clusters. However, similar to Waterfall,
 slight changes in center locations might have a large impact on the trajectory
 found
+
+
+
+
+Monocle [30] is an alternative method to detect branched trajectories. Monocle
+uses ICA as its initial dimensionality reduction step (Fig. 2), but first
+performs a differential expression test between the different cell populations,
+as ICA does not scale well with an increasing number of genes. After the
+dimensionality has been reduced, a minimal spanning tree (MST) is calculated,
+after which the longest connected path(s) is determined within the graph. Each
+cell is then assigned to the nearest point in the inferred trajectory.
+Calculating an MST between individual cells is typically very sensitive to noise
+(Fig. 3). By reducing the number of genes using a differential expression test,
+the execution time of ICA is decreased and potentially improves the robustness
+of the MST. However, this introduces a heavy bias toward existing population
+groupings and away from possible heterogeneities within subpopulations. In a
+recent paper, Monocle was used to successfully recover the continuous
+development from endothelial cells to hematopoietic stem cells from scRNA-seq
+data [46]
+
+
 
 </details>
 
