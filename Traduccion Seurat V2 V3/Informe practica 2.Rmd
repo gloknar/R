@@ -410,7 +410,7 @@ reducedDim(x = deng_SCE, type = "LLE") <- slicer_traj_lle
 reducedDimNames(deng_SCE)
 
 # Graficamos el espacio de dimensionalidad reducida LLE
-plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2") +
+plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2", ncomponents = 3) +
                 xlab("Componente de LLE 1") + ylab("Componente de LLE 2") +
                 ggtitle("Embebimiento localmente lineal (LLE) de las células - SLICER") + 
                 theme(plot.title =  element_text(hjust = 0.5))
@@ -430,15 +430,12 @@ slicer_traj_graph <- conn_knn_graph(slicer_traj_lle, k = 5)
 plot(slicer_traj_graph, main = "Grafo k-NN completamente conectado de SLICER")
 
 
-#####################################################################
-# Library
+
+
+# Graficamos en 3D
 library(plotly)
-
-# Data: volcano is provided by plotly
-
-# Plot
-p <- plot_ly(z = volcano, type = "surface")
-p 
+plot_ly(data = data.frame(slicer_traj_lle), type = "surface")
+ 
 
 # save the widget
 # library(htmlwidgets)
