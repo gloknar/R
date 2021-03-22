@@ -423,16 +423,11 @@ plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2", ncomponents =
 Ahora que hemos calculado el LLE, podemos construir un grafo basado en _k-nearest neighbours_ (k-NN) que sea completamente conectado ( _fully connected_, como se suele decir en el ámbito de los MLPs) mediante el comando `conn_knn_graph`. En el grafo a continuación se representan las células como círculos naranjas con sus IDs en azul. Mostramos a continuación el grafo obtenido con 10 vecinos.
 
 ```{r, warning = F}
-# Construimos el grafo con k = 10 vecinos
+# El input del grafo es el LLE (de k = 60 vecinos)
 slicer_traj_graph <- conn_knn_graph(slicer_traj_lle, k = 5)
 
 # Graficamos
 plot(slicer_traj_graph, main = "Grafo k-NN completamente conectado de SLICER")
-
-# Graficamos en 3D (opcional)
-library(plotly)
-p <- plot_ly(data = data.frame(slicer_traj_lle), type = "surface")
-p
 ```
 
 A partir del grafo podemos identificar las células distales (de los extremos), las cuales serán candidatas para el comienzo y el fin de la trayectoria. Esto se lleva a cabo a través de la función `find_extreme_cells`.
@@ -495,39 +490,39 @@ __Solución__:
 
 <br>
 
-![__Grafo con k = 1; LLE con k fijo en 60__](./Cosas accesorias Informe 2/resultados slicer/solucion1.png)
+![__Grafo con k = 1; LLE con k = 60__](./Cosas accesorias Informe 2/resultados slicer/solucion1.png)
 
 <br>
 
-![__Grafo con k = 5; LLE con k fijo en 60__](./Cosas accesorias Informe 2/resultados slicer/solucion2.png)
+![__Grafo con k = 5; LLE con k = 60__](./Cosas accesorias Informe 2/resultados slicer/solucion2.png)
 
 <br>
 
-![__Grafo con k = 30; LLE con k fijo en 60__](./Cosas accesorias Informe 2/resultados slicer/solucion3.png)
+![__Grafo con k = 30; LLE con k = 60__](./Cosas accesorias Informe 2/resultados slicer/solucion3.png)
 
 <br>
 
-![__Orden celular con LLE con k = 10; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion4.png)
+![__Orden celular con LLE con k = 10__](./Cosas accesorias Informe 2/resultados slicer/solucion4.png)
 
 <br>
 
-![__Orden celular con LLE con k = 30; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion5.png)
+![__Orden celular con LLE con k = 30__](./Cosas accesorias Informe 2/resultados slicer/solucion5.png)
 
 <br>
 
-![__Orden celular con LLE con k = 50; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion6.png)
+![__Orden celular con LLE con k = 50__](./Cosas accesorias Informe 2/resultados slicer/solucion6.png)
 
 <br>
 
-![__Orden celular con LLE con k = 55; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion7.png)
+![__Orden celular con LLE con k = 55__](./Cosas accesorias Informe 2/resultados slicer/solucion7.png)
 
 <br>
 
-![__Orden celular con LLE con k = 100; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion8.png)
+![__Orden celular con LLE con k = 100__](./Cosas accesorias Informe 2/resultados slicer/solucion8.png)
 
 <br>
 
-![__Orden celular con LLE con k = 150; grafo con k fijo en 10__](./Cosas accesorias Informe 2/resultados slicer/solucion9.png)
+![__Orden celular con LLE con k = 150__](./Cosas accesorias Informe 2/resultados slicer/solucion9.png)
 
 </details>
 
