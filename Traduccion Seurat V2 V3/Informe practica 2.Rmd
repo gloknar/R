@@ -430,16 +430,14 @@ slicer_traj_graph <- conn_knn_graph(slicer_traj_lle, k = 5)
 plot(slicer_traj_graph, main = "Grafo k-NN completamente conectado de SLICER")
 
 
-
-
-# Graficamos en 3D
+# Graficamos en 3D (opcional)
 library(plotly)
-plot_ly(data = data.frame(slicer_traj_lle), type = "surface")
+p <- plot_ly(data = data.frame(slicer_traj_lle), type = "surface")
  
 
 # save the widget
-# library(htmlwidgets)
-# saveWidget(p, file=paste0( getwd(), "/HtmlWidget/3dSurface.html"))
+library(htmlwidgets)
+saveWidget(p, file=paste0( getwd(), "/HtmlWidget/3dSurface.html"))
 
 ```
 
