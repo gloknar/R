@@ -1128,7 +1128,15 @@ Hemos añadido el pseudotiempo computado por cada algoritmo estudiado al bolsill
 
 PCA:
 ```{r}
-plotExpression(deng_SCE, "Rhoa", x = "PC1", colour_by = "cell_type2", show_smooth = T, show_violin = F)
+plotExpression(deng_SCE, features = "Rhoa", x = "PC1", colour_by = "cell_type2")
+plotExpression(deng_SCE, features = "Rhoa", x = "PC1", colour_by = "pseudotime_order_tscan") # avance de la PC1 en la madurez de la célula?  según tscan
+retrieveCellInfo(x = deng_SCE, by = "Rhoa")
+
+# Aqui guardo todo lo del objeto_SCE, inaginatelo como una carpeta del ordenador
+names(colData(deng_SCE))
+
+colnames(colData(deng_SCE))
+
 ```
 
 
