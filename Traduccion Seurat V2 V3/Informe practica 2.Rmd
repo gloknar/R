@@ -316,7 +316,7 @@ Los mapas de difusión fueron inventados por [Ronald Coifman y Stephane Lagon en
 
 10 años después, [Angerer _et al._](https://academic.oup.com/bioinformatics/article/32/8/1241/1744143) aplicaron exitosamente el concepto de los mapas de difusión al análisis de datos scRNA-seq para crear así un paquete de R llamado `destiny`.
 
-Si en la sección del PCA comentábamos que el pseudotiempo era las coordenadas de la 1ª componente principal, en `destiny` el pseudotiempo pasa a ser las coordenadas de la 1ª componente de difusión.
+Si en la sección del PCA comentábamos que el pseudotiempo era las coordenadas de la 1ª componente principal, en `destiny` el pseudotiempo pasa a ser las coordenadas de la 1ª componente de difusión. Los mapas de difusión son no lineales.
 
 ```{r}
 # Primero creamos la matriz de conteos en forma logarítmica con  el comando
