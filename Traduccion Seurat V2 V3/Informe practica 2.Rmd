@@ -423,6 +423,7 @@ plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2", ncomponents =
 Ahora que hemos calculado el LLE, podemos construir un grafo basado en _k-nearest neighbours_ (k-NN) que sea completamente conectado ( _fully connected_, como se suele decir en el ámbito de los MLPs) mediante el comando `conn_knn_graph`. En el grafo a continuación se representan las células como círculos naranjas con sus IDs en azul. Mostramos a continuación el grafo obtenido con 10 vecinos.
 
 ```{r, warning = F}
+set.seed(43765)
 # El input del grafo es el LLE (de k = 60 vecinos)
 slicer_traj_graph <- conn_knn_graph(slicer_traj_lle, k = 5)
 
