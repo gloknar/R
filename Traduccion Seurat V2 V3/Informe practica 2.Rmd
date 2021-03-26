@@ -331,6 +331,7 @@ colnames(log_deng) <- cellLabels
 # Calculamos las componentes de difusión. Hay que transponer la matriz de
 # conteos logarítmica.
 dm <- DiffusionMap(t(log_deng))
+# plot.DiffusionMap(dm)
 
 # Creamos un dataframe _ad interim_ con las 2 primeras componentes de difusión y
 # el tipo ce célula.
