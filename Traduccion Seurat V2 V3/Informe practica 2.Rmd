@@ -558,7 +558,7 @@ __Solución__:
 
 * Incluye un test para hipótesis Bayesiana para encontrar a lo largo de la trayectoria genes regulados antes que otros.     
 
-* Identifica estados metaestables a lo largo de la trayectoria, _i.e._ tipos celulares discretos.
+* Identifica estados metaestables a lo largo de la trayectoria, _i.e._ tipos celulares.
 
 
 
@@ -869,7 +869,9 @@ Ahora tanto la trayectoria como los valores de regulación se muestran correctam
 
 <br>
 
-Adicionalmente, con `ouija` podemos detectar estados celulares metaestables usando matrices de consistencia. Para ello, primero tenemos que computar la matriz de consistencia con el comando `consistency_matrix`, y acto seguido agrupar las células con `cluster_consistency`. Tras ello, podemos computar el pseudotiempo con el comando `map_pseudotime` y visualizar cómo se suceden dichos estados celulares a lo largo del pseudotiempo. Nótese que comprobé posteriormente que `ouija` también nos devuelve el pseudotiempo al revés, así que lo corregiremos aquí para ahorrarnos futuros quebraderos de cabeza.
+Adicionalmente, con `ouija` podemos detectar __estados celulares metaestables__ usando matrices de consistencia. Los estados celulares metaestables son un sinónimo de tipos celulares, ya que la idea detrás del nombre es que a medida que las células se diferencian durante el proceso biológico, pueden mantener un estado estable en un tramo de la trayectoria, lo que contaría como un tipo celular. Esto puede ser útil para detectar nuevos tipos celulares en procesos de diferenciación más o menos conocidos, como por ejemplo en la diferenciación de las células troncales hematopoyéticas ([Ceredig _et al._, 2009](https://pubmed.ncbi.nlm.nih.gov/19282853/)). 
+
+Para identificar estos tipos celulares metaestables, primero tenemos que computar la matriz de consistencia con el comando `consistency_matrix`, y acto seguido agrupar las células con `cluster_consistency`. Tras ello, podemos computar el pseudotiempo con el comando `map_pseudotime` y visualizar cómo se suceden dichos estados celulares a lo largo del pseudotiempo. Nótese que comprobé posteriormente que `ouija` también nos devuelve el pseudotiempo al revés, así que lo corregiremos aquí para ahorrarnos futuros quebraderos de cabeza.
 
 ```{r, warning = F}
 # Visualizamos la matriz de consistencia (opcional)
@@ -916,7 +918,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
 
 <br>
 
-`ouija` identifica en este caso 5 estados celulares metaestables, los cuales anotaremos como “zygote/2 cell”, “4/8/16 cell”, "early/mid blast" y “late blast”.
+En vista del gráfico, anotaremos esos 4 estados metaestables como “zygote/2 cell”, “4/8/16 cell”, "early/mid blast" y “late blast”.
 
 <br>
 
