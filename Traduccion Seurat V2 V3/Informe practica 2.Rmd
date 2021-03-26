@@ -588,6 +588,9 @@ ouija_markers_transient <- c("Zscan4b", "Foxa1", "Prdm14", "Sox21")
 # progresa el pseudotiempo (de ahí lo de "up").
 ouija_markers_up <- c("Creb3", "Gpx4", "Krt8", "Elf5", "Eomes", "Cdx2", "Tdgf1", "Gdf3") # Mirar gen Sox2
 
+# Mirar differential activity of the CARM1 histone methyltransferase has been
+# shown to determine cell fate decision in 4-cell mouse embryos
+
 
 ouija_markers <- c(ouija_markers_up, ouija_markers_down, ouija_markers_transient)
 
@@ -977,7 +980,7 @@ oui_vb$fit@sim$samples[[1]][c(22:37)] <- lapply(oui_vb$fit@sim$samples[[1]][c(22
 
 <br>
 
-Tanto en el gráfico superior como en el inferior, observamos que Zscan4b alcanza su máximo de expresión antes que Sox21, pero, ¿es esa diferencia significativa o se debe al azar)? Según la tabla, esa diferencia es efectivamente significativa. Podemos afirmar con un 95% de confianza que Zscan4b alcanza su máximo de expresión antes que lo hace Sox21. Un resultado así podría indicarnos que la activación de Sox21 podría depender del producto génico de Zscan4b.
+Tanto en el gráfico superior como en el inferior, observamos que Zscan4b alcanza su máximo de expresión antes que Sox21, pero, ¿es esa diferencia significativa o se debe al azar)? Según la tabla, esa diferencia es efectivamente significativa. Podemos afirmar con un 95% de confianza que Zscan4b alcanza su máximo de expresión antes que lo hace Sox21. Un resultado así podría indicarnos que la activación de Sox21 podría depender del producto génico de Zscan4b, y el retardo observado entre ambos picos de expresión se correspondería con el tiempo que tarda en transcribirse Zscan4b, traducirse en el citoplasma, desplazarse al núcleo e inducir una activación detectable de Sox21.
 
 ```{r, echo = F, message = F}
 plot_peak_times(oui_vb) + scale_y_reverse(limits = c(1,0)) + 
@@ -1055,29 +1058,14 @@ Aquí vemos que `ouija`, `TSCAN` y `SLICER` dan trayectorias fuertemente correla
 Ver las figuras 1 y 2 del apartado 1- Introducción al pseudotiempo (revisión de Canoodt et al.)
 
 
-SLICER [44] is a KNN-based TI method that is able to infer branched trajectories
-while requiring little input from the end user. It uses an alpha-hull to
-estimate the k parameter for locally linear embedding dimensionality reduction.
-Locally linear embedding is used to compute the KNN graph, and to find the most
-“extreme” cells (Fig. 2). The user then has to specify which of these extreme
-cells is a starting cell, and from that cell the shortest path to all other
-cells is determined. The geodesic entropy is used to find branches; high values
-thereof indicate the existence of a branching point. SLICER helps the end user
-by automatically estimating its parameters and by determining good candidate
-starting cells. Allowing the end user to select a starting cell through visual
-inspection introduces a minimal bias effect in the results (Fig. 3). As for now,
-it is the only technique to offer fully branched TI with minimal bias in the
-outputted results, which can also scale well to thousands of genes and cells.
 
 
 
+* `TSCAN` es un método basado en MST o Minimum Spanning Tree, y es conceptualmente muy parecido a `Monocle`. Además, hace uso de PCA para reducir la dimensionalidad de los datos y Mclust para agrupar las células en un nº óptimo de clusters (determinado automáticamente usando el criterio de información bayesiano [sinónimos= BIC o criterio de Schwarz]).
 
-Another MST-based method is TSCAN [42], which is conceptually very similar to
-Monocle and Waterfall. TSCAN also uses PCA to reduce the dimensionality, but
-uses Mclust, a clustering algorithm that models the datasets as a mixture of
-normal distributions, to cluster the cells while automatically determining the
-number of clusters using the Bayesian information criterion (Fig. 2). It
-calculates an MST through the cluster centers from which a trajectory is
+
+
+It calculates an MST through the cluster centers from which a trajectory is
 inferred by determining the longest connected path through the tree. Finally,
 all the cells are projected to the nearest point on the trajectory, creating the
 final ordering. TSCAN is also one of the few completely unsupervised methods, as
@@ -1089,6 +1077,9 @@ since the cells were first grouped into clusters. However, similar to Waterfall,
 slight changes in center locations might have a large impact on the trajectory
 found
 
+
+
+* `SLICER` es un método de inferencia de trayectoria basado en grafos k-NN y capaz de inferir trayectorias ramificadas a la vez que requiere de un escaso input por parte del usuario. Usa una envolutra alfa o _alpha-hull_ (serie de rectas que forman en su conjunto curvas en el espacio euclídeo y están asociadas a un grupo de instancias/puntos) para estimar el parámetro `k` del LLE. Dicho LLE se usa para computar el grafo k-NN y encontrar las células distales, candidatas a ser el punto de partida o fin de la trayectoria. El usuario debe especificar cuál de estas células será el punto de partida, y a partir de ahí `SLICER` calcula la ruta más corta al resto de las células. Los puntos de ramificación de la trayectoria se detectan por vía de la entropía geodésica (zonas con una elevada entropía indican puntos de ramificación). `SLICER` calcula automáticamente sus propios parámetros y muestra visualmente las células distales, para permitir al usuario seleccionar la célula de partida óptima. A día de hoy es la única técnica que ofrece una trayectoria ramificada con un sesgo mínimo en los resultados, y escala bien con miles de células y genes.
 
 
 
@@ -1109,16 +1100,23 @@ development from endothelial cells to hematopoietic stem cells from scRNA-seq
 data [46]
 
 
-Assume that during development the expression of regulator A increases and in
-turn this regulator activates the expression of regulator B and gene C. Between
-the upregulation of regulator A and the upregulation of B and C we expect a time
-delay, equal to the time it takes for regulator A to be translated, translocated
-to the nucleus, and induce a detectable increase in the expression of B and C.
-On the other hand the expression of regulator B and gene C will be very strongly
-correlated, because they are both activated at the same time. Incorporating this
-time delay into the gene regulatory network inference could therefore be used to
-better discern the true causative regulatory edge between A and B/C with a
-spurious correlative edge between B and C [83]
+
+At the methodological level, currently available TI methods frequently make
+assumptions about the structure of the trajectory and the parameterization of
+the method, or require external information such as known cellular states. While
+these assumptions are usually based on established biological knowledge, they
+still introduce a bias that could in some cases prevent the method from finding
+the correct but unexpected trajectory in the data. One can imagine for example
+that cells have the capacity to follow several alternative routes to a
+particular end state [49], but such branching and subsequent convergence is
+rarely covered by current methods. Moreover, a crucial assumption shared by
+every current TI method is that there is a trajectory present in the data, and
+as such these methods will always return a trajectory, even if it is not well
+supported by the data. In such cases alternative methods to cluster and/or
+visualize the data such as SPADE [20], viSNE [21], or FlowSOM [22] could be
+better suited. It is therefore crucial that the models generated by TI methods
+are seen as hypotheses, which require further experimental validation to
+establish the correct developmental relationships between cells
 
 
 </details>
