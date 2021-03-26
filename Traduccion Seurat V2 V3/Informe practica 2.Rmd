@@ -122,6 +122,14 @@ colnames(raw_deng) <- cellLabels
 ```
 
 
+```{r, eval = F, echo = F}
+# Aqui guardo todo lo del objeto de tipo `SingleCellEexperiment`, imaginatelo
+# como una carpeta del ordenador
+names(colData(deng_SCE))
+colnames(colData(deng_SCE)) # es lo mismo que el comando anterior
+```
+
+
 Tal como muestra el siguiente gráfico, el PCA muestra bastante bien la estructura de los datos y los separa correctamente en su mayoría, exceptuando aquellas células que corresponden al estadio de blastocisto (early/mid/lateblast), que están mezcladas entre sí. Se aprecia cómo las células están ordenadas en el espacio del PCA en sentido horario, desde la etapa de zigoto (zy) hasta la de blastocisto tardío (lateblast).
 
 ```{r}
@@ -888,7 +896,7 @@ ggplot(ouija_pseudotime, aes(x = map_pst, y = cell_classifications)) +
 ```
 
 
-Ahora que hemos identificado 5 estados celulares metaestables, procedemos a identificarlos mediante su comparación con la verdad experimental (curiosamente, Pedro detectó sólo 4):
+Ahora que hemos identificado 4 estados celulares metaestables, procedemos a identificarlos mediante su comparación con la verdad experimental:
 
 ```{r}
 # Añadimos el pseudotiempo y los estados celulares metaestables computados en el
@@ -908,7 +916,7 @@ ggplot(as.data.frame(colData(deng_SCE)),
 
 <br>
 
-`ouija` identifica en este caso 5 estados celulares metaestables, los cuales anotaremos como “zygote/2cell”, “4cell”, "8/16cell/early blast", “mid blast” and “late blast”.
+`ouija` identifica en este caso 5 estados celulares metaestables, los cuales anotaremos como “zygote/2 cell”, “4/8/16 cell”, "early/mid blast" y “late blast”.
 
 <br>
 
@@ -1091,18 +1099,16 @@ Los paquetes estudiados cuentan con herramientas para visualizar la expresión g
 
 Hemos añadido el pseudotiempo computado por cada algoritmo estudiado al bolsillo `colData` del objeto `deng_SCE`. Por tanto, podemos usar el paquete `scater` para investigar de manera visual la relación entre expresión génica, poblaciones celulares y pseudotiempo. El paquete `scater` es especialmente útil en el caso de paquetes como `SLICER`, los cuales carecen de herramientas para graficar.
 
+```{r}
+# Compara con los gráficos de violín y los de ouija, son muy parecidos...
+plotExpression(deng_SCE, features = "Rhoa", x = "cell_type2", colour_by = "cell_type2") + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
 
 PCA:
 ```{r}
-plotExpression(deng_SCE, features = "Rhoa", x = "PC1", colour_by = "cell_type2")
-plotExpression(deng_SCE, features = "Rhoa", x = "PC1", colour_by = "pseudotime_order_tscan") # avance de la PC1 en la madurez de la célula?  según tscan
-retrieveCellInfo(x = deng_SCE, by = "Rhoa")
-
-# Aqui guardo todo lo del objeto_SCE, inaginatelo como una carpeta del ordenador
-names(colData(deng_SCE))
-
-colnames(colData(deng_SCE))
-
+plotExpression(deng_SCE, features = "Rhoa", x = "PC1", colour_by = "cell_type2", show_smooth = T, show_violin = F)
 ```
 
 
@@ -1110,6 +1116,7 @@ TSCAN:
 ```{r}
 plotExpression(deng_SCE, "Rhoa", x = "pseudotime_order_tscan", colour_by = "cell_type2", show_smooth = T, show_violin = F)
 ```
+
 
 Mapa de difusión:
 ```{r}
