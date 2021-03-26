@@ -314,7 +314,7 @@ for (i in c(2:9)) {
 
 Los mapas de difusión fueron inventados por [Ronald Coifman y Stephane Lagon en 2006](https://ieeexplore.ieee.org/document/1704834), y la idea principal tras dichos mapas es asumir que los datos son muestras de un proceso de difusión. Este método infiere la estructura de los datos en un espacio de baja dimensionalidad al estimar los _eigenvalues_ y los _eigenvectors_ (valores y vectores propios) del operador de difusión relacionado con los datos.
 
-10 años después, [Angerer _et al._](https://academic.oup.com/bioinformatics/article/32/8/1241/1744143) aplicaron exitosamente el concepto de los mapas de difusión al análisis de datos scRNA-seq para crear así un paquete de R llamado `destiny`.
+10 años después, [Angerer _et al._](https://academic.oup.com/bioinformatics/article/32/8/1241/1744143) aplicaron exitosamente el concepto de los mapas de difusión al análisis de datos scRNA-seq para crear así un paquete de R llamado `destiny`. Para más información sobre el paquete y sus viñetas, véase la página correspondiente del [ICB](https://www.helmholtz-muenchen.de/icb/research/groups/marr-lab/software/destiny/index.html).
 
 Si en la sección del PCA comentábamos que el pseudotiempo era las coordenadas de la 1ª componente principal, en `destiny` el pseudotiempo pasa a ser las coordenadas de la 1ª componente de difusión. Los mapas de difusión son no lineales.
 
@@ -391,8 +391,8 @@ Emplearemos la función `select_genes` de `SLICER` para seleccionar automáticam
 
 
 ```{r, warning = F}
-# Para seleccionar los genes en SLICER, usamos la matriz de conteos logarítmica
-# traspuesta. Ídem para seleccionar k
+# Para seleccionar los genes en `SLICER`, usamos la matriz de conteos
+# logarítmica traspuesta. Ídem para seleccionar el parámetro `k` del LLE
 slicer_genes <- select_genes(t(log_deng))
 k <- select_k(t(log_deng[slicer_genes,]), kmin = 30, kmax = 60)
 
@@ -416,9 +416,6 @@ plotReducedDim(deng_SCE, dimred = "LLE", colour_by = "cell_type2", ncomponents =
                 theme(plot.title =  element_text(hjust = 0.5))
 ```
 
-> SLICER was initially developed with single cell RNA-seq in mind, but we have also found that it can give good results when applied to other types of data, including bulk RNA-seq, single cell qPCR data, and single cell epigenomic data.
-
-> A key assumption of SLICER is that a possibly branching, intrinsically one-dimensional process is the dominant source of variation among samples. It is important to think carefully about whether this assumption is reasonable for any given dataset.
 
 Ahora que hemos calculado el LLE, podemos construir un grafo basado en _k-nearest neighbours_ (k-NN) que sea completamente conectado ( _fully connected_, como se suele decir en el ámbito de los MLPs) mediante el comando `conn_knn_graph`. En el grafo a continuación se representan las células como círculos naranjas con sus IDs en azul. Mostramos a continuación el grafo obtenido con 10 vecinos.
 
@@ -1057,29 +1054,24 @@ Aquí vemos que `ouija`, `TSCAN` y `SLICER` dan trayectorias fuertemente correla
 
 * `TSCAN` es un método basado en MST o Minimum Spanning Tree, y es conceptualmente muy parecido a `Monocle`. Además, hace uso de PCA para reducir la dimensionalidad de los datos y Mclust para agrupar las células en un nº óptimo de clusters, determinado automáticamente usando el criterio de información bayesiano (= BIC o criterio de Schwarz). `TSCAN` calcula un MST que pasa por el centroide de todos los clusters y de ahí infiere la trayectoria como el camino más largo a través del árbol (Monocle también busca la ruta más larga en un MST). Por último, las células son proyectadas al punto más cercano de la trayectoria, creando el orden final de las mismas. `TSCAN` es además uno de los pocos métodos completamente no supervisado, ya que al igual que `Monocle`, determina automáticamente los clusters de partida y de fin de la trayectoria. `TSCAN` es fácil de usar dado que determina todos sus parámetros automáticamente. Si bien la trayectoria inferida por `TSCAN` es más fiable que la de `Monocle` (puesto que `TSCAN` agrupa primero las células en clusters antes de calcular el camino más largo en el MST), dicha trayectoria sigue sin ser robusta, dado que ligeros cambios en la localización de los centroides puede provocar grandes cambios en la susodicha trayectoria inferida.
 
+
 * `SLICER` es un método de inferencia de trayectoria basado en grafos k-NN y capaz de inferir trayectorias ramificadas a la vez que requiere de un escaso input por parte del usuario. Usa una envolutra alfa o _alpha-hull_ (serie de rectas que forman en su conjunto curvas en el espacio euclídeo y están asociadas a un grupo de instancias/puntos) para estimar el parámetro `k` del LLE. Dicho LLE se usa para computar el grafo k-NN y encontrar las células distales, candidatas a ser el punto de partida o fin de la trayectoria. El usuario debe especificar cuál de estas células será el punto de partida, y a partir de ahí `SLICER` calcula la ruta más corta al resto de las células. Los puntos de ramificación de la trayectoria se detectan por vía de la entropía geodésica (zonas con una elevada entropía indican puntos de ramificación). `SLICER` calcula automáticamente sus propios parámetros y muestra visualmente las células distales, para permitir al usuario seleccionar la célula de partida óptima. A día de hoy es la única técnica que ofrece una trayectoria ramificada con un sesgo mínimo en los resultados, y escala bien con miles de células y genes.
+
+    * best practice is to visually examine LLE plots for a range of k values. Also, note that there is a separate nearest neighbor parameter that determines the number of edges in the k-nearest neighbor graph that SLICER builds in the low-dimensional LLE space. The select_k function does not select the value of this parameter. We generally set this parameter at 5 (as in the code snippet above), but occasionally, we find that tweaking it slightly improves the results. SLICER is fundamentally an exploratory, unsupervised analysis tool, so setting of parameter values should always be guided by careful consideration of the biological sensibility of results.
+    
+    * `SLICER` does not restrict the dimensionality of the low-dimensional projection to 2. We have found that in some cases, particularly when the dataset involves many cell fates, using a more high-dimensional projection can improve results.
+    
+    * `SLICER` asume que la mayoría de la variación observada en el dataset proviene de un proceso biológico unidimensional con capacidad de ramificarse (tomar caminos paralelos). Se debe tener en cuenta si dicha suposición es acertada para el dataset en cuestión.
 
 
 * `Monocle` es un método para detectar trayectorias ramificadas. Primero detecta genes diferencialmente expresados en las poblaciones celulares de interés y luego aplica un ICA sobre dichos genes para reducir la dimensionalidad de los datos (esto se hace así porque el ICA no escala bien con muchos genes). Después se calcula un MST sobre las células y el camino más largo a través del mismo (nótese que al calcular el MST sobre células individuales y no sobre clusters como hace `TSCAN`, este algoritmo es sensible al ruido). Cada célula se proyecta al punto más cercano de la trayectoria inferida. Al ejecutar el ICA sólo sobre genes diferencialmente expresados, se introduce un sesgo en los resultados.
 
 
+<br>
 
-At the methodological level, currently available TI methods frequently make
-assumptions about the structure of the trajectory and the parameterization of
-the method, or require external information such as known cellular states. While
-these assumptions are usually based on established biological knowledge, they
-still introduce a bias that could in some cases prevent the method from finding
-the correct but unexpected trajectory in the data. One can imagine for example
-that cells have the capacity to follow several alternative routes to a
-particular end state [49], but such branching and subsequent convergence is
-rarely covered by current methods. Moreover, a crucial assumption shared by
-every current TI method is that there is a trajectory present in the data, and
-as such these methods will always return a trajectory, even if it is not well
-supported by the data. In such cases alternative methods to cluster and/or
-visualize the data such as SPADE [20], viSNE [21], or FlowSOM [22] could be
-better suited. It is therefore crucial that the models generated by TI methods
-are seen as hypotheses, which require further experimental validation to
-establish the correct developmental relationships between cells
+Nótese que los métodos actuales de inferencia de trayectoria raramente son capaces de modelar caminos alternativos que convergan en un mismo destino celular. También asumen que siempre hay una trayectoria en los datos, aunque no siempre sea el caso, por lo que en esas situaciones se recomienda emplear métodos de clustering y/o visualización alternativos tales como SPADE, viSNE o FlowSOM.
+
+Para finalizar, conviene tener en cuenta que las trayectorias generadas por estos métodos no dejan de ser hipótesis, las cuales deben ser validadas experimentalmente. 
 
 
 </details>
