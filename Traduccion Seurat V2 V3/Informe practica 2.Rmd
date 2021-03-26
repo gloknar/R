@@ -577,7 +577,7 @@ En nuestro caso particular con el dataset de Deng podemos hacer un poco de tramp
 ```{r, fig.height = 9.5}
 # Genes de la etapa inicial(excepto Nanog). Comienzan activos y se desactivan a
 # medida que progresa el pseudotiempo (de ahí lo de "down").
-ouija_markers_down <- c("Dazl", "Rnf17", "Sycp3", "Pou5f1", "Fgf8", "Egfr", "Bmp5", "Bmp15") 
+ouija_markers_down <- c("Dazl", "Rnf17", "Sycp3", "Pou5f1", "Fgf8", "Egfr", "Bmp5", "Bmp15")
 
 # Genes de la etapa intermedia. Comienzan inactivos, se activan un rato y
 # vuelven a desactivarse hacia el final de la trayectoria. Presentan una
@@ -586,7 +586,7 @@ ouija_markers_transient <- c("Zscan4b", "Foxa1", "Prdm14", "Sox21")
 
 # Genes de la etapa tardía. Comienzan inactivos y se activan a medida que
 # progresa el pseudotiempo (de ahí lo de "up").
-ouija_markers_up <- c("Creb3", "Gpx4", "Krt8", "Elf5", "Eomes", "Cdx2", "Tdgf1", "Gdf3") 
+ouija_markers_up <- c("Creb3", "Gpx4", "Krt8", "Elf5", "Eomes", "Cdx2", "Tdgf1", "Gdf3") # Mirar gen Sox2
 
 
 ouija_markers <- c(ouija_markers_up, ouija_markers_down, ouija_markers_transient)
@@ -880,7 +880,7 @@ ggplot(ouija_pseudotime, aes(x = map_pst, y = cell_classifications)) +
 ```
 
 
-Ahora que hemos identificado 5 estados celulares metaestables, procedemos a identificarlos mediante su comparación con la verdad experimental (curiosamente, Pedro decetó sólo 4):
+Ahora que hemos identificado 5 estados celulares metaestables, procedemos a identificarlos mediante su comparación con la verdad experimental (curiosamente, Pedro detectó sólo 4):
 
 ```{r}
 # Añadimos el pseudotiempo y los estados celulares metaestables computados en el
@@ -1108,6 +1108,17 @@ recent paper, Monocle was used to successfully recover the continuous
 development from endothelial cells to hematopoietic stem cells from scRNA-seq
 data [46]
 
+
+Assume that during development the expression of regulator A increases and in
+turn this regulator activates the expression of regulator B and gene C. Between
+the upregulation of regulator A and the upregulation of B and C we expect a time
+delay, equal to the time it takes for regulator A to be translated, translocated
+to the nucleus, and induce a detectable increase in the expression of B and C.
+On the other hand the expression of regulator B and gene C will be very strongly
+correlated, because they are both activated at the same time. Incorporating this
+time delay into the gene regulatory network inference could therefore be used to
+better discern the true causative regulatory edge between A and B/C with a
+spurious correlative edge between B and C [83]
 
 
 </details>
