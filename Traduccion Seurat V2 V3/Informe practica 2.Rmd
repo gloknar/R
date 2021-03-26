@@ -1055,31 +1055,12 @@ Aquí vemos que `ouija`, `TSCAN` y `SLICER` dan trayectorias fuertemente correla
 
 <br>
 
-Ver las figuras 1 y 2 del apartado 1- Introducción al pseudotiempo (revisión de Canoodt et al.)
-
-
 * `TSCAN` es un método basado en MST o Minimum Spanning Tree, y es conceptualmente muy parecido a `Monocle`. Además, hace uso de PCA para reducir la dimensionalidad de los datos y Mclust para agrupar las células en un nº óptimo de clusters, determinado automáticamente usando el criterio de información bayesiano (= BIC o criterio de Schwarz). `TSCAN` calcula un MST que pasa por el centroide de todos los clusters y de ahí infiere la trayectoria como el camino más largo a través del árbol (Monocle también busca la ruta más larga en un MST). Por último, las células son proyectadas al punto más cercano de la trayectoria, creando el orden final de las mismas. `TSCAN` es además uno de los pocos métodos completamente no supervisado, ya que al igual que `Monocle`, determina automáticamente los clusters de partida y de fin de la trayectoria. `TSCAN` es fácil de usar dado que determina todos sus parámetros automáticamente. Si bien la trayectoria inferida por `TSCAN` es más fiable que la de `Monocle` (puesto que `TSCAN` agrupa primero las células en clusters antes de calcular el camino más largo en el MST), dicha trayectoria sigue sin ser robusta, dado que ligeros cambios en la localización de los centroides puede provocar grandes cambios en la susodicha trayectoria inferida.
 
 * `SLICER` es un método de inferencia de trayectoria basado en grafos k-NN y capaz de inferir trayectorias ramificadas a la vez que requiere de un escaso input por parte del usuario. Usa una envolutra alfa o _alpha-hull_ (serie de rectas que forman en su conjunto curvas en el espacio euclídeo y están asociadas a un grupo de instancias/puntos) para estimar el parámetro `k` del LLE. Dicho LLE se usa para computar el grafo k-NN y encontrar las células distales, candidatas a ser el punto de partida o fin de la trayectoria. El usuario debe especificar cuál de estas células será el punto de partida, y a partir de ahí `SLICER` calcula la ruta más corta al resto de las células. Los puntos de ramificación de la trayectoria se detectan por vía de la entropía geodésica (zonas con una elevada entropía indican puntos de ramificación). `SLICER` calcula automáticamente sus propios parámetros y muestra visualmente las células distales, para permitir al usuario seleccionar la célula de partida óptima. A día de hoy es la única técnica que ofrece una trayectoria ramificada con un sesgo mínimo en los resultados, y escala bien con miles de células y genes.
 
 
-
-
-Monocle [30] is an alternative method to detect branched trajectories. Monocle
-uses ICA as its initial dimensionality reduction step (Fig. 2), but first
-performs a differential expression test between the different cell populations,
-as ICA does not scale well with an increasing number of genes. After the
-dimensionality has been reduced, a minimal spanning tree (MST) is calculated,
-after which the longest connected path(s) is determined within the graph. Each
-cell is then assigned to the nearest point in the inferred trajectory.
-Calculating an MST between individual cells is typically very sensitive to noise
-(Fig. 3). By reducing the number of genes using a differential expression test,
-the execution time of ICA is decreased and potentially improves the robustness
-of the MST. However, this introduces a heavy bias toward existing population
-groupings and away from possible heterogeneities within subpopulations. In a
-recent paper, Monocle was used to successfully recover the continuous
-development from endothelial cells to hematopoietic stem cells from scRNA-seq
-data [46]
+* `Monocle` es un método para detectar trayectorias ramificadas. Primero detecta genes diferencialmente expresados en las poblaciones celulares de interés y luego aplica un ICA sobre dichos genes para reducir la dimensionalidad de los datos (esto se hace así porque el ICA no escala bien con muchos genes). Después se calcula un MST sobre las células y el camino más largo a través del mismo (nótese que al calcular el MST sobre células individuales y no sobre clusters como hace `TSCAN`, este algoritmo es sensible al ruido). Cada célula se proyecta al punto más cercano de la trayectoria inferida. Al ejecutar el ICA sólo sobre genes diferencialmente expresados, se introduce un sesgo en los resultados.
 
 
 
