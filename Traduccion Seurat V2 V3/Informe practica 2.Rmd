@@ -1058,28 +1058,10 @@ Aquí vemos que `ouija`, `TSCAN` y `SLICER` dan trayectorias fuertemente correla
 Ver las figuras 1 y 2 del apartado 1- Introducción al pseudotiempo (revisión de Canoodt et al.)
 
 
-
-
-
-* `TSCAN` es un método basado en MST o Minimum Spanning Tree, y es conceptualmente muy parecido a `Monocle`. Además, hace uso de PCA para reducir la dimensionalidad de los datos y Mclust para agrupar las células en un nº óptimo de clusters (determinado automáticamente usando el criterio de información bayesiano [sinónimos= BIC o criterio de Schwarz]).
-
-
-
-It calculates an MST through the cluster centers from which a trajectory is
-inferred by determining the longest connected path through the tree. Finally,
-all the cells are projected to the nearest point on the trajectory, creating the
-final ordering. TSCAN is also one of the few completely unsupervised methods, as
-it automatically determines both start and end cell clusters like Monocle does,
-while avoiding any prior filtering in the gene dimension. It has a high ease of
-use, as all of its parameters are automatically determined (Fig. 3). Like
-Monocle, it also finds the longest path in an MST, but does so more reliably
-since the cells were first grouped into clusters. However, similar to Waterfall,
-slight changes in center locations might have a large impact on the trajectory
-found
-
-
+* `TSCAN` es un método basado en MST o Minimum Spanning Tree, y es conceptualmente muy parecido a `Monocle`. Además, hace uso de PCA para reducir la dimensionalidad de los datos y Mclust para agrupar las células en un nº óptimo de clusters, determinado automáticamente usando el criterio de información bayesiano (= BIC o criterio de Schwarz). `TSCAN` calcula un MST que pasa por el centroide de todos los clusters y de ahí infiere la trayectoria como el camino más largo a través del árbol (Monocle también busca la ruta más larga en un MST). Por último, las células son proyectadas al punto más cercano de la trayectoria, creando el orden final de las mismas. `TSCAN` es además uno de los pocos métodos completamente no supervisado, ya que al igual que `Monocle`, determina automáticamente los clusters de partida y de fin de la trayectoria. `TSCAN` es fácil de usar dado que determina todos sus parámetros automáticamente. Si bien la trayectoria inferida por `TSCAN` es más fiable que la de `Monocle` (puesto que `TSCAN` agrupa primero las células en clusters antes de calcular el camino más largo en el MST), dicha trayectoria sigue sin ser robusta, dado que ligeros cambios en la localización de los centroides puede provocar grandes cambios en la susodicha trayectoria inferida.
 
 * `SLICER` es un método de inferencia de trayectoria basado en grafos k-NN y capaz de inferir trayectorias ramificadas a la vez que requiere de un escaso input por parte del usuario. Usa una envolutra alfa o _alpha-hull_ (serie de rectas que forman en su conjunto curvas en el espacio euclídeo y están asociadas a un grupo de instancias/puntos) para estimar el parámetro `k` del LLE. Dicho LLE se usa para computar el grafo k-NN y encontrar las células distales, candidatas a ser el punto de partida o fin de la trayectoria. El usuario debe especificar cuál de estas células será el punto de partida, y a partir de ahí `SLICER` calcula la ruta más corta al resto de las células. Los puntos de ramificación de la trayectoria se detectan por vía de la entropía geodésica (zonas con una elevada entropía indican puntos de ramificación). `SLICER` calcula automáticamente sus propios parámetros y muestra visualmente las células distales, para permitir al usuario seleccionar la célula de partida óptima. A día de hoy es la única técnica que ofrece una trayectoria ramificada con un sesgo mínimo en los resultados, y escala bien con miles de células y genes.
+
 
 
 
