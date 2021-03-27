@@ -1096,7 +1096,7 @@ Para finalizar, conviene tener en cuenta que las trayectorias generadas por esto
 # Expresión génica temporal: `scater`
 
 
-Los paquetes estudiados cuentan con herramientas para visualizar la expresión génica a lo largo del pseudotiempo. Seguir el rastro de genes individuales resulta útil para identificar aquellos genes que tengan un rol importante en el proceso de diferenciación celular estudiado. Ilustraremos el procedimiento usando el gen __Rhoa__, el cual participa en procesos de transducción de señales intracelulares ([1](https://www.genecards.org/cgi-bin/carddisp.pl?gene=RHOA) y __Hoxa1__[2](https://www.genecards.org/cgi-bin/carddisp.pl?gene=HOXA1&keywords=hoxa1), un gen del cromosoma 7 que codifica para un factor de transcripción que se ue a motivos de ADN el cual regula la expresión génica, la diferenciación celular, la morfogénesis y genera segmentos del hindbrain (¿traducción?).
+Los paquetes estudiados cuentan con herramientas para visualizar la expresión génica a lo largo del pseudotiempo. Seguir el rastro de genes individuales resulta útil para identificar aquellos genes que tengan un rol importante en el proceso de diferenciación celular estudiado. Ilustraremos el procedimiento usando los genes __Rhoa__ y __Hoxa1__[2](https://www.genecards.org/cgi-bin/carddisp.pl?gene=HOXA1&keywords=hoxa1).
 
 
 Hemos añadido el pseudotiempo computado por cada algoritmo estudiado al bolsillo `colData` del objeto `deng_SCE`. Por tanto, podemos usar el paquete `scater` para investigar de manera visual la relación entre expresión génica, poblaciones celulares y pseudotiempo. El paquete `scater` es especialmente útil en el caso de paquetes como `SLICER`, los cuales carecen de herramientas para graficar expresión génica.
@@ -1106,7 +1106,7 @@ Compara los gráficos de violín y los de ouija del comando `plot()`, son muy pa
 
 ```{r}
 # Violín
-plotExpression(deng_SCE, features = "Rhoa, hoxa1", x = "cell_type2", colour_by = "cell_type2") + 
+plotExpression(deng_SCE, features = c("Rhoa, hoxa1"), x = "cell_type2", colour_by = "cell_type2") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 # ouija
@@ -1120,9 +1120,11 @@ __Roha:__
 El gen Roha:
 
 
-* Ver información en __Genecards__
+* Ver información en __Genecards__ y expresión experimental en _[The Human Protein Atlas](https://www.proteinatlas.org/search/embryo)_.
 
-* eee
+https://www.proteinatlas.org/search/Rhoa
+
+* Participa en procesos de transducción de señales intracelulares ([1](https://www.genecards.org/cgi-bin/carddisp.pl?gene=RHOA)
 
 * eee
 
@@ -1167,18 +1169,23 @@ plotExpression(deng_SCE, "Rhoa", x = "pseudotime_ouija", colour_by = "cell_type2
 
 __Hoxa1:__
 
-
 El gen Hoxa1:
 
 * Forma parte del clúster A del cromosoma 7
 
-* Codifica factor transcripción que se une a motivos ( _motifs_) de ADN
+* Codifica para un factor transcripción que se une a motivos ( _motifs_) de ADN
 
 * Regula procesos de desarrollo como formación del brainstem, oído interior y exterior, nervio abducens y el sistema cardiovascular
 
 * El producto génico podría estar involucrado en la generación de sementos del hindbrain del eje anterior-posterior (delante-arriba
 
 * Codifica para dos transcritos de ARNm, y produce 2 isoformas (aunque solo una contiene la región del homeodominio).
+
+Buscar expresión experimental de HoxA1 en _[The Human Protein Atlas](https://www.proteinatlas.org/search/embryo)_.
+
+https://www.proteinatlas.org/search/hoxa1
+
+
 
 [provided by RefSeq, Jul 2008]
 
@@ -1228,8 +1235,6 @@ plotExpression(deng_SCE, "Hoxa1", x = "pseudotime_ouija", colour_by = "cell_type
 
 <details> 
 <summary> __Ejercicio 2.6?: ¿Qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo, para nuestro dataset?__</summary>
-
-
 
 <br>
 
