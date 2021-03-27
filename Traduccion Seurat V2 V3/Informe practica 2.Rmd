@@ -1192,7 +1192,7 @@ https://www.proteinatlas.org/search/Rhoa
 
 <br>
 
-Visualización
+Visualización de la expresón génica de __"Rhoa"__ a lo largo de las trayectorias generadas:
 
 __PCA:__
 ```{r}
@@ -1226,6 +1226,7 @@ plotExpression(deng_SCE, "Rhoa", x = "pseudotime_ouija", colour_by = "cell_type2
 
 <br>
 
+***
 
 __Hoxa1:__
 
@@ -1256,7 +1257,7 @@ https://www.proteinatlas.org/search/hoxa1
 
 <br>
 
-Visualización
+Visualización de la expresón génica de __"Hoxa1"__ a lo largo de las trayectorias generadas:
 
 __PCA:__
 ```{r}
