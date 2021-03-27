@@ -1145,6 +1145,10 @@ plotExpression(deng_SCE, "Rhoa", x = "pseudotime_ouija", colour_by = "cell_type2
 <br>
 
 
+```{r}
+# T test?
+# df_pseudotime?
+```
 
 WIP
 
