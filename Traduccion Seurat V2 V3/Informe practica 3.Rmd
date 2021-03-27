@@ -1,0 +1,142 @@
+---
+title: "Informe práctica 3"
+author: "Adam Casas"
+date: 'Compilado: `r format(Sys.Date(), "%d de %B del %Y")`'
+output: 
+  html_document:
+    df_print: paged
+    highlight: kate
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+---
+
+```{r configuracion_inicial, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F,
+                      warning = F,
+                      tidy = F)
+##################################################
+#######        Encoded in UTF-8        ###########
+##################################################
+```
+
+***
+
+# Título
+
+
+__Análisis de Correlación Canónica para integrar datasets de distintas especies__
+
+
+We will apply Canonical Correlation Analysis (CCA) in pancreas data shown in Butler et al. (2018). This
+is done to integrate single-cell RNA-seq datasets from human and mouse.
+
+## 4.1 Load count matrices, normalisation and CCA
+
+<br>
+
+
+```{r}
+#results="hide" above
+human.data <- read.table("data/pancreas_human.expressionMatrix.txt", sep = "\t")
+mouse.data <- read.table("data/pancreas_mouse.expressionMatrix.txt", sep = "\t")
+# setup Seurat objects
+# since both count matrices have already filtered cells, we do no
+# additional filtering here
+library(Seurat)
+human <- CreateSeuratObject(raw.data = human.data)
+human <- NormalizeData(human)
+human <- ScaleData(human)
+human <- FindVariableGenes(human, do.plot = F)
+mouse <- CreateSeuratObject(raw.data = mouse.data)
+mouse <- NormalizeData(mouse)
+mouse <- ScaleData(mouse)
+mouse <- FindVariableGenes(mouse, do.plot = F)
+hvg.human <- rownames(head(human@hvg.info, 1000))
+hvg.mouse <- rownames(head(mouse@hvg.info, 1000))
+hvg.union <- union(hvg.human, hvg.mouse)
+# now we scale the data, adding in the individual (stored in orig.ident)
+# as a regression covariate
+mouse <- ScaleData(mouse, vars.to.regress = "orig.ident", genes.use = hvg.union)
+human <- ScaleData(human, vars.to.regress = "orig.ident", genes.use = hvg.union)
+##
+## Time Elapsed: 5.51687598228455 secs
+mouse@meta.data[, "species"] <- "mouse"
+human@meta.data[, "species"] <- "human"
+# now we run CCA
+pancreas.combined <- RunCCA(mouse, human, genes.use = hvg.union)
+PrintDim(pancreas.combined, reduction.type = "cca")
+pancreas.combined@meta.data[mouse@cell.names, "species"] <- "mouse"
+pancreas.combined <- CalcVarExpRatio(pancreas.combined, reduction.type = "pca",
+grouping.var = "species", dims.use = 1:20)
+pancreas.combined.all <- pancreas.combined
+# Visualize the aligned datasets (before alignment)
+pancreas.combined <-RunPCA(pancreas.combined , pc.genes = NULL, pcs.compute = 20,
+use.imputed = FALSE, rev.pca = FALSE,
+weight.by.var = TRUE, do.print = TRUE, pcs.print = 1:5,
+genes.print = 30, reduction.name = "pca",
+reduction.key = "PC", assay.type = "RNA", seed.use = 42)
+pancreas.combined <- RunTSNE(pancreas.combined, reduction.use = "pca",
+dims.use = 1:20, do.fast = T)
+TSNEPlot(pancreas.combined, group.by = "species")
+#-----
+pancreas.combined <- SubsetData(pancreas.combined, subset.name = "var.ratio.pca",
+accept.low = 0.5)
+pancreas.combined <- AlignSubspace(pancreas.combined, reduction.type = "cca",
+grouping.var = "species", dims.align = 1:20) #1:20
+pancreas.combined <- RunTSNE(pancreas.combined, reduction.use = "cca.aligned",
+dims.use = 1:20, do.fast = T)
+# Visualize the aligned datasets
+TSNEPlot(pancreas.combined, group.by = "species")
+# Perform joint clustering
+pancreas.combined <- FindClusters(pancreas.combined, reduction.type = "cca.aligned",
+dims.use = 1:20, save.SNN = T)
+# Visualize the clusters
+TSNEPlot(pancreas.combined) # Cómando seurat?
+# Finally, we can also plot the UMAP
+pancreas.combined <- RunUMAP(pancreas.combined, reduction.use = "cca", dims.use = 1:20)
+DimPlot(pancreas.combined , reduction.use = "umap", plot.title='UMAP (20 canonical
+components)', pt.size=0.3, do.label=TRUE, do.return = TRUE)
+```
+
+
+
+
+
+
+<details>
+<summary> __Ejercicio 3.1: Las células pancreáticas Beta (β) produce insulina (¿¿y las alfa y las Delta??). Puedes Identificar dichas células β en el _dataset___ </summary>
+
+
+Consulta la info de gen como __PDX1__ en _Genecards_ o similares, y luego la _Proteómic Tissue Expression Atlas_ o coom se llame
+
+Tip: Use gene marker, e.g. PDX1. 
+
+<br>
+
+__Solución:__
+
+
+</details>
+
+
+
+
+
+<br>
+
+***
+
+# sessionInfo()
+
+<details>
+
+<summary> Click para mostrar </summary>
+
+```{r, echo = F}
+sessionInfo()
+```
+
+</details>

@@ -1096,65 +1096,97 @@ Para finalizar, conviene tener en cuenta que las trayectorias generadas por esto
 # Expresión génica temporal: `scater`
 
 
-Los paquetes estudiados cuentan con herramientas para visualizar la expresión génica a lo largo del pseudotiempo. Seguir el rastro de genes individuales resulta útil para identificar aquellos genes que tengan un rol importante en el proceso de diferenciación celular estudiado. Ilustraremos el procedimiento usando el gen Rhoa, el cual participa en procesos de transducción de señales intracelulares ([fuente](https://www.genecards.org/cgi-bin/carddisp.pl?gene=RHOA)).
+Los paquetes estudiados cuentan con herramientas para visualizar la expresión génica a lo largo del pseudotiempo. Seguir el rastro de genes individuales resulta útil para identificar aquellos genes que tengan un rol importante en el proceso de diferenciación celular estudiado. Ilustraremos el procedimiento usando el gen __Rhoa__, el cual participa en procesos de transducción de señales intracelulares ([1](https://www.genecards.org/cgi-bin/carddisp.pl?gene=RHOA) y __Hoxa1__[2](https://www.genecards.org/cgi-bin/carddisp.pl?gene=HOXA1&keywords=hoxa1), un gen del cromosoma 7 que codifica para un factor de transcripción que se ue a motivos de ADN el cual regula la expresión génica, la diferenciación celular, la morfogénesis y genera segmentos del hindbrain (¿traducción?).
 
 
-Hemos añadido el pseudotiempo computado por cada algoritmo estudiado al bolsillo `colData` del objeto `deng_SCE`. Por tanto, podemos usar el paquete `scater` para investigar de manera visual la relación entre expresión génica, poblaciones celulares y pseudotiempo. El paquete `scater` es especialmente útil en el caso de paquetes como `SLICER`, los cuales carecen de herramientas para graficar.
+Hemos añadido el pseudotiempo computado por cada algoritmo estudiado al bolsillo `colData` del objeto `deng_SCE`. Por tanto, podemos usar el paquete `scater` para investigar de manera visual la relación entre expresión génica, poblaciones celulares y pseudotiempo. El paquete `scater` es especialmente útil en el caso de paquetes como `SLICER`, los cuales carecen de herramientas para graficar expresión génica.
+
+
+Compara los gráficos de violín y los de ouija del comando `plot()`, son muy parecidos...
 
 ```{r}
-# Compara con los gráficos de violín y los de ouija, son muy parecidos...
 plotExpression(deng_SCE, features = "Rhoa", x = "cell_type2", colour_by = "cell_type2") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 
-PCA:
+
+__Roha:__
+
+* Ver información
+
+<br>
+
+Visualización
+
+__PCA:__
 ```{r}
 plotExpression(deng_SCE, features = "Rhoa", x = "PC1", colour_by = "cell_type2", show_smooth = T, show_violin = F)
 ```
 
 
-TSCAN:
+__TSCAN:__
 ```{r}
 plotExpression(deng_SCE, "Rhoa", x = "pseudotime_order_tscan", colour_by = "cell_type2", show_smooth = T, show_violin = F)
 ```
 
 
-Mapa de difusión:
+__Mapa de difusión:__
 ```{r}
 plotExpression(deng_SCE, "Rhoa", x = "pseudotime_diffusionmap", colour_by = "cell_type2", show_smooth = T, show_violin = F)
 ```
 
 
-SLICER:
+__SLICER:__
 ```{r}
 plotExpression(deng_SCE, "Rhoa", x = "pseudotime_slicer", colour_by = "cell_type2", show_smooth = T, show_violin = F)
 ```
 
 
-Ouija:
+__Ouija:__
 ```{r}
 plotExpression(deng_SCE, "Rhoa", x = "pseudotime_ouija", colour_by = "cell_type2", show_smooth = T, show_violin = F)
 ```
 
 <br>
 
-<details> 
-<summary> __Ejercicio 2.6?: ¿Qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo, para nuestro dataset?__</summary>
+__Hoxa1:__
+
+* Forma parte del clúster A del cromosoma 7
+* Codifica factor transcripción que se une a motivos ( _motifs_) de ADN
+
+* brainstem, inner and outer ear, abducens nerve and cardiovascular development
+* 
+
+* The encoded protein may be involved in the placement of
+hindbrain segments in the proper location along the anterior-posterior axis
+during development. Two transcript variants encoding two different isoforms have
+been found for this gene, with only one of the isoforms containing the
+homeodomain region. [provided by RefSeq, Jul 2008]
 
 <br>
 
+Visualización
+
+<br>
+
+<details> 
+<summary> __Ejercicio 2.6?: ¿Qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo, para nuestro dataset?__</summary>
+
+
+
+<br>
 
 ```{r}
 # T test?
-# df_pseudotime?
+# Anova?
+# ¿Correción de p-valor con Benjamini- Hochberg?
+# ¿Correción de p-valor con Bonferroni?
+
+# Ver datos en
+df_pseudotime
+str(df_)
 ```
-
-WIP
-
-
-
-
 
 </details>
 
