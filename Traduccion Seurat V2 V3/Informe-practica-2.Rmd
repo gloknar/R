@@ -1105,12 +1105,8 @@ Hemos añadido el pseudotiempo computado por cada algoritmo estudiado al bolsill
 Compara los gráficos de violín y los de ouija del comando `plot()`, son muy parecidos...
 
 ```{r}
-# Violín
-plotExpression(deng_SCE, features = "Rhoa, hoxa1", x = "cell_type2", colour_by = "cell_type2") + 
+plotExpression(deng_SCE, features = "Rhoa", x = "cell_type2", colour_by = "cell_type2") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
-# ouija
-
 ```
 
 
@@ -1125,8 +1121,6 @@ El gen Roha:
 * eee
 
 * eee
-
-
 
 <br>
 
@@ -1240,8 +1234,8 @@ plotExpression(deng_SCE, "Hoxa1", x = "pseudotime_ouija", colour_by = "cell_type
 # ¿Correción de p-valor con Bonferroni?
 
 # Ver datos en
-# df_pseudotime
-str(df_pseudotime)
+df_pseudotime
+str(df_)
 ```
 
 </details>
