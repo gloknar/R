@@ -1107,9 +1107,9 @@ Compara los gráficos de violín y los del comando `plotExpression()` de `ouija`
 ```{r}
 # ouija
 
-ouija_markers_down <- c("Hoxa1", "Rhoa")
+ouija_markers_down <- c("Hoxa1", "Creb3")
 ouija_markers_transient <- c("Zscan4b", "Foxa1") 
-ouija_markers_up <- c("Creb3") # Mirar gen Sox2
+ouija_markers_up <- c("Rhoa") # Mirar gen Sox2
 
 # Mirar differential activity of the CARM1 histone methyltransferase has been
 # shown to determine cell fate decision in 4-cell mouse embryos
@@ -1152,6 +1152,11 @@ oui_vb <- ouija(x = deng_SCE[ouija_markers,],
                 single_cell_experiment_assay = "logcounts")
 
 plot_expression(oui_vb)
+
+# Recuerda:
+# ouija_markers_down <- c("Hoxa1", "Rhoa")
+# ouija_markers_transient <- c("Zscan4b", "Foxa1") 
+# ouija_markers_up <- c("Creb3") # Mirar gen Sox2
 ```
 
 
