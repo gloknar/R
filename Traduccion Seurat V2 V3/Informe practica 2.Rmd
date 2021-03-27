@@ -1102,22 +1102,27 @@ Los paquetes estudiados cuentan con herramientas para visualizar la expresión g
 Hemos añadido el pseudotiempo computado por cada algoritmo estudiado al bolsillo `colData` del objeto `deng_SCE`. Por tanto, podemos usar el paquete `scater` para investigar de manera visual la relación entre expresión génica, poblaciones celulares y pseudotiempo. El paquete `scater` es especialmente útil en el caso de paquetes como `SLICER`, los cuales carecen de herramientas para graficar expresión génica.
 
 
-Compara los gráficos de violín y los de ouija del comando `plot()`, son muy parecidos...
+Compara los gráficos de violín y los del comando `plotExpression()` de `ouija`, pues son muy parecidos...
 
 ```{r}
-# Violín
-plotExpression(deng_SCE, features = "Rhoa", x = "cell_type2", colour_by = "cell_type2")
-plotExpression(deng_SCE, features = "Hoxa1", x = "cell_type2", colour_by = "cell_type2")
-
-
 # ouija
-# ouija_marcador <- e
+
+ouija_markers_down <- c("Hoxa1", "Rhoa")
+ouija_markers_transient <- c("Zscan4b", "Foxa1") 
+ouija_markers_up <- c("Creb3") # Mirar gen Sox2
+
+# Mirar differential activity of the CARM1 histone methyltransferase has been
+# shown to determine cell fate decision in 4-cell mouse embryos
+
+ouija_markers <- c(ouija_markers_up, ouija_markers_down, ouija_markers_transient)
+
+plotExpression(deng_SCE, features = ouija_markers, x = "cell_type2", colour_by = "cell_type2") + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
 
 
 
-
-
-
+```{r}
 # Tipo de respuesta de cada gen
 response_type <- c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up)),
                    rep("transient", length(ouija_markers_transient)))
@@ -1146,32 +1151,10 @@ oui_vb <- ouija(x = deng_SCE[ouija_markers,],
                 inference_type = "vb", # "vb" = ADVI
                 single_cell_experiment_assay = "logcounts")
 
-plot_expression(oui_vb) + scale_x_reverse()
+plot_expression(oui_vb)
 ```
 
-```{r}
-# Genes de la etapa inicial. Comienzan activo y se desactiva a medida que progresa
-# el pseudotiempo (de ahí lo de "down").
-ouija_markers_down <- c("Hoxa1", "Rhoa")
 
-# Gene de la etapa intermedia. Comienzan inactivos, se activan un rato y
-# vuelven a desactivarse hacia el final de la trayectoria. Presentan una
-# activación transitoria
-ouija_markers_transient <- c("Zscan4b", "Foxa1") 
-
-# Gen de la etapa tardía. Comienza inctivo y se activan a medida que progresa el
-# pseudotiempo (de ahí lo de "up").
-ouija_markers_up <- c("Creb3") # Mirar gen Sox2
-
-# Mirar differential activity of the CARM1 histone methyltransferase has been
-# shown to determine cell fate decision in 4-cell mouse embryos
-
-
-ouija_markers <- c(ouija_markers_up, ouija_markers_down, ouija_markers_transient)
-
-plotExpression(deng_SCE, features = ouija_markers, x = "cell_type2", colour_by = "cell_type2") + 
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-```
 
 
 
@@ -1241,12 +1224,6 @@ El gen Hoxa1:
 * El producto génico podría estar involucrado en la generación del tejido anterior-posterior (delante-arriba) del metencéfalo, el cual se diferenciará en cerebelo, puente de Valorio y los nervios craneales V (trigeminal o trigémino), VI ( _abducens_), VII (facial) y VIII (auditivo).
 
 * Codifica para dos transcritos de ARNm, y produce 2 isoformas (aunque solo una contiene la región del homeodominio)
-
-[provided by RefSeq, Jul 2008]
-
-
-
-
 
 Buscar expresión experimental de HoxA1 en _[The Human Protein Atlas](https://www.proteinatlas.org/search/embryo)_.
 
