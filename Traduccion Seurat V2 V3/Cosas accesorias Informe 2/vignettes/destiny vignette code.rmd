@@ -1,3 +1,15 @@
+---
+    title: "Destiny"
+author: "Philipp Angerer _et al._"
+date: "June 24, 2015"
+output: html_document
+vignette: >
+    %\VignetteIndexEntry{Vignette Title}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
+---
+    
+```{r}
 library(xlsx)
 raw.ct <- read.xlsx('mmc4.xls', sheetName = 'Sheet1')
 
@@ -137,3 +149,6 @@ par(mar = c(2,2,1,5), pch = 20)
 plot(dif64,  1:2,      col     = palette()[[6]],
      new.dcs = pred32, col.new = palette()[[5]])
 colorlegend(c(32L, 64L), palette()[5:6])
+```
+
+

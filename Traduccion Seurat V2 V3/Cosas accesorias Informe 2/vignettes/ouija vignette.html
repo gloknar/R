@@ -217,7 +217,8 @@ example_gex[1:3, ]</code></pre>
 <h2>Fitting with Ouija</h2>
 <p>In order to fit the pseudotimes simply call <code>ouija</code> passing in the expected response types. Note that if no response types are provided then they are all assumed to be switch-like by default. The input to Ouija is either a cell-by-gene matrix of non-negative expression values, or an <code>ExpressionSet</code> that has similar values in <code>exprs(eset)</code>.</p>
 <p>For this vignette we’ll reduce the number of iterations to 500 and the number of cells to 200 to speed up the build time, though we recommend around 4000 in practice.</p>
-<pre class="r"><code>oui &lt;- ouija(example_gex[sample(seq_len(nrow(example_gex)), 200), ], 
+<pre class="r"><code>options(mc.cores = parallel::detectCores())
+oui &lt;- ouija(example_gex[sample(seq_len(nrow(example_gex)), 200), ], 
              response_type, iter = 500)</code></pre>
 <pre class="r"><code>print(oui)</code></pre>
 <pre><code>## A Ouija fit with 200 cells and 11 marker genes 
