@@ -1,0 +1,255 @@
+---
+title: "Ouija: Interpretable marker-based single-cell pseudotime using Bayesian parametric models"
+author: "Kieran R Campbell"
+date: "February 2018"
+output: html_document
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(scater)
+library(SingleCellExperiment)
+library(ggplot2)
+library(ouija)
+theme_set(theme_bw())
+
+set.seed(1L)
+
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning = FALSE)
+```
+
+# Introduction
+
+`Ouija` is a probabilistic framework that allows for interpretable learning of single-cell pseudotimes using only small panels of marker genes.  Ouija 
+
+* infers pseudotimes from a **small number of marker genes** letting you understand **why** the pseudotimes have been learned in terms of those genes (**A**)
+* provides parameter estimates (with uncertainty) for **interpretable gene regulation behaviour** (such as the peak time or the upregulation time) (**B**)
+* has a Bayesian hypothesis test to **find genes regulated before others** along the trajectory (**C**)
+* identifies **metastable states**, ie discrete cell types along the continuous trajectory (**D**)
+
+<img src="fig_main_ouija.png" width="800"/>
+
+
+Under the hood, Ouija uses Bayesian non-linear factor analysis with priors on the factor loading matrix to specify gene behaviour. Inference is performed using the [Stan](http://mc-stan.org) probabilistic programming language.
+
+
+# A basic example 
+
+## Data input
+
+Ouija takes input in three forms:
+
+1. A cell-by-gene expression matrix of non-negative values. We recommend using `log2(TPM + 1)` or `log2(RPKM + 1)` as this is what the mean-variance relationship in the model is designed for.
+2. A `SingleCellExperiment` (from the [SingleCellExperiment](https://bioconductor.org/packages/devel/bioc/html/SingleCellExperiment.html) package)
+
+Here we can use some synthetic data bundled with the package. This contains a gene expression matrix `example_gex` comprising 11 genes and 400 cells, of which the first 9 are switch-like and the final 2 are transient
+
+```{r load-synth-data}
+data(example_gex)
+example_gex[1:3, ]
+```
+
+We can further create example `SingleCellExperiment` that Ouija can use as input:
+
+```{r}
+single_cell_set <- SingleCellExperiment(assays = list(logcounts = t(example_gex)))
+```
+
+For the two input cases above Ouija can equivalently use `ouija(example_gex, ...)` or `ouija(single_cell_set, ...)`. By default Ouija uses the `logcounts` assay for a `SingleCellExperiment`, though this can be changed using the `single_cell_experiment_assay` argument to the `ouija` function.
+
+## Response types
+
+Using Ouija we can model genes as either exhibiting monotonic up or down regulation (known as switch-like behaviour), or transient behaviour where the gene briefly peaks. By default Ouija assumes all genes exhibit switch-like behaviour (and don't worry if you get it wrong - the noise model means incorrectly specifying a transient gene as switch-like has minimal effect).
+
+In this example we can infer the behaviour type from the gene names:
+
+```{r}
+response_type <- sapply(strsplit(colnames(example_gex), "_"), `[`, 1)
+```
+
+## Fitting with Ouija
+
+In order to fit the pseudotimes simply call `ouija` passing in the expected response types. Note that if no response types are provided then they are all assumed to be switch-like by default. The input to Ouija is either a cell-by-gene matrix of non-negative expression values, or an `ExpressionSet` that has similar values in `exprs(eset)`.
+
+For this vignette we'll reduce the number of iterations to 500 and the number of cells to 200 to speed up the build time, though we recommend around 4000 in practice.
+
+```{r ouija-fit, results = "hide", message = F, error = F}
+options(mc.cores = parallel::detectCores())
+oui <- ouija(example_gex[sample(seq_len(nrow(example_gex)), 200), ], 
+             response_type, iter = 500)
+```
+
+```{r}
+print(oui)
+```
+
+
+It's good practice to look at the trace and aurocorrelation of the (log)-likelihood to make sure the distribution has (roughly) converged. More advanced diagnostics may be accessed through the `rstan` package applied to `oui$fit`.
+
+```{r plot-diagnostics}
+plot_diagnostics(oui)
+```
+
+## Examining results
+
+Ouija comes with three plotting functions to help understand the fitted pseudotimes.
+
+We can plot the gene expression over pseudotime along with the maximum a posteriori (MAP) estimates of the mean function (the sigmoid or Gaussian transient function) using the `plot_expression` function:
+
+```{r plot-map-pseudotime}
+plot_expression(oui)
+```
+
+We can also visualise when in the trajectory gene regulation behaviour occurs, either in the form of the switch time or the peak time (for switch-like or transient genes) using the `plot_switch_times` and `plot_transient_times` functions:
+
+```{r}
+plot_switch_times(oui)
+```
+
+
+```{r}
+plot_peak_times(oui)
+```
+
+## Extracting useful quantities
+
+For downstream analysis it is useful to extract maximum a posteriori estimates of several quantities. These can be accessed through various convenience functions:
+
+```{r}
+tmap <- map_pseudotime(oui) # MAP pseudotimes
+t0map <- switch_times(oui) # MAP switch times
+pmap <- peak_times(oui) # MAP peak times
+kmap <- switch_strengths(oui) # MAP switch strengths
+```
+
+
+
+## Determining regulation order of genes
+
+A common analysis is to work out the regulation orderings of genes. For example, is gene A upregulated before gene B? Does gene C peak before the downregulation of gene D? Ouija answers these questions in terms of a Bayesian hypothesis test of whether the difference in regulation timing (either switch time or peak time) is significantly different to 0. This is collated using the `gene_regulation` function:
+
+```{r}
+gene_regs <- gene_regulation(oui)
+head(gene_regs)
+```
+
+As can be seen, this returns a `data.frame` with 7 columns:
+
+* `label` The two genes being compared in a string format (handy for plotting)
+* `gene_A` The first gene being compared
+* `gene_B` The second gene being compared
+* `mean_difference` The mean difference in regulation timing across all MCMC traces
+* `lower_95` The lower bound of the 95% credible interval for the difference in regulation timing
+* `upper_95` The corresopnding upper bound
+* `significant` A logical describing whether the difference in regulation timings is significant - true if the posterior credible interval does not overlap 0
+
+We can graph the posterior differences in gene regulation including whether they are significantly different as per our example above:
+
+
+```{r, fig.height = 10, fig.width = 6}
+ggplot(gene_regs, aes(y = label, x = mean_difference, color = significant)) +
+  geom_point() +
+  geom_errorbarh(aes(xmin = lower_95, xmax = upper_95)) +
+  xlab("Mean difference in regulation time") +
+  ylab("Gene pair")
+```
+
+
+
+## Identifying metastable states with consistency matrices
+
+A further common analysis to be performed with Ouija is the identification of "metastable states", or discrete cell types along continuous pseudotemporal trajectories. The basic idea is that as cells differentiate they may be "stable" for part of the trajectory, which counts as a cell type.
+
+To identify these Ouija forms a _consistency matrix_. If there are $N$ cells, the consistency matrix is the $N$ by $N$ matrix where the entry in the $i^{th}$ row and $j^{th}$ column is the empirical probability that cell $i$ is before cell $j$. The intuition is that if there are phases of pseudotime where the consistency matrix is around 0.5 then there is large uncertainty as to whether one cell is ordered before another, meaning all the cells are essentially at the same point in pseudotime defining a cell state. If however the consistency matrix is at 0 or 1, the cells are transitioning along pseudotime with little uncertainty as to their ordering implying a continuous progression.
+
+We can visualise the consistency matrix via a call to `plot_consistency` and calculate it via a call to `consistency_matrix`:
+
+```{r}
+cmo <- consistency_matrix(oui)
+plot_consistency(oui)
+```
+
+In order to identify the clusters along pseudotime we call `cluster_consistency` on the confusion matrix. This applies Gaussian Mixture Modelling through the `mclust` package to the first principal component of the consistency matrix. The number of clusters chosen is that which maximises the BIC through iterative search, which defaults to `2:9` though this can be changed through the `n_clusters` argument:
+
+```{r}
+cell_classifications <- cluster_consistency(cmo)
+```
+
+We can visualise this either as a scatter plot or density plot:
+
+```{r}
+map_pst <- map_pseudotime(oui)
+df_class <- data.frame(map_pst, cell_classifications)
+ggplot(df_class, aes(x = map_pst, y = cell_classifications)) +
+  geom_point() +
+  xlab("MAP pseudotime") +
+  ylab("Cell classification")
+```
+
+
+
+```{r}
+ggplot(df_class, aes(x = map_pst, fill = factor(cell_classifications))) +
+  geom_density() +
+  theme(legend.position = 'top') +
+  scale_fill_discrete(name = "Cell classification") +
+  xlab("MAP pseudotime")
+```
+
+
+# Advanced usage
+
+## Incorporating prior information on gene behaviour
+
+Because Ouija uses a parametric model of gene expression with interpretable parameters under a Bayesian framework we can encode prior beliefs or information as informative Bayesian priors. For example, the switch time parameter $t_0$ tells us where in the trajectory a gene is up or down regulated, with 0 being the beginning of the trajectory and 1 the end. By default, a weak prior is placed on $t0$ with a mean at 0.5. However, a researcher may know a given gene is downregulated early in the (differentiation) trajectory. In such case we may wish to place an informative prior, such as a prior mean of 0.1 indicating downregulation happens early.
+
+In general the parameters we may reasonably wish to place prior information on are the switch strengths, switch times, and peak times. In each case the parameter has a Gaussian prior distribution with 
+
+$$ \theta \sim \mathcal{N}(\mu, \sigma) $$
+
+where $\mu$ tells us what the prior information is and $\sigma$ signifies how strong this prior information is.
+
+For example, if we're a gene is strongly upregulated, we might place a $\mathcal{N}(10, 0.1)$ prior on one of the switch strengths; if we think it's strongly upregulated but aren't as sure we might place a $\mathcal{N}(10, 5)$ prior on it.
+
+We pass this information to Ouija through arguments to the `ouija` function. Here we specify the vectors of the $\mu$ and $\sigma$ variables. These must be same length as the corresponding number of genes - e.g. the length of $\mu$ for switch-strength must be the same as the number of genes. 
+
+The arguments to the `ouija` function that specify the prior means and variances for each of the parameters are given in the table below. 
+
+| Parameter       | Symbol  | Prior mean argument $\mu$ | Prior stdev argument $\sigma$ |
+| ----------------|:-------:|:-------------------:|:---------------------:|
+| Switch strength |$k$      | `switch_strengths`  |`switch_strength_sd`   |
+| Switch time     |$t_0$    | `switch_times`      |`switch_time_sd`       |
+| Peak time       |$p$      | `peak_times`        |`peak_time_sd`         | 
+
+## Accessing the STAN fit
+
+The underlying STAN fit sits directly in the `fit` slot of the object returned by `ouija`. Therefore, you can directly visualise anything related to this fit, e.g. using the functions `stan_hist` and `stan_trace`, along with accessing posterior samples through the `extract` function.
+
+## Inference types
+
+[Stan](http://mc-stan.org) now supports two types of inference: 
+
+* Hamiltonian Monte Carlo (HMC) - full MCMC inference where gradient information of the log-posterior is used to "guide" the random walk through the parameter space
+* Automatic Differentiation Variational Bayes (ADVI or simply VI) - approximate inference where the KL divergence to an approximate distribution is minimised
+
+In general, HMC will provide more accurate inference with approximately correct posterior variance for all parameters. However, VB is orders of magnitude quicker than HMC and while it may underestimate posterior variance, anecdotally it seems just as good as HMC for discovering posterior pseudotimes. 
+
+These inference types may be invoked using the `inference_type` argument:
+
+```{r inference-type, eval = FALSE}
+oui_vb <- ouija(example_gex, response_types,
+                inference_type = "vb")
+```
+
+
+
+# Technical info
+
+```{r sess-info}
+sessionInfo()
+```

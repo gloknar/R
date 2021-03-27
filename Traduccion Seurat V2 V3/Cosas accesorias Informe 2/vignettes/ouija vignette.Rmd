@@ -78,7 +78,8 @@ In order to fit the pseudotimes simply call `ouija` passing in the expected resp
 
 For this vignette we'll reduce the number of iterations to 500 and the number of cells to 200 to speed up the build time, though we recommend around 4000 in practice.
 
-```{r ouija-fit, results = 'hide', message = FALSE, error = FALSE}
+```{r ouija-fit, results = "hide", message = F, error = F}
+options(mc.cores = parallel::detectCores())
 oui <- ouija(example_gex[sample(seq_len(nrow(example_gex)), 200), ], 
              response_type, iter = 500)
 ```

@@ -1142,7 +1142,15 @@ plotExpression(deng_SCE, "Rhoa", x = "pseudotime_ouija", colour_by = "cell_type2
 <details> 
 <summary> __Ejercicio 2.6?: ¿Qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo, para nuestro dataset?__</summary>
 
+<br>
+
+
+
 WIP
+
+
+
+
 
 </details>
 
