@@ -1106,7 +1106,7 @@ Compara los gráficos de violín y los de ouija del comando `plot()`, son muy pa
 
 ```{r}
 # Violín
-plotExpression(deng_SCE, features = c("Rhoa, hoxa1"), x = "cell_type2", colour_by = "cell_type2") + 
+plotExpression(deng_SCE, features = as.list("Rhoa", x = "cell_type2", colour_by = "cell_type2") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 # ouija
@@ -1175,19 +1175,22 @@ El gen Hoxa1:
 
 * Codifica para un factor transcripción que se une a motivos ( _motifs_) de ADN
 
-* Regula procesos de desarrollo como formación del brainstem, oído interior y exterior, nervio abducens y el sistema cardiovascular
+* Regula procesos de desarrollo como formación del brainstem tronco encefálico o _brainstem_, oído interior y exterior, nervio VI ( _abducens_) y el sistema cardiovascular
 
-* El producto génico podría estar involucrado en la generación de sementos del hindbrain del eje anterior-posterior (delante-arriba
+* El producto génico podría estar involucrado en la generación del tejido anterior-posterior (delante-arriba) del metencéfalo, el cual se diferenciará en cerebelo, puente de Valorio y los nervios craneales V (trigeminal o trigémino), VI ( _abducens_), VII (facial) y VIII (auditivo).
 
-* Codifica para dos transcritos de ARNm, y produce 2 isoformas (aunque solo una contiene la región del homeodominio).
+* Codifica para dos transcritos de ARNm, y produce 2 isoformas (aunque solo una contiene la región del homeodominio)
+
+[provided by RefSeq, Jul 2008]
+
+
+
+
 
 Buscar expresión experimental de HoxA1 en _[The Human Protein Atlas](https://www.proteinatlas.org/search/embryo)_.
 
 https://www.proteinatlas.org/search/hoxa1
 
-
-
-[provided by RefSeq, Jul 2008]
 
 
 
@@ -1236,7 +1239,15 @@ plotExpression(deng_SCE, "Hoxa1", x = "pseudotime_ouija", colour_by = "cell_type
 <details> 
 <summary> __Ejercicio 2.6?: ¿Qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo, para nuestro dataset?__</summary>
 
+
+
 <br>
+
+__Solución:__
+
+tal y cual
+
+
 
 ```{r}
 # T test?
@@ -1250,6 +1261,9 @@ str(df_pseudotime)
 ```
 
 </details>
+
+
+
 
 
 ***
