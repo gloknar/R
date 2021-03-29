@@ -42,10 +42,15 @@ is done to integrate single-cell RNA-seq datasets from human and mouse.
 #results="hide" above
 human.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_human.expressionMatrix.txt", sep = "\t")
 mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_mouse.expressionMatrix.txt", sep = "\t")
+```
+
+```{r}
 # setup Seurat objects
 # since both count matrices have already filtered cells, we do no
 # additional filtering here
 library(Seurat)
+remotes::install_version("Seurat", version = "3.2")
+
 human <- CreateSeuratObject(raw.data = human.data)
 human <- NormalizeData(human)
 human <- ScaleData(human)
@@ -57,6 +62,9 @@ mouse <- FindVariableGenes(mouse, do.plot = F)
 hvg.human <- rownames(head(human@hvg.info, 1000))
 hvg.mouse <- rownames(head(mouse@hvg.info, 1000))
 hvg.union <- union(hvg.human, hvg.mouse)
+```
+
+```{r}
 # now we scale the data, adding in the individual (stored in orig.ident)
 # as a regression covariate
 mouse <- ScaleData(mouse, vars.to.regress = "orig.ident", genes.use = hvg.union)
