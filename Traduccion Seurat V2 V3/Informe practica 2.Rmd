@@ -1100,46 +1100,6 @@ La mayoría de los paquetes vistos en esta práctica cuentan con herramientas pa
 
 Dado que hemos añadido el pseudotiempo computado por cada algoritmo estudiado al bolsillo `colData` del objeto `deng_SCE`, podemos usar `scater` para investigar de manera visual la relación entre expresión génica, poblaciones celulares y pseudotiempo en nuestro dataset. Para ver en más detalle las utilidades que incorpora `scater`, véase su [viñeta online](https://bioconductor.org/packages/release/bioc/vignettes/scater/inst/doc/overview.html).
 
-```{r}
-# Biomarcadores
-ouija_markers_down <- c("Hoxa1", "Rhoa", "Sox2")
-ouija_markers_transient <- c("Zscan4b", "Foxa1")
-ouija_markers_up <- c("Creb3", "Carm1", "Creb1")
-ouija_markers <- c(ouija_markers_up, ouija_markers_down, ouija_markers_transient)
-
-# Violin plot
-plotExpression(deng_SCE, features = ouija_markers, x = "cell_type2", colour_by = "cell_type2") + 
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
-# Respuesta gen
-response_type <- c(rep("switch", length(ouija_markers_down) + length(ouija_markers_up)),
-                   rep("transient", length(ouija_markers_transient)))
-
-# Certeza gen
-switch_strengths <- c(rep(-10, length(ouija_markers_down)), 
-                      rep(10, length(ouija_markers_up)))
-
-# Desviación estándar certeza
-switch_strength_sd <- c(rep(0.5, length(ouija_markers_down)), 
-                         rep(0.5, length(ouija_markers_up)))
-
-options(mc.cores = parallel::detectCores())
-oui_2 <- ouija(x = deng_SCE[ouija_markers,],
-                response_type = response_type,
-                switch_strengths = switch_strengths,
-                switch_strength_sd = switch_strength_sd,
-                inference_type = "vb", # "vb" = ADVI
-                single_cell_experiment_assay = "logcounts")
-
-
-plot_expression(oui_2) + scale_x_reverse()
-
-plot_switch_times(oui_2)
-```
-
-
-
-
 
 __Rhoa:__
 
@@ -1258,7 +1218,7 @@ De acuerdo a la información disponible en [Genecards](https://www.genecards.org
 
 * Codifica para una enzima que metila argininas de histonas y proteínas asociadas a la cromatina
 
-* Participa en procesos de regulación de la expresión génica a través del remodelado de cromatina y la regulación de la transcripción, del splicing alternativo de pre-ARNm y de la estabilidad del ARNm. También silencia a los genes de la familia CREB (véase gráfico de los tiempos de regulación)
+* Participa en procesos de regulación de la expresión génica a través del remodelado de cromatina y la regulación de la transcripción, del splicing alternativo de pre-ARNm y de la estabilidad del ARNm. También silencia los genes de la familia CREB
 
 * Se expresa en las fases tempranas del desarrollo embrionario
 
