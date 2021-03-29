@@ -40,8 +40,8 @@ is done to integrate single-cell RNA-seq datasets from human and mouse.
 
 ```{r}
 #results="hide" above
-human.data <- read.table("data/pancreas_human.expressionMatrix.txt", sep = "\t")
-mouse.data <- read.table("data/pancreas_mouse.expressionMatrix.txt", sep = "\t")
+human.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_human.expressionMatrix.txt", sep = "\t")
+mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_mouse.expressionMatrix.txt", sep = "\t")
 # setup Seurat objects
 # since both count matrices have already filtered cells, we do no
 # additional filtering here
