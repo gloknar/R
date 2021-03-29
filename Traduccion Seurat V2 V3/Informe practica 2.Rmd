@@ -1259,35 +1259,57 @@ plotExpression(deng_SCE, "Carm1", x = "pseudotime_ouija", colour_by = "cell_type
 
 <br>
 
-***
-
-
 <br>
+
+
+
 
 <details> 
 
 <summary> __Ejercicio 2.6?: Para nuestro dataset, ¿qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo?__</summary>
 
-
-
 <br>
 
 __Solución:__
 
-tal y cual
+Nos encontramos ante una respuesta compleja, y es que al igual que sucede en _Machine Learning_, no hay un algoritmo que dé el mejor resultado en todos los casos, sino que cada uno de los algoritmos estudiados destaca en algo.
+
+* Para etapas tempranas del desarrollo (de "zy" a "4 cell"), `destiny` es el método que mejor separa las etapas, y en su orden correcto.
+
+* Para las etapas "8 cell" y "16 cell", `SLICER` es el algoritmo que mejor las separa, pero les asigna un orden incorrecto, pues según `SLICER`, la etapa de 16 células se sucede antes que la etapa de 8 células. Por otro lado, `TSCAN` ordena correctamente ambas etapas, y las separa relativamente bien (exceptuando unas pocas células de la etapa "8 células") 
+
+* Para las 3 etapas del blastocisto, el PCA es el método que mejor las separa del resto de etapas, aunque si nos centramos en esas 3 etapas, le cuesta discernir cuándo una célula es del "early blast", "mid blast" o "late blast". En ese aspecto, `SLICER` logra distinguir con mejores resultados las 3 etapas de blastocisto entre sí, si bien no hay ningún algoritmo que produjese una separación limpia entre esas 3 etapas.
+
+* Finalmente, comentar que si bien `SLICER` no es perfecto, parece producir los clusters más compactos en general.
 
 
 
-```{r}
-# T test?
-# Anova?
-# ¿Correción de p-valor con Benjamini- Hochberg?
-# ¿Correción de p-valor con Bonferroni?
+<br>
 
-# Ver datos en
-# df_pseudotime
-str(df_pseudotime)
-```
+A continuación se recopilan los resultados obtenidos por los métodos aquí estudiados:
+
+__PCA__:
+![](./Cosas accesorias Informe 2/ordenamientos/ordenamiento_PCA.png)
+
+
+
+
+__TSCAN__:
+![](./Cosas accesorias Informe 2/ordenamientos/ordenamiento_TSCAN.png)
+
+
+
+__ouija__:
+![](./Cosas accesorias Informe 2/ordenamientos/ordenamiento_ouija.png)
+
+
+__SLICER__:
+![](./Cosas accesorias Informe 2/ordenamientos/ordenamiento_SLICER.png)
+
+
+__destiny__:
+![](./Cosas accesorias Informe 2/ordenamientos/ordenamiento_destiny.png)
+
 
 </details>
 
