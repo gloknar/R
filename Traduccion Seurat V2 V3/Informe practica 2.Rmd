@@ -817,8 +817,8 @@ plot_switch_times(oui = oui_vb) + theme_classic() + scale_y_reverse() +
 ################################################################
 
 
-# Solución con bucle `for`. Automatizamos con un bucle `for` los pasos realizados en
-# la solución 2
+# Solución con bucle for. Automatizamos con un bucle `for` los pasos realizados en
+# la solución 2 (los bucles for no son eficientes en R)
 
 
 # Con `grep` obtenemos los índices de los k.1-k.16 y los visualizamos con
@@ -1102,9 +1102,9 @@ Dado que hemos añadido el pseudotiempo computado por cada algoritmo estudiado a
 
 ```{r}
 # Biomarcadores
-ouija_markers_down <- c("Hoxa1", "Creb3", "Carm1")
-ouija_markers_transient <- c("Zscan4b", "Foxa1") 
-ouija_markers_up <- c("Rhoa", "Sox2")
+ouija_markers_down <- c("Hoxa1", "Rhoa", "Sox2")
+ouija_markers_transient <- c("Zscan4b", "Foxa1")
+ouija_markers_up <- c("Creb3", "Carm1", "Creb1")
 ouija_markers <- c(ouija_markers_up, ouija_markers_down, ouija_markers_transient)
 
 # Violin plot
@@ -1124,25 +1124,17 @@ switch_strength_sd <- c(rep(0.5, length(ouija_markers_down)),
                          rep(0.5, length(ouija_markers_up)))
 
 options(mc.cores = parallel::detectCores())
-oui_vb <- ouija(x = deng_SCE[ouija_markers,],
+oui_2 <- ouija(x = deng_SCE[ouija_markers,],
                 response_type = response_type,
                 switch_strengths = switch_strengths,
                 switch_strength_sd = switch_strength_sd,
                 inference_type = "vb", # "vb" = ADVI
                 single_cell_experiment_assay = "logcounts")
 
-# Con `grep` (RegEx) obtenemos los índices de los k.1-k.5 y los visualizamos con
-# `print()`
-indices <- grep("k.", names(oui_vb$fit@sim$samples[[1]])); print(c(min(indices), max(indices)))
 
-# Multiplicamos sus valores por -1 para obtener la regulación génica en el
-# sentido correcto
-oui_vb$fit@sim$samples[[1]][c(22:37)] <- lapply(oui_vb$fit@sim$samples[[1]][c(22:37)], function(x) x*-1)
+plot_expression(oui_2) + scale_x_reverse()
 
-
-plot_expression(oui_vb) + scale_x_reverse()
-
-plot_switch_times(oui_vb)  + scale_y_reverse()
+plot_switch_times(oui_2)
 ```
 
 
@@ -1157,7 +1149,7 @@ De acuerdo a la información disponible en [GeneCards](https://www.genecards.org
 
 * Codifica para una GTPasa de la familia Rho, la cual actúa como interruptor molecular en cascadas de señalización
 
-* Promueve la reorganización del citoesqueleto, alterando así la forma, motilidad y adhesión celular
+* Promueve la reorganización del citoesqueleto, alterando así la forma, motilidad y adhesión celular. Además, participa en la citocinesis
 
 * Se expresa en el desarrollo embrionario
 
@@ -1278,10 +1270,6 @@ Visualizamos la expresión génica de __Carm1__ a lo largo de las trayectorias g
 __PCA:__
 ```{r}
 plotExpression(deng_SCE, features = "Carm1", x = "PC1", colour_by = "cell_type2", show_smooth = T, show_violin = F)
-
-plotExpression(deng_SCE, features = "Creb3", x = "pseudotime_ouija", colour_by = "cell_type2", show_smooth = T, show_violin = F)
-
-plotExpression(deng_SCE, features = "Creb1", x = "pseudotime_ouija", colour_by = "cell_type2", show_smooth = T, show_violin = F)
 ```
 
 
