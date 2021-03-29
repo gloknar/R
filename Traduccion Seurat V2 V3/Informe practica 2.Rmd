@@ -1131,28 +1131,41 @@ oui_vb <- ouija(x = deng_SCE[ouija_markers,],
                 inference_type = "vb", # "vb" = ADVI
                 single_cell_experiment_assay = "logcounts")
 
+# Con `grep` (RegEx) obtenemos los índices de los k.1-k.5 y los visualizamos con
+# `print()`
+indices <- grep("k.", names(oui_vb$fit@sim$samples[[1]])); print(c(min(indices), max(indices)))
+
+# Multiplicamos sus valores por -1 para obtener la regulación génica en el
+# sentido correcto
+oui_vb$fit@sim$samples[[1]][c(22:37)] <- lapply(oui_vb$fit@sim$samples[[1]][c(22:37)], function(x) x*-1)
+
+
 plot_expression(oui_vb) + scale_x_reverse()
 
-plot_switch_times(oui_vb)
+plot_switch_times(oui_vb)  + scale_y_reverse()
 ```
 
 
 
 
 
-__Roha:__
+__Rhoa:__
 
-Según GeneCards <sup>[1](https://www.genecards.org/cgi-bin/carddisp.pl?gene=RHOA)</sup>, el gen Roha:
+De acuerdo a la información disponible en [GeneCards](https://www.genecards.org/cgi-bin/carddisp.pl?gene=RHOA) y [MGI](http://www.informatics.jax.org/marker/MGI:1096342), el gen Rhoa:
 
-* Participa en procesos de transducción de señales intracelulares
+* Se localiza en el cromosoma 9 en ratón
 
-* eee
+* Codifica para una GTPasa de la familia Rho, la cual actúa como interruptor molecular en cascadas de señalización
+
+* Promueve la reorganización del citoesqueleto, alterando así la forma, motilidad y adhesión celular
+
+* Se expresa en el desarrollo embrionario
 
 
 
 <br>
 
-Visualizamos la expresión génica de __"Rhoa"__ a lo largo de las trayectorias generadas:
+Visualizamos la expresión génica de __Rhoa__ a lo largo de las trayectorias generadas:
 
 __PCA:__
 ```{r}
@@ -1191,9 +1204,9 @@ plotExpression(deng_SCE, "Rhoa", x = "pseudotime_ouija", colour_by = "cell_type2
 
 __Hoxa1:__
 
-Según [GeneCards](https://www.genecards.org/cgi-bin/carddisp.pl?gene=HOXA1) y [MGI](http://www.informatics.jax.org/marker/MGI:1913208), el gen Hoxa1:
+De acuerdo a la información disponible en [GeneCards](https://www.genecards.org/cgi-bin/carddisp.pl?gene=HOXA1) y [MGI](http://www.informatics.jax.org/marker/MGI:96170), el gen Hoxa1:
 
-* Forma parte del clúster A del cromosoma 7 en humanos, y en ratón?
+* En ratón, su locus se halla en el cromosoma 6
 
 * Codifica para un factor transcripción que se une a motivos ( _motifs_) de ADN
 
@@ -1202,6 +1215,8 @@ Según [GeneCards](https://www.genecards.org/cgi-bin/carddisp.pl?gene=HOXA1) y [
 * El producto génico podría estar involucrado en la generación del tejido anterior-posterior (delante-arriba) del metencéfalo, el cual se diferenciará en cerebelo, puente de Valorio y los nervios craneales V (trigeminal o trigémino), VI ( _abducens_), VII (facial) y VIII (auditivo).
 
 * Codifica para dos transcritos de ARNm y produce 2 isoformas (aunque sólo una contiene la región del homeodominio)
+
+* Se expresa en las fases tempranas del desarrollo embrionario
 
 
 <br>
@@ -1263,6 +1278,10 @@ Visualizamos la expresión génica de __Carm1__ a lo largo de las trayectorias g
 __PCA:__
 ```{r}
 plotExpression(deng_SCE, features = "Carm1", x = "PC1", colour_by = "cell_type2", show_smooth = T, show_violin = F)
+
+plotExpression(deng_SCE, features = "Creb3", x = "pseudotime_ouija", colour_by = "cell_type2", show_smooth = T, show_violin = F)
+
+plotExpression(deng_SCE, features = "Creb1", x = "pseudotime_ouija", colour_by = "cell_type2", show_smooth = T, show_violin = F)
 ```
 
 
@@ -1299,7 +1318,7 @@ plotExpression(deng_SCE, "Carm1", x = "pseudotime_ouija", colour_by = "cell_type
 
 <details> 
 
-<summary> __Ejercicio 2.6?: ¿Qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo, para nuestro dataset?__</summary>
+<summary> __Ejercicio 2.6?: Para nuestro dataset, ¿qué algoritmos de los aquí estudiados riden mejor que el PCA a la hora de inferir el pseudotiempo?__</summary>
 
 
 
