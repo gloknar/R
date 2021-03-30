@@ -49,25 +49,25 @@ mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 
 # since both count matrices have already filtered cells, we do no
 # additional filtering here
 library(Seurat)
-remotes::install_version("Seurat", version = "3.2")
-
-human <- CreateSeuratObject(raw.data = human.data)
+# remotes::install_version("Seurat", version = "3.2") # Seurat V3.2 no es compatible con la ultima version de spatstat, o sea, la 2.0-1
+# install.packages('https://cran.r-project.org/src/contrib/Archive/spatstat/spatstat_1.64-1.tar.gz', repos=NULL,type="source")
+human <- CreateSeuratObject(counts = human.data)
 human <- NormalizeData(human)
 human <- ScaleData(human)
-human <- FindVariableGenes(human, do.plot = F)
-mouse <- CreateSeuratObject(raw.data = mouse.data)
+human <- FindVariableFeatures(human)
+mouse <- CreateSeuratObject(counts = mouse.data)
 mouse <- NormalizeData(mouse)
 mouse <- ScaleData(mouse)
-mouse <- FindVariableGenes(mouse, do.plot = F)
-hvg.human <- rownames(head(human@hvg.info, 1000))
-hvg.mouse <- rownames(head(mouse@hvg.info, 1000))
-hvg.union <- union(hvg.human, hvg.mouse)
+mouse <- FindVariableFeatures(mouse)
+hvg.human <- rownames(head(human@meta.data, 1000)) # Coge el nombre de las primeras 1000 celulas, parece
+hvg.mouse <- rownames(head(mouse@meta.data, 1000)) # ?????mirar eso de hvg.info higly variable gen supongo
+hvg.union <- union(hvg.human, hvg.mouse) # Concatena las dos listas de strings
 ```
 
 ```{r}
 # now we scale the data, adding in the individual (stored in orig.ident)
 # as a regression covariate
-mouse <- ScaleData(mouse, vars.to.regress = "orig.ident", genes.use = hvg.union)
+mouse <- ScaleData(mouse, vars.to.regress = "orig.ident", genes.use = hvg.union) # Mirar genes.use
 human <- ScaleData(human, vars.to.regress = "orig.ident", genes.use = hvg.union)
 ##
 ## Time Elapsed: 5.51687598228455 secs
