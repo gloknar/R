@@ -110,45 +110,69 @@ pancreas.combined <- RunCCA(mouse, human, features = hvg.union)
 # PrintDim(pancreas.combined, reduction.type = "cca")
 #
 # mientras que Seurat V3 usa `print()` sobre la propia reducción:
-print(pancreas.combined@reductions$cca, dims = 1:5, nfeatures = 30)
+print(pancreas.combined@reductions$cca, dims = 1:5, nfeatures = 15)
 
 
-# Graficamos ambos datasets
-DimPlot(pancreas.combined, reduction = "cca")
+# Graficamos ambos datasets en la proyección de dimensionalidad reducida "cca"
+DimPlot(pancreas.combined, group.by = "species", reduction = "cca")
 ```
 
 
-ejem
+Corremos el PCA para poder ver el t-SNE:
 
-```{r, eval = F}
-# ¿Por qué hace esto?
-pancreas.combined@meta.data[rownames(mouse@meta.data), "species"] <- "mouse"
+```{r}
 
-# Seurat V2 usa `CalcVarExpRatio`; Seurat V3 usa...
-pancreas.combined <- CalcVarExpRatio(pancreas.combined, reduction.type = "pca",
-                                     grouping.var = "species", dims.use = 1:20)
+# Seurat V2 usa `CalcVarExpRatio`; Seurat V3 usa... mirar
+# https://github.com/satijalab/seurat/issues/982
+# pancreas.combined <- CalcVarExpRatio(pancreas.combined, reduction.type = "pca",
+#                                     grouping.var = "species", dims.use = 1:20)
 
 
-pancreas.combined.all <- pancreas.combined
+# pancreas.combined.all <- pancreas.combined
 
 
 
 
 # Visualize the aligned datasets (before alignment)
-pancreas.combined <-RunPCA(pancreas.combined , pc.genes = NULL, pcs.compute = 20,
-                           use.imputed = FALSE, rev.pca = FALSE,
-                           weight.by.var = TRUE, do.print = TRUE, pcs.print = 1:5,
-                           genes.print = 30, reduction.name = "pca",
-                           reduction.key = "PC", assay.type = "RNA", seed.use = 42)
+#
+# pancreas.combined <-RunPCA(pancreas.combined , pc.genes = NULL, pcs.compute = 20,
+#                            use.imputed = FALSE, rev.pca = FALSE,
+#                            weight.by.var = TRUE, do.print = TRUE, pcs.print = 1:5,
+#                            genes.print = 30, reduction.name = "pca",
+#                            reduction.key = "PC", assay.type = "RNA", seed.use = 42)
+
+
+# Nota: Seurat V2 usa parámetros "pcs.print", "genes.print" y "pcs.compute",
+# mientras que Seurat v3 usa "ndims.print", "nfeatures.print" y "npcs",
+# respectivamente.
+# `RunPCA` en Seurat V3 no usa `use.imputed` ni `do.print`. `assay.type` =
+# `assay`. `pc.genes` = `features`. `do.print` = `verbose`
+pancreas.combined <-RunPCA(pancreas.combined , features = hvg.union, npcs = 20,
+                           rev.pca = FALSE,
+                           weight.by.var = TRUE, ndims.print = 1:5,
+                           nfeatures.print = 30, reduction.name = "pca",
+                           assay = "RNA", seed.use = 42)
 ```
 
 
 
+
+Corremos el t-SNE y lo visualizamos:
+
+```{r}
+pancreas.combined <- RunTSNE(pancreas.combined, reduction.use = "pca",
+                             dims = 1:20, verbose = T)
+
+# t-SNE con etiquetas
+library(ggplot2)
+DimPlot(pancreas.combined, group.by='species', reduction = "tsne", pt.size = NULL, label = T) + 
+  ggtitle("t-SNE") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+
 ```{r, eval = F}
 
-pancreas.combined <- RunTSNE(pancreas.combined, reduction.use = "pca",
-dims.use = 1:20, do.fast = T)
-TSNEPlot(pancreas.combined, group.by = "species")
+
 #-----
 pancreas.combined <- SubsetData(pancreas.combined, subset.name = "var.ratio.pca",
 accept.low = 0.5)
