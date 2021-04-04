@@ -95,23 +95,51 @@ mouse@meta.data$species <- "mouse"
 
 
 
-Ahora corremos el CCA:
+Ahora corremos el CCA para generar el objeto `seurat` combinado `pancreas.combined`:
+
+```{r}
+# CCA
+pancreas.combined <- RunCCA(mouse, human, features = hvg.union)
+
+# Seurat v2 usa `PrintDim` tal que así:
+# PrintDim(pancreas.combined, reduction.type = "cca")
+# mientras que Seurat V3 usa `print()` sobre la propia reducción:
+print(pancreas.combined@reductions$cca, dims = 1:5, nfeatures = 30)
 
 
-```{r, eval = F}
-# now we run CCA
-pancreas.combined <- RunCCA(mouse, human, genes.use = hvg.union)
-PrintDim(pancreas.combined, reduction.type = "cca")
-pancreas.combined@meta.data[mouse@cell.names, "species"] <- "mouse"
+# Graficamos ambos datasets
+DimPlot(pancreas.combined, reduction = "cca")
+```
+
+
+ejem
+
+```{r}
+# ¿Por qué hace esto?
+pancreas.combined@meta.data[rownames(mouse@meta.data), "species"] <- "mouse"
+
+# Seurat V2 usa `CalcVarExpRatio`; Seurat V3 usa...
 pancreas.combined <- CalcVarExpRatio(pancreas.combined, reduction.type = "pca",
-grouping.var = "species", dims.use = 1:20)
+                                     grouping.var = "species", dims.use = 1:20)
+
+
 pancreas.combined.all <- pancreas.combined
+
+
+
+
 # Visualize the aligned datasets (before alignment)
 pancreas.combined <-RunPCA(pancreas.combined , pc.genes = NULL, pcs.compute = 20,
 use.imputed = FALSE, rev.pca = FALSE,
 weight.by.var = TRUE, do.print = TRUE, pcs.print = 1:5,
 genes.print = 30, reduction.name = "pca",
 reduction.key = "PC", assay.type = "RNA", seed.use = 42)
+```
+
+
+
+```{r, eval = F}
+
 pancreas.combined <- RunTSNE(pancreas.combined, reduction.use = "pca",
 dims.use = 1:20, do.fast = T)
 TSNEPlot(pancreas.combined, group.by = "species")
