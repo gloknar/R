@@ -46,8 +46,10 @@ Creamos los objetos `seurat`, normalizamos y escalamos los datos y detectamos ge
 
 ```{r}
 library(Seurat)
-# Seurat V3.2 no es compatible con la ultima version de spatstat (2.0-1)
-# install.packages('https://cran.r-project.org/src/contrib/Archive/spatstat/spatstat_1.64-1.tar.gz', repos=NULL,type="source")
+# Seurat V3.2 no es compatible con la ultima version de spatstat (2.0-1). Puedes
+# instalar la versión previa con el siguiente comando:
+#
+# devtools::install_version(package = "spatstat", version = "1.64-1")
 
 # Objeto seurat del dataset humano
 human <- CreateSeuratObject(counts = human.data)
@@ -72,13 +74,14 @@ hvg.union <- union(hvg.human, hvg.mouse)
 
 # Otra manera de obtener los genes diferencialmente expresados es obtenerlos del
 # bolsillo `human/mouse[["RNA"]]@meta.features`:
+#
 # hvg.human <- rownames(head(human[["RNA"]]@meta.features, 1000))
 # hvg.mouse <- rownames(head(mouse[["RNA"]]@meta.features, 1000))
 ```
 
 
 
-Ahora escalamos los datos, con la particularidad de que esta vez ajustamos para la covariable confusora "Especie", codificada en la columna `orig.ident` del bolsillo `human/mouse@meta.data`. Tras ello crearemos una columna en los metadatos con información sobre la especie de la que provienen los datos:
+Ahora escalamos los datos, con la particularidad de que esta vez ajustamos para la covariable confusora "Especie", codificada en la columna `orig.ident` del bolsillo `objeto@meta.data`. Tras ello crearemos una columna en los metadatos con información sobre la especie de la que provienen los datos:
 
 ```{r}
 human <- ScaleData(human, vars.to.regress = "orig.ident", features = hvg.union)
@@ -89,6 +92,7 @@ human@meta.data$species <- "human"
 mouse@meta.data$species <- "mouse"
 
 # Otra manera de crear la columna:
+#
 # human@meta.data[, "species"] <- "human"
 # mouse@meta.data[, "species"] <- "mouse"
 ```
@@ -102,7 +106,9 @@ Ahora corremos el CCA para generar el objeto `seurat` combinado `pancreas.combin
 pancreas.combined <- RunCCA(mouse, human, features = hvg.union)
 
 # Seurat v2 usa `PrintDim` tal que así:
+#
 # PrintDim(pancreas.combined, reduction.type = "cca")
+#
 # mientras que Seurat V3 usa `print()` sobre la propia reducción:
 print(pancreas.combined@reductions$cca, dims = 1:5, nfeatures = 30)
 
@@ -114,7 +120,7 @@ DimPlot(pancreas.combined, reduction = "cca")
 
 ejem
 
-```{r}
+```{r, eval = F}
 # ¿Por qué hace esto?
 pancreas.combined@meta.data[rownames(mouse@meta.data), "species"] <- "mouse"
 
@@ -130,10 +136,10 @@ pancreas.combined.all <- pancreas.combined
 
 # Visualize the aligned datasets (before alignment)
 pancreas.combined <-RunPCA(pancreas.combined , pc.genes = NULL, pcs.compute = 20,
-use.imputed = FALSE, rev.pca = FALSE,
-weight.by.var = TRUE, do.print = TRUE, pcs.print = 1:5,
-genes.print = 30, reduction.name = "pca",
-reduction.key = "PC", assay.type = "RNA", seed.use = 42)
+                           use.imputed = FALSE, rev.pca = FALSE,
+                           weight.by.var = TRUE, do.print = TRUE, pcs.print = 1:5,
+                           genes.print = 30, reduction.name = "pca",
+                           reduction.key = "PC", assay.type = "RNA", seed.use = 42)
 ```
 
 
