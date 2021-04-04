@@ -24,55 +24,81 @@ knitr::opts_chunk$set(echo = TRUE,
 
 ***
 
-# Título
+# Integración de datasets de distintas especies con Análisis de Correlación Canónica (CCA)
 
 
-__Análisis de Correlación Canónica para integrar datasets de distintas especies__
+En el trabajo de Butler _et al._ (2018) se muestran 2 datasets de scRNA-seq de páncreas: uno de humano y otro de ratón. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.
 
 
-We will apply Canonical Correlation Analysis (CCA) in pancreas data shown in Butler et al. (2018). This
-is done to integrate single-cell RNA-seq datasets from human and mouse.
+## 4.1 Carga de datos, normalización, escalado y CCA
 
-## 4.1 Load count matrices, normalisation and CCA
-
-<br>
-
+Cargamos las matrices de conteos de los datasets de interés:
 
 ```{r}
-#results="hide" above
 human.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_human.expressionMatrix.txt", sep = "\t")
+
 mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_mouse.expressionMatrix.txt", sep = "\t")
 ```
 
+
+
+Creamos los objetos `seurat`, normalizamos y escalamos los datos y detectamos genes diferencialmente expresados. Dado que las matrices de conteo de Butler _et al._ ya han filtrado las células mal secuenciadas, no tenemos que hacer ningún filtrado adicional.
+
 ```{r}
-# setup Seurat objects
-# since both count matrices have already filtered cells, we do no
-# additional filtering here
 library(Seurat)
-# remotes::install_version("Seurat", version = "3.2") # Seurat V3.2 no es compatible con la ultima version de spatstat, o sea, la 2.0-1
+# Seurat V3.2 no es compatible con la ultima version de spatstat (2.0-1)
 # install.packages('https://cran.r-project.org/src/contrib/Archive/spatstat/spatstat_1.64-1.tar.gz', repos=NULL,type="source")
+
+# Objeto seurat del dataset humano
 human <- CreateSeuratObject(counts = human.data)
 human <- NormalizeData(human)
 human <- ScaleData(human)
-human <- FindVariableFeatures(human)
+human <- FindVariableFeatures(human, selection.method = "mvp")
+
+# Objeto seurat del dataset de ratón
 mouse <- CreateSeuratObject(counts = mouse.data)
 mouse <- NormalizeData(mouse)
 mouse <- ScaleData(mouse)
-mouse <- FindVariableFeatures(mouse)
-hvg.human <- rownames(head(human@meta.data, 1000)) # Coge el nombre de las primeras 1000 celulas, parece
-hvg.mouse <- rownames(head(mouse@meta.data, 1000)) # ?????mirar eso de hvg.info higly variable gen supongo
-hvg.union <- union(hvg.human, hvg.mouse) # Concatena las dos listas de strings
+mouse <- FindVariableFeatures(mouse, selection.method = "mvp")
 ```
 
+
+Hecho eso, ahora obtenemos los genes diferencialmente expresados (DEGs o _Differentially Expressed Genes_) en humano, los DEGs de ratón y los agrupamos en un único objeto mediante el comando `union`.
+
 ```{r}
-# now we scale the data, adding in the individual (stored in orig.ident)
-# as a regression covariate
-mouse <- ScaleData(mouse, vars.to.regress = "orig.ident", genes.use = hvg.union) # Mirar genes.use
-human <- ScaleData(human, vars.to.regress = "orig.ident", genes.use = hvg.union)
-##
-## Time Elapsed: 5.51687598228455 secs
-mouse@meta.data[, "species"] <- "mouse"
-human@meta.data[, "species"] <- "human"
+hvg.human <- VariableFeatures(human)
+hvg.mouse <- VariableFeatures(mouse)
+hvg.union <- union(hvg.human, hvg.mouse)
+
+# Otra manera de obtener los genes diferencialmente expresados es obtenerlos del
+# bolsillo `human/mouse[["RNA"]]@meta.features`:
+# hvg.human <- rownames(head(human[["RNA"]]@meta.features, 1000))
+# hvg.mouse <- rownames(head(mouse[["RNA"]]@meta.features, 1000))
+```
+
+
+
+Ahora escalamos los datos, con la particularidad de que esta vez ajustamos para la covariable confusora "Especie", codificada en la columna `orig.ident` del bolsillo `human/mouse@meta.data`. Tras ello crearemos una columna en los metadatos con información sobre la especie de la que provienen los datos:
+
+```{r}
+human <- ScaleData(human, vars.to.regress = "orig.ident", features = hvg.union)
+mouse <- ScaleData(mouse, vars.to.regress = "orig.ident", features = hvg.union)
+
+# Añadimos información sobre la especie de origen en los metadatos:
+human@meta.data$species <- "human"
+mouse@meta.data$species <- "mouse"
+
+# Otra manera de crear la columna:
+# human@meta.data[, "species"] <- "human"
+# mouse@meta.data[, "species"] <- "mouse"
+```
+
+
+
+Ahora corremos el CCA:
+
+
+```{r, eval = F}
 # now we run CCA
 pancreas.combined <- RunCCA(mouse, human, genes.use = hvg.union)
 PrintDim(pancreas.combined, reduction.type = "cca")
