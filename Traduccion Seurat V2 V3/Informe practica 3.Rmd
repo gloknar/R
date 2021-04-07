@@ -27,12 +27,14 @@ knitr::opts_chunk$set(echo = TRUE,
 # Integración de datasets de distintas especies con Análisis de Correlación Canónica (CCA)
 
 
-En el trabajo de Butler _et al._ (2018) se muestran 2 datasets de scRNA-seq de páncreas: uno de humano y otro de ratón. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.
+Integrar datasets en Seurat V2 era tedioso, pues había que ejecutar varias líneas de código para obtener los resultados deseados. La 3ª versión de Seurat simplificó enormemente el protocolo con la aparición de los comandos `FindIntegrationAnchors()` y `IntegrateData`, pues ejecutan automáticamente la retahíla de pasos necesarios en Seurat V2.
+
+Dicho esto, usaremos para este informe 2 datasets de scRNA-seq provenientes del trabajo de Butler _et al._ (2018). Los datasets en cuestión consisten en tejido pancreático de humano y de ratón, respectivamente. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.
 
 
 ## 4.1 Carga de datos, normalización, escalado y CCA
 
-Cargamos las matrices de conteos de los datasets de interés:
+Primero cargamos las matrices de conteos de los datasets de interés:
 
 ```{r}
 human.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_human.expressionMatrix.txt", sep = "\t")
@@ -41,8 +43,13 @@ mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 
 ```
 
 
+<br>
 
-Creamos los objetos `seurat`, normalizamos y escalamos los datos y detectamos genes diferencialmente expresados. Dado que las matrices de conteo de Butler _et al._ ya han filtrado las células mal secuenciadas, no tenemos que hacer ningún filtrado adicional.
+A continuación creamos dos objetos `seurat` a partir de dichas matrices de conteos y añadimos a sus metadatos la columna `species`, donde se recoge la información sobre la especie de la que provienen los datos.
+
+preprocesamos los datos como haríamos en un protocolo cualquiera, _i.e._ normalizamos y escalamos los datos.
+
+y detectamos genes diferencialmente expresados. Dado que las matrices de conteo de Butler _et al._ ya han filtrado las células mal secuenciadas, no tenemos que hacer ningún filtrado adicional.
 
 ```{r}
 library(Seurat)
@@ -53,30 +60,30 @@ library(Seurat)
 
 # Objeto seurat del dataset humano
 human <- CreateSeuratObject(counts = human.data)
-human <- NormalizeData(human)
-human <- ScaleData(human)
-human <- FindVariableFeatures(human, selection.method = "mvp")
+human@meta.data$species <- "human"
+# human <- NormalizeData(human)
+# human <- ScaleData(human)
+# human <- FindVariableFeatures(human, selection.method = "vst")
 
-# Objeto seurat del dataset de ratón
+
+# Objeto seurat del dataset murino
 mouse <- CreateSeuratObject(counts = mouse.data)
-mouse <- NormalizeData(mouse)
-mouse <- ScaleData(mouse)
-mouse <- FindVariableFeatures(mouse, selection.method = "mvp")
+mouse@meta.data$species <- "mouse"
+# mouse <- NormalizeData(mouse)
+# mouse <- ScaleData(mouse)
+# mouse <- FindVariableFeatures(mouse, selection.method = "vst")
 ```
 
 
 Hecho eso, ahora obtenemos los genes diferencialmente expresados (DEGs o _Differentially Expressed Genes_) en humano, los DEGs de ratón y los agrupamos en un único objeto mediante el comando `union`.
 
 ```{r}
-hvg.human <- VariableFeatures(human)
-hvg.mouse <- VariableFeatures(mouse)
-hvg.union <- union(hvg.human, hvg.mouse)
+pancreas.list <- list(human, mouse)
+names(pancreas.list) <- c("human", "mouse")
 
-# Otra manera de obtener los genes diferencialmente expresados es obtenerlos del
-# bolsillo `human/mouse[["RNA"]]@meta.features`:
-#
-# hvg.human <- rownames(head(human[["RNA"]]@meta.features, 1000))
-# hvg.mouse <- rownames(head(mouse[["RNA"]]@meta.features, 1000))
+pancreas.anchors <- FindIntegrationAnchors(object.list = pancreas.list, scale = T, normalization.method = "LogNormalize", reduction = "cca", dims = 1:20) # ya escalé los datos al crear los objetos seurat. TMB ejecuta FindVariableFeatures si no lo hiciste
+
+pancreas.integrated <- IntegrateData(anchorset = pancreas.anchors, new.assay.name = "integrated", normalization.method = "LogNormalize", dims = 1:20)
 ```
 
 
@@ -84,114 +91,57 @@ hvg.union <- union(hvg.human, hvg.mouse)
 Ahora escalamos los datos, con la particularidad de que esta vez ajustamos para la covariable confusora "Especie", codificada en la columna `orig.ident` del bolsillo `objeto@meta.data`. Tras ello crearemos una columna en los metadatos con información sobre la especie de la que provienen los datos:
 
 ```{r}
-human <- ScaleData(human, vars.to.regress = "orig.ident", features = hvg.union)
-mouse <- ScaleData(mouse, vars.to.regress = "orig.ident", features = hvg.union)
+library(ggplot2)
+library(cowplot)
+library(patchwork)
 
-# Añadimos información sobre la especie de origen en los metadatos:
-human@meta.data$species <- "human"
-mouse@meta.data$species <- "mouse"
 
-# Otra manera de crear la columna:
-#
-# human@meta.data[, "species"] <- "human"
-# mouse@meta.data[, "species"] <- "mouse"
+# Run the standard workflow for visualization and clustering
+pancreas.integrated <- ScaleData(pancreas.integrated, verbose = T)
+
+pancreas.integrated <- RunPCA(pancreas.integrated, npcs = 20, verbose = T)
+
+pancreas.integrated <- RunTSNE(pancreas.integrated, reduction = "pca", dims = 1:20)
+
+pancreas.integrated <- RunUMAP(pancreas.integrated, reduction = "pca", dims = 1:20)
+
+
+# Visualizamos los datasets integrados
+DimPlot(pancreas.integrated, reduction = "pca", group.by = "species")
+DimPlot(pancreas.integrated, reduction = "tsne", group.by = "species")
+DimPlot(pancreas.integrated, reduction = "umap", group.by = "species")
 ```
 
 
 
-Ahora corremos el CCA para generar el objeto `seurat` combinado `pancreas.combined`:
+Ahora clusters:
 
 ```{r}
-# CCA
-pancreas.combined <- RunCCA(mouse, human, features = hvg.union)
-
-# Seurat v2 usa `PrintDim` tal que así:
-#
-# PrintDim(pancreas.combined, reduction.type = "cca")
-#
-# mientras que Seurat V3 usa `print()` sobre la propia reducción:
-print(pancreas.combined@reductions$cca, dims = 1:5, nfeatures = 15)
+pancreas.integrated <- FindNeighbors(pancreas.integrated, dims = 1:20)
+pancreas.integrated <- FindClusters(pancreas.integrated, resolution = 1, method = "matrix", algorithm = 1)
 
 
-# Graficamos ambos datasets en la proyección de dimensionalidad reducida "cca"
-DimPlot(pancreas.combined, group.by = "species", reduction = "cca")
+DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "species")
+DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "seurat_clusters")
+
+
+DimPlot(pancreas.integrated, reduction = "tsne", label = T, group.by = "species")
+DimPlot(pancreas.integrated, reduction = "tsne", label = T, group.by = "seurat_clusters")
 ```
 
 
-Corremos el PCA para poder ver el t-SNE:
+Corremos el PCA para poder computar después la proyección t-SNE y acto seguido visualizarla:
 
-```{r}
+```{r, eval = F}
 
-# Seurat V2 usa `CalcVarExpRatio`; Seurat V3 usa... mirar
-# https://github.com/satijalab/seurat/issues/982
-# pancreas.combined <- CalcVarExpRatio(pancreas.combined, reduction.type = "pca",
-#                                     grouping.var = "species", dims.use = 1:20)
-
-
-# pancreas.combined.all <- pancreas.combined
-
-
-
-
-# Visualize the aligned datasets (before alignment)
-#
-# pancreas.combined <-RunPCA(pancreas.combined , pc.genes = NULL, pcs.compute = 20,
-#                            use.imputed = FALSE, rev.pca = FALSE,
-#                            weight.by.var = TRUE, do.print = TRUE, pcs.print = 1:5,
-#                            genes.print = 30, reduction.name = "pca",
-#                            reduction.key = "PC", assay.type = "RNA", seed.use = 42)
-
-
-# Nota: Seurat V2 usa parámetros "pcs.print", "genes.print" y "pcs.compute",
-# mientras que Seurat v3 usa "ndims.print", "nfeatures.print" y "npcs",
-# respectivamente.
-# `RunPCA` en Seurat V3 no usa `use.imputed` ni `do.print`. `assay.type` =
-# `assay`. `pc.genes` = `features`. `do.print` = `verbose`
-pancreas.combined <-RunPCA(pancreas.combined , features = hvg.union, npcs = 20,
-                           rev.pca = FALSE,
-                           weight.by.var = TRUE, ndims.print = 1:5,
-                           nfeatures.print = 30, reduction.name = "pca",
-                           assay = "RNA", seed.use = 42)
-```
-
-
-
-
-Corremos el t-SNE y lo visualizamos:
-
-```{r}
-pancreas.combined <- RunTSNE(pancreas.combined, reduction.use = "pca",
-                             dims = 1:20, verbose = T)
-
-# t-SNE con etiquetas
 library(ggplot2)
 DimPlot(pancreas.combined, group.by='species', reduction = "tsne", pt.size = NULL, label = T) + 
   ggtitle("t-SNE") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
 
-```{r, eval = F}
 
 
-#-----
-pancreas.combined <- SubsetData(pancreas.combined, subset.name = "var.ratio.pca",
-accept.low = 0.5)
-pancreas.combined <- AlignSubspace(pancreas.combined, reduction.type = "cca",
-grouping.var = "species", dims.align = 1:20) #1:20
-pancreas.combined <- RunTSNE(pancreas.combined, reduction.use = "cca.aligned",
-dims.use = 1:20, do.fast = T)
-# Visualize the aligned datasets
-TSNEPlot(pancreas.combined, group.by = "species")
-# Perform joint clustering
-pancreas.combined <- FindClusters(pancreas.combined, reduction.type = "cca.aligned",
-dims.use = 1:20, save.SNN = T)
-# Visualize the clusters
-TSNEPlot(pancreas.combined) # Cómando seurat?
-# Finally, we can also plot the UMAP
-pancreas.combined <- RunUMAP(pancreas.combined, reduction.use = "cca", dims.use = 1:20)
-DimPlot(pancreas.combined , reduction.use = "umap", plot.title='UMAP (20 canonical
-components)', pt.size=0.3, do.label=TRUE, do.return = TRUE)
-```
 
 
 
@@ -199,12 +149,15 @@ components)', pt.size=0.3, do.label=TRUE, do.return = TRUE)
 
 
 <details>
-<summary> __Ejercicio 3.1: Las células pancreáticas Beta (β) produce insulina (¿¿y las alfa y las Delta??). Puedes Identificar dichas células β en el _dataset___ </summary>
+<summary> __Ejercicio 3.1: Las células pancreáticas Beta (β) produce insulina (¿¿y las alfa y las Delta??). Puedes Identificar dichas células β en el dataset__ </summary>
 
 
-Consulta la info de gen como __PDX1__ en _Genecards_ o similares, y luego la _Proteómic Tissue Expression Atlas_ o coom se llame
+Consulta la info de gen como __PDX1__ y __MAFA__ en _Genecards_ o similares, y luego la _Proteómic Tissue Expression Atlas_ o coom se llame
 
 Tip: Use gene marker, e.g. PDX1. 
+
+
+c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10")
 
 <br>
 
@@ -213,6 +166,39 @@ __Solución:__
 
 </details>
 
+
+
+
+
+
+
+
+
+<details>
+<summary> __Ejercicio 3.2: Can you identify gene markers that are unique in the cluster of Pancreatic β cells?__ </summary>
+
+<br>
+
+__Solución:__
+
+
+</details>
+
+
+
+
+
+
+
+<details>
+<summary> __Ejercicio 3.3: Can you identify genes that are differentially expressed between Pancreatic β cells and pancreatic α cells?__ </summary>
+
+<br>
+
+__Solución:__
+
+
+</details>
 
 
 
