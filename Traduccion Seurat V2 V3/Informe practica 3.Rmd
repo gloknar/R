@@ -29,14 +29,16 @@ knitr::opts_chunk$set(echo = TRUE,
 
 Integrar datasets en Seurat V2 era tedioso, pues había que ejecutar varias líneas de código para obtener los resultados deseados. La 3ª versión de Seurat simplificó enormemente el protocolo con la aparición de los comandos `FindIntegrationAnchors()` y `IntegrateData`, pues ejecutan automáticamente la retahíla de pasos necesarios en Seurat V2.
 
-Dicho esto, usaremos para este informe 2 datasets de scRNA-seq provenientes del trabajo de Butler _et al._ (2018). Los datasets en cuestión consisten en tejido pancreático de humano y de ratón, respectivamente. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.
+Dicho esto, usaremos para este informe 2 datasets de scRNA-seq provenientes del trabajo de [Butler _et al._](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6700744/) (2018). Los datasets en cuestión consisten en tejido pancreático de humano y de ratón, respectivamente. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.
 
 
-## 4.1 Carga de datos, normalización, escalado y CCA
+## 4.1 Carga y preprocesado de los datasets humano y murino
 
 Primero cargamos las matrices de conteos de los datasets de interés:
 
 ```{r}
+set.seed(1)
+
 human.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_human.expressionMatrix.txt", sep = "\t")
 
 mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_mouse.expressionMatrix.txt", sep = "\t")
@@ -45,11 +47,10 @@ mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 
 
 <br>
 
-A continuación creamos dos objetos `seurat` a partir de dichas matrices de conteos y añadimos a sus metadatos la columna `species`, donde se recoge la información sobre la especie de la que provienen los datos.
+A continuación creamos dos objetos `seurat` a partir de dichas matrices de conteos y añadimos a sus metadatos la columna `species`, donde se recoge la información sobre la especie de la que provienen los datos. Nótese que las matrices de conteo de Butler _et al._ ya tienen filtradas las células mal secuenciadas, por lo que podemos omitir el paso del filtrado de células.
 
-preprocesamos los datos como haríamos en un protocolo cualquiera, _i.e._ normalizamos y escalamos los datos.
+Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que todas esas funciones están integradas en el comando `FindIntegrationAnchors()`, no es necesario hacerlo ahora (dejaremos las funciones `ScaleData` y `FindVariableFeatures` comentadas). No obstante, y al menos en `Seurat 3.2`, el paso de normalización de dicha función no parece funcionar correctamente (normalizando previamente, encuentra 4303 anchors; sin normalizar, 3200 anchors), por lo que normalizaremos los datos en el siguiente chunk. 
 
-y detectamos genes diferencialmente expresados. Dado que las matrices de conteo de Butler _et al._ ya han filtrado las células mal secuenciadas, no tenemos que hacer ningún filtrado adicional.
 
 ```{r}
 library(Seurat)
@@ -61,7 +62,7 @@ library(Seurat)
 # Objeto seurat del dataset humano
 human <- CreateSeuratObject(counts = human.data)
 human@meta.data$species <- "human"
-# human <- NormalizeData(human)
+human <- NormalizeData(human)
 # human <- ScaleData(human)
 # human <- FindVariableFeatures(human, selection.method = "vst")
 
@@ -69,11 +70,16 @@ human@meta.data$species <- "human"
 # Objeto seurat del dataset murino
 mouse <- CreateSeuratObject(counts = mouse.data)
 mouse@meta.data$species <- "mouse"
-# mouse <- NormalizeData(mouse)
+mouse <- NormalizeData(mouse)
 # mouse <- ScaleData(mouse)
 # mouse <- FindVariableFeatures(mouse, selection.method = "vst")
 ```
 
+<br>
+
+***
+
+## Integración con CCA 
 
 Hecho eso, ahora obtenemos los genes diferencialmente expresados (DEGs o _Differentially Expressed Genes_) en humano, los DEGs de ratón y los agrupamos en un único objeto mediante el comando `union`.
 
@@ -162,6 +168,14 @@ c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10")
 <br>
 
 __Solución:__
+
+
+FeaturePlot(object = pancreas.combined, reduction.use='umap',features.plot = c("PDX1","MAFA"), min.cutof4.1.
+
+```{r, eval = F}
+FeaturePlot(object = pancreas.combined, reduction.use='umap',features.plot = c("PDX1","MAFA"), min.cutof)
+```
+
 
 
 </details>
