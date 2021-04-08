@@ -49,9 +49,9 @@ mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 
 
 A continuación creamos dos objetos `seurat` a partir de dichas matrices de conteos y añadimos a sus metadatos la columna `species`, donde se recoge la información sobre la especie de la que provienen los datos. Nótese que las matrices de conteo de Butler _et al._ ya tienen filtradas las células mal secuenciadas, por lo que podemos omitir el paso del filtrado de células.
 
-Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que todas esas funciones están integradas en el comando `FindIntegrationAnchors`, no es necesario hacerlo ahora (dejaremos las funciones `ScaleData` y `FindVariableFeatures` comentadas). No obstante, y al menos en `Seurat 3.2`, el paso de normalización de dicha función no parece funcionar correctamente*, por lo que normalizaremos los datos en el siguiente chunk. 
+Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que el comando `FindIntegrationAnchors` integra las funciones de escalado y detección de genes altamente variables, no es necesario hacerlo ahora (por tanto dejaremos las funciones `ScaleData` y `FindVariableFeatures` comentadas en el siguiente chunk).
 
-*Si normalizamos ambos datasets antes de integrarlos, el algoritmo encuentra 4303 células ancla o _anchors_; mientras que si omitimos dicho paso, `FindIntegrationAnchors` encuentra solo 3200 _anchors_. Téngase en cuenta que de acuerdo al paper de [Stuart _et al._, 2019](https://doi.org/10.1016/j.cell.2019.05.031 ), las células ancla son pares de células de distintos datasets que presentan perfiles de expresión génica similares y por tanto son vecinas mútuas o _mutual nearest neighbours_. 
+Téngase en cuenta que de acuerdo al paper de [Stuart _et al._, 2019](https://doi.org/10.1016/j.cell.2019.05.031 ), las células ancla o _anchors_ son pares de células de distintos datasets que presentan perfiles de expresión génica similares y por tanto son vecinas mutuas o _mutual nearest neighbours_. 
 
 ```{r}
 library(Seurat)
@@ -83,7 +83,7 @@ mouse <- NormalizeData(mouse)
 
 ## Integración con CCA 
 
-Con los datasets ya cargados, procedemos a integrarlos en un único objeto seurat denominado `pancreas.integrated`. Para integrar los datasets, usaremos el ya mencionado comando `FindIntegrationAnchors`, el cual acepta como input una lista nombrada de los objetos seurat a integrar. Si bien ya comentamos en el párrafo anterior, el paso de normalizado ejecutado por dicho comando no parece funcionar correctamente en `Seurat V3.2`, pero incluiremos el comando completo por si funcionase en versiones superiores de Seurat.
+Con los datasets ya cargados, procedemos a integrarlos en un único objeto seurat denominado `pancreas.integrated`. Para integrar los datasets, usaremos el ya mencionado comando `FindIntegrationAnchors`, el cual acepta como input una lista nombrada de los objetos seurat a integrar. Nótese que en el parámetro `normalization.method` hay que indicar el algoritmo empleado para el normalizado de los datos en el paso previo (este puede ser el método `LogNormalize` o el método `SCT`).
 
 La función `FindIntegrationAnchors` realiza una reducción de la dimensionalidad y busca en dicha proyección las _anchors_ de los datasets que se le pasen como input. Las técnicas de reducción de la dimensionalidad que incluye este comando son el CCA y el RPCA ( _Reciprocal PCA_). De acuerdo al [laboratorio Satija](https://satijalab.org/seurat/archive/v3.2/integration.html), el CCA es apto para integrar datasets de distintas especies, pero no es computacionalmente eficiente para datasets grandes, por lo que si se quiere integrar datasets grandes y de una misma especie, se recomienda usar en su lugar el RPCA.
 
@@ -92,7 +92,8 @@ La función `FindIntegrationAnchors` realiza una reducción de la dimensionalida
 pancreas.list <- list(human, mouse)
 names(pancreas.list) <- c("human", "mouse")
 
-# Buscamos las anchors de ambos datasets y realizamos el CCA
+# Buscamos las anchors de ambos datasets y realizamos el CCA con 20 componentes
+# canónicas
 pancreas.anchors <- FindIntegrationAnchors(object.list = pancreas.list, scale = T, 
                                            normalization.method = "LogNormalize", 
                                            reduction = "cca", 
@@ -105,66 +106,49 @@ pancreas.integrated <- IntegrateData(anchorset = pancreas.anchors,
                                      dims = 1:20)
 ```
 
-
-
-Ahora escalamos los datos, con la particularidad de que esta vez ajustamos para la covariable confusora "Especie", codificada en la columna `orig.ident` del bolsillo `objeto@meta.data`. Tras ello crearemos una columna en los metadatos con información sobre la especie de la que provienen los datos:
+Con los datasets ya integrados en un único objeto `seurat`, basta con escalar los datos y ya podemos emplear dicho objeto en nuestros protocolos de visualizado y clustering.
 
 ```{r}
+# Cargamos librerías gráficas
 library(ggplot2)
-library(cowplot)
-library(patchwork)
 
 
-# Run the standard workflow for visualization and clustering
+# Escalamos el dataset integrado para emplearlo en protocolos posteriores
 pancreas.integrated <- ScaleData(pancreas.integrated, verbose = T)
 
+
+# Con el dataset ya escalado, podemos calcular y visualizar las células en las
+# distintas proyecciones disponibles en Seurat
 pancreas.integrated <- RunPCA(pancreas.integrated, npcs = 20, verbose = T)
-
 pancreas.integrated <- RunTSNE(pancreas.integrated, reduction = "pca", dims = 1:20)
-
 pancreas.integrated <- RunUMAP(pancreas.integrated, reduction = "pca", dims = 1:20)
 
 
-# Visualizamos los datasets integrados
-DimPlot(pancreas.integrated, reduction = "pca", group.by = "species")
-DimPlot(pancreas.integrated, reduction = "tsne", group.by = "species")
-DimPlot(pancreas.integrated, reduction = "umap", group.by = "species")
+# Gráficos
+DimPlot(pancreas.integrated, reduction = "pca", group.by = "species") +
+  ggtitle("PCA (20 componentes canónicas)") + theme(plot.title = element_text(hjust = 0.5))
+
+DimPlot(pancreas.integrated, reduction = "tsne", group.by = "species") +
+  ggtitle("t-SNE (20 componentes canónicas)") + theme(plot.title = element_text(hjust = 0.5))
+
+DimPlot(pancreas.integrated, reduction = "umap", group.by = "species") +
+  ggtitle("UMAP (20 componentes canónicas)") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
-
-
-Ahora clusters:
+Ahora encontramos clusters de células como haríamos en un protocolo cualquiera de scRNA-seq. Dado que tenemos muchas células en el dataset integrado, y por motivos de eficiencia computacional, vamos a usar el método `igraph` en el comando `FindClusters` en lugar del método por defecto `matrix`:
 
 ```{r}
+# Encontramos clusters
 pancreas.integrated <- FindNeighbors(pancreas.integrated, dims = 1:20)
-pancreas.integrated <- FindClusters(pancreas.integrated, resolution = 1, method = "matrix", algorithm = 1)
+pancreas.integrated <- FindClusters(pancreas.integrated, resolution = 1, method = "igraph", algorithm = 1)
 
+# Visualizamos los clusters
+DimPlot(pancreas.integrated, reduction = "tsne", label = T, group.by = "seurat_clusters") +
+  ggtitle("t-SNE (20 componentes canónicas)") + theme(plot.title = element_text(hjust = 0.5))
 
-DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "species")
-DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "seurat_clusters")
-
-
-DimPlot(pancreas.integrated, reduction = "tsne", label = T, group.by = "species")
-DimPlot(pancreas.integrated, reduction = "tsne", label = T, group.by = "seurat_clusters")
+DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "seurat_clusters") +
+  ggtitle("UMAP (20 componentes canónicas)") + theme(plot.title = element_text(hjust = 0.5))
 ```
-
-
-Corremos el PCA para poder computar después la proyección t-SNE y acto seguido visualizarla:
-
-```{r, eval = F}
-
-library(ggplot2)
-DimPlot(pancreas.combined, group.by='species', reduction = "tsne", pt.size = NULL, label = T) + 
-  ggtitle("t-SNE") + theme(plot.title = element_text(hjust = 0.5))
-```
-
-
-
-
-
-
-
-
 
 
 <details>
@@ -194,8 +178,7 @@ FeaturePlot(object = pancreas.combined, reduction.use='umap',features.plot = c("
 </details>
 
 
-
-
+<br>
 
 
 
@@ -212,6 +195,7 @@ __Solución:__
 </details>
 
 
+<br>
 
 
 
