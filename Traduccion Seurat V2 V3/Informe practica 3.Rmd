@@ -85,12 +85,14 @@ mouse <- NormalizeData(mouse)
 
 Con los datasets ya cargados, procedemos a integrarlos en un único objeto seurat denominado `pancreas.integrated`. Para integrar los datasets, usaremos el ya mencionado comando `FindIntegrationAnchors`, el cual acepta como input una lista nombrada de los objetos seurat a integrar. Si bien ya comentamos en el párrafo anterior, el paso de normalizado ejecutado por dicho comando no parece funcionar correctamente en `Seurat V3.2`, pero incluiremos el comando completo por si funcionase en versiones superiores de Seurat.
 
+La función `FindIntegrationAnchors` realiza una reducción de la dimensionalidad y busca en dicha proyección las _anchors_ de los datasets que se le pasen como input. Las técnicas de reducción de la dimensionalidad que incluye este comando son el CCA y el RPCA ( _Reciprocal PCA_). De acuerdo al [laboratorio Satija](https://satijalab.org/seurat/archive/v3.2/integration.html), el CCA es apto para integrar datasets de distintas especies, pero no es computacionalmente eficiente para datasets grandes, por lo que si se quiere integrar datasets grandes y de una misma especie, se recomienda usar en su lugar el RPCA.
+
 ```{r}
-# Lista nombrada de objetos seurat
+# Lista nombrada de los objetos seurat a integrar
 pancreas.list <- list(human, mouse)
 names(pancreas.list) <- c("human", "mouse")
 
-# Buscamos anchors en ambos datasets y realizamos el CCA
+# Buscamos las anchors de ambos datasets y realizamos el CCA
 pancreas.anchors <- FindIntegrationAnchors(object.list = pancreas.list, scale = T, 
                                            normalization.method = "LogNormalize", 
                                            reduction = "cca", 
