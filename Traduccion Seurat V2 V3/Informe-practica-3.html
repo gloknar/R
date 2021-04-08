@@ -329,7 +329,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Informe práctica 3</h1>
 <h4 class="author">Adam Casas</h4>
-<h4 class="date">Compilado: 07 de abril del 2021</h4>
+<h4 class="date">Compilado: 08 de abril del 2021</h4>
 
 </div>
 
@@ -350,9 +350,7 @@ div.tocify {
 <p><br></p>
 <p>A continuación creamos dos objetos <code>seurat</code> a partir de dichas matrices de conteos y añadimos a sus metadatos la columna <code>species</code>, donde se recoge la información sobre la especie de la que provienen los datos. Nótese que las matrices de conteo de Butler <em>et al.</em> ya tienen filtradas las células mal secuenciadas, por lo que podemos omitir el paso del filtrado de células.</p>
 <p>Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que todas esas funciones están integradas en el comando <code>FindIntegrationAnchors</code>, no es necesario hacerlo ahora (dejaremos las funciones <code>ScaleData</code> y <code>FindVariableFeatures</code> comentadas). No obstante, y al menos en <code>Seurat 3.2</code>, el paso de normalización de dicha función no parece funcionar correctamente*, por lo que normalizaremos los datos en el siguiente chunk.</p>
-<ul>
-<li>(normalizando previamente, encuentra 4303 células ancla o <em>anchors</em>; sin normalizar, 3200 <em>anchors</em>; anchor = pairs of cells from each dataset that are contained within each other’s neighborhoods (also known as mutual nearest neighbors).). Mirar Stuart T, Butler A, et al. Comprehensive Integration of Single-Cell Data. Cell. 2019;177:1888-1902 <a href="https://doi.org/10.1016/j.cell.2019.05.031" class="uri">https://doi.org/10.1016/j.cell.2019.05.031</a></li>
-</ul>
+<p>*Si normalizamos ambos datasets antes de integrarlos, el algoritmo encuentra 4303 células ancla o <em>anchors</em>; mientras que si omitimos dicho paso, <code>FindIntegrationAnchors</code> encuentra solo 3200 <em>anchors</em>. Téngase en cuenta que de acuerdo al paper de <a href="https://doi.org/10.1016/j.cell.2019.05.031">Stuart <em>et al.</em>, 2019</a>, las células ancla son pares de células de distintos datasets que presentan perfiles de expresión génica similares y por tanto son vecinas mútuas o <em>mutual nearest neighbours</em>.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Seurat V3.2 no es compatible con la ultima version de spatstat (2.0-1). Puedes</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># instalar la versión previa con el siguiente comando:</span></span>
