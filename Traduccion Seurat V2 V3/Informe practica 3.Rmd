@@ -32,7 +32,7 @@ Integrar datasets en Seurat V2 era tedioso, pues había que ejecutar varias lín
 Dicho esto, usaremos para este informe 2 datasets de scRNA-seq provenientes del trabajo de [Butler _et al._](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6700744/) (2018). Los datasets en cuestión consisten en tejido pancreático de humano y de ratón, respectivamente. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.
 
 
-## 4.1 Carga y preprocesado de los datasets humano y murino
+## Carga y preprocesado de los datasets humano y murino
 
 Primero cargamos las matrices de conteos de los datasets de interés:
 
@@ -49,8 +49,9 @@ mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 
 
 A continuación creamos dos objetos `seurat` a partir de dichas matrices de conteos y añadimos a sus metadatos la columna `species`, donde se recoge la información sobre la especie de la que provienen los datos. Nótese que las matrices de conteo de Butler _et al._ ya tienen filtradas las células mal secuenciadas, por lo que podemos omitir el paso del filtrado de células.
 
-Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que todas esas funciones están integradas en el comando `FindIntegrationAnchors()`, no es necesario hacerlo ahora (dejaremos las funciones `ScaleData` y `FindVariableFeatures` comentadas). No obstante, y al menos en `Seurat 3.2`, el paso de normalización de dicha función no parece funcionar correctamente (normalizando previamente, encuentra 4303 anchors; sin normalizar, 3200 anchors), por lo que normalizaremos los datos en el siguiente chunk. 
+Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que todas esas funciones están integradas en el comando `FindIntegrationAnchors`, no es necesario hacerlo ahora (dejaremos las funciones `ScaleData` y `FindVariableFeatures` comentadas). No obstante, y al menos en `Seurat 3.2`, el paso de normalización de dicha función no parece funcionar correctamente*, por lo que normalizaremos los datos en el siguiente chunk. 
 
+*Si normalizamos ambos datasets antes de integrarlos, el algoritmo encuentra 4303 células ancla o _anchors_; mientras que si omitimos dicho paso, `FindIntegrationAnchors` encuentra solo 3200 _anchors_. Téngase en cuenta que de acuerdo al paper de [Stuart _et al._, 2019](https://doi.org/10.1016/j.cell.2019.05.031 ), las células ancla son pares de células de distintos datasets que presentan perfiles de expresión génica similares y por tanto son vecinas mútuas o _mutual nearest neighbours_. 
 
 ```{r}
 library(Seurat)
@@ -58,6 +59,7 @@ library(Seurat)
 # instalar la versión previa con el siguiente comando:
 #
 # devtools::install_version(package = "spatstat", version = "1.64-1")
+
 
 # Objeto seurat del dataset humano
 human <- CreateSeuratObject(counts = human.data)
@@ -81,15 +83,24 @@ mouse <- NormalizeData(mouse)
 
 ## Integración con CCA 
 
-Hecho eso, ahora obtenemos los genes diferencialmente expresados (DEGs o _Differentially Expressed Genes_) en humano, los DEGs de ratón y los agrupamos en un único objeto mediante el comando `union`.
+Con los datasets ya cargados, procedemos a integrarlos en un único objeto seurat denominado `pancreas.integrated`. Para integrar los datasets, usaremos el ya mencionado comando `FindIntegrationAnchors`, el cual acepta como input una lista nombrada de los objetos seurat a integrar. Si bien ya comentamos en el párrafo anterior, el paso de normalizado ejecutado por dicho comando no parece funcionar correctamente en `Seurat V3.2`, pero incluiremos el comando completo por si funcionase en versiones superiores de Seurat.
 
 ```{r}
+# Lista nombrada de objetos seurat
 pancreas.list <- list(human, mouse)
 names(pancreas.list) <- c("human", "mouse")
 
-pancreas.anchors <- FindIntegrationAnchors(object.list = pancreas.list, scale = T, normalization.method = "LogNormalize", reduction = "cca", dims = 1:20) # ya escalé los datos al crear los objetos seurat. TMB ejecuta FindVariableFeatures si no lo hiciste
+# Buscamos anchors en ambos datasets y realizamos el CCA
+pancreas.anchors <- FindIntegrationAnchors(object.list = pancreas.list, scale = T, 
+                                           normalization.method = "LogNormalize", 
+                                           reduction = "cca", 
+                                           dims = 1:20)
 
-pancreas.integrated <- IntegrateData(anchorset = pancreas.anchors, new.assay.name = "integrated", normalization.method = "LogNormalize", dims = 1:20)
+# Integramos ambos datasets en uno nuevo
+pancreas.integrated <- IntegrateData(anchorset = pancreas.anchors, 
+                                     new.assay.name = "integrated", 
+                                     normalization.method = "LogNormalize", 
+                                     dims = 1:20)
 ```
 
 

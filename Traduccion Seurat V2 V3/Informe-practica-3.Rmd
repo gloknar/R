@@ -1,0 +1,245 @@
+---
+title: "Informe práctica 3"
+author: "Adam Casas"
+date: 'Compilado: `r format(Sys.Date(), "%d de %B del %Y")`'
+output: 
+  html_document:
+    df_print: paged
+    highlight: kate
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+---
+
+```{r configuracion_inicial, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F,
+                      warning = F,
+                      tidy = F)
+##################################################
+#######        Encoded in UTF-8        ###########
+##################################################
+```
+
+***
+
+# Integración de datasets de distintas especies con Análisis de Correlación Canónica (CCA)
+
+
+Integrar datasets en Seurat V2 era tedioso, pues había que ejecutar varias líneas de código para obtener los resultados deseados. La 3ª versión de Seurat simplificó enormemente el protocolo con la aparición de los comandos `FindIntegrationAnchors()` y `IntegrateData`, pues ejecutan automáticamente la retahíla de pasos necesarios en Seurat V2.
+
+Dicho esto, usaremos para este informe 2 datasets de scRNA-seq provenientes del trabajo de [Butler _et al._](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6700744/) (2018). Los datasets en cuestión consisten en tejido pancreático de humano y de ratón, respectivamente. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.
+
+
+## Carga y preprocesado de los datasets humano y murino
+
+Primero cargamos las matrices de conteos de los datasets de interés:
+
+```{r}
+set.seed(1)
+
+human.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_human.expressionMatrix.txt", sep = "\t")
+
+mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_mouse.expressionMatrix.txt", sep = "\t")
+```
+
+
+<br>
+
+A continuación creamos dos objetos `seurat` a partir de dichas matrices de conteos y añadimos a sus metadatos la columna `species`, donde se recoge la información sobre la especie de la que provienen los datos. Nótese que las matrices de conteo de Butler _et al._ ya tienen filtradas las células mal secuenciadas, por lo que podemos omitir el paso del filtrado de células.
+
+Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que todas esas funciones están integradas en el comando `FindIntegrationAnchors`, no es necesario hacerlo ahora (dejaremos las funciones `ScaleData` y `FindVariableFeatures` comentadas). No obstante, y al menos en `Seurat 3.2`, el paso de normalización de dicha función no parece funcionar correctamente*, por lo que normalizaremos los datos en el siguiente chunk. 
+
+*Si normalizamos ambos datasets antes de integrarlos, el algoritmo encuentra 4303 células ancla o _anchors_; mientras que si omitimos dicho paso, `FindIntegrationAnchors` encuentra solo 3200 _anchors_. Téngase en cuenta que de acuerdo al paper de [Stuart _et al._, 2019](https://doi.org/10.1016/j.cell.2019.05.031 ), las células ancla son pares de células de distintos datasets que presentan perfiles de expresión génica similares y por tanto son vecinas mútuas o _mutual nearest neighbours_. 
+
+```{r}
+library(Seurat)
+# Seurat V3.2 no es compatible con la ultima version de spatstat (2.0-1). Puedes
+# instalar la versión previa con el siguiente comando:
+#
+# devtools::install_version(package = "spatstat", version = "1.64-1")
+
+
+# Objeto seurat del dataset humano
+human <- CreateSeuratObject(counts = human.data)
+human@meta.data$species <- "human"
+human <- NormalizeData(human)
+# human <- ScaleData(human)
+# human <- FindVariableFeatures(human, selection.method = "vst")
+
+
+# Objeto seurat del dataset murino
+mouse <- CreateSeuratObject(counts = mouse.data)
+mouse@meta.data$species <- "mouse"
+mouse <- NormalizeData(mouse)
+# mouse <- ScaleData(mouse)
+# mouse <- FindVariableFeatures(mouse, selection.method = "vst")
+```
+
+<br>
+
+***
+
+## Integración con CCA 
+
+Con los datasets ya cargados, procedemos a integrarlos en un único objeto seurat denominado `pancreas.integrated`. Para integrar los datasets, usaremos el ya mencionado comando `FindIntegrationAnchors`, el cual acepta como input una lista nombrada de los objetos seurat a integrar. Si bien ya comentamos en el párrafo anterior, el paso de normalizado ejecutado por dicho comando no parece funcionar correctamente en `Seurat V3.2`, pero incluiremos el comando completo por si funcionase en versiones superiores de Seurat.
+
+```{r}
+# Lista nombrada de objetos seurat
+pancreas.list <- list(human, mouse)
+names(pancreas.list) <- c("human", "mouse")
+
+# Buscamos anchors en ambos datasets y realizamos el CCA
+pancreas.anchors <- FindIntegrationAnchors(object.list = pancreas.list, scale = T, 
+                                           normalization.method = "LogNormalize", 
+                                           reduction = "cca", 
+                                           dims = 1:20)
+
+# Integramos ambos datasets en uno nuevo
+pancreas.integrated <- IntegrateData(anchorset = pancreas.anchors, 
+                                     new.assay.name = "integrated", 
+                                     normalization.method = "LogNormalize", 
+                                     dims = 1:20)
+```
+
+
+
+Ahora escalamos los datos, con la particularidad de que esta vez ajustamos para la covariable confusora "Especie", codificada en la columna `orig.ident` del bolsillo `objeto@meta.data`. Tras ello crearemos una columna en los metadatos con información sobre la especie de la que provienen los datos:
+
+```{r}
+library(ggplot2)
+library(cowplot)
+library(patchwork)
+
+
+# Run the standard workflow for visualization and clustering
+pancreas.integrated <- ScaleData(pancreas.integrated, verbose = T)
+
+pancreas.integrated <- RunPCA(pancreas.integrated, npcs = 20, verbose = T)
+
+pancreas.integrated <- RunTSNE(pancreas.integrated, reduction = "pca", dims = 1:20)
+
+pancreas.integrated <- RunUMAP(pancreas.integrated, reduction = "pca", dims = 1:20)
+
+
+# Visualizamos los datasets integrados
+DimPlot(pancreas.integrated, reduction = "pca", group.by = "species")
+DimPlot(pancreas.integrated, reduction = "tsne", group.by = "species")
+DimPlot(pancreas.integrated, reduction = "umap", group.by = "species")
+```
+
+
+
+Ahora clusters:
+
+```{r}
+pancreas.integrated <- FindNeighbors(pancreas.integrated, dims = 1:20)
+pancreas.integrated <- FindClusters(pancreas.integrated, resolution = 1, method = "matrix", algorithm = 1)
+
+
+DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "species")
+DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "seurat_clusters")
+
+
+DimPlot(pancreas.integrated, reduction = "tsne", label = T, group.by = "species")
+DimPlot(pancreas.integrated, reduction = "tsne", label = T, group.by = "seurat_clusters")
+```
+
+
+Corremos el PCA para poder computar después la proyección t-SNE y acto seguido visualizarla:
+
+```{r, eval = F}
+
+library(ggplot2)
+DimPlot(pancreas.combined, group.by='species', reduction = "tsne", pt.size = NULL, label = T) + 
+  ggtitle("t-SNE") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+
+
+
+
+
+
+
+<details>
+<summary> __Ejercicio 3.1: Las células pancreáticas Beta (β) produce insulina (¿¿y las alfa y las Delta??). Puedes Identificar dichas células β en el dataset__ </summary>
+
+
+Consulta la info de gen como __PDX1__ y __MAFA__ en _Genecards_ o similares, y luego la _Proteómic Tissue Expression Atlas_ o coom se llame
+
+Tip: Use gene marker, e.g. PDX1. 
+
+
+c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10")
+
+<br>
+
+__Solución:__
+
+
+FeaturePlot(object = pancreas.combined, reduction.use='umap',features.plot = c("PDX1","MAFA"), min.cutof4.1.
+
+```{r, eval = F}
+FeaturePlot(object = pancreas.combined, reduction.use='umap',features.plot = c("PDX1","MAFA"), min.cutof)
+```
+
+
+
+</details>
+
+
+
+
+
+
+
+
+
+<details>
+<summary> __Ejercicio 3.2: Can you identify gene markers that are unique in the cluster of Pancreatic β cells?__ </summary>
+
+<br>
+
+__Solución:__
+
+
+</details>
+
+
+
+
+
+
+
+<details>
+<summary> __Ejercicio 3.3: Can you identify genes that are differentially expressed between Pancreatic β cells and pancreatic α cells?__ </summary>
+
+<br>
+
+__Solución:__
+
+
+</details>
+
+
+
+
+<br>
+
+***
+
+# sessionInfo()
+
+<details>
+
+<summary> Click para mostrar </summary>
+
+```{r, echo = F}
+sessionInfo()
+```
+
+</details>

@@ -339,8 +339,8 @@ div.tocify {
 <h1 number="1"><span class="header-section-number">1</span> Integración de datasets de distintas especies con Análisis de Correlación Canónica (CCA)</h1>
 <p>Integrar datasets en Seurat V2 era tedioso, pues había que ejecutar varias líneas de código para obtener los resultados deseados. La 3ª versión de Seurat simplificó enormemente el protocolo con la aparición de los comandos <code>FindIntegrationAnchors()</code> y <code>IntegrateData</code>, pues ejecutan automáticamente la retahíla de pasos necesarios en Seurat V2.</p>
 <p>Dicho esto, usaremos para este informe 2 datasets de scRNA-seq provenientes del trabajo de <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6700744/">Butler <em>et al.</em></a> (2018). Los datasets en cuestión consisten en tejido pancreático de humano y de ratón, respectivamente. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.</p>
-<div id="carga-de-datos-normalización-escalado-y-cca" class="section level2" number="1.1">
-<h2 number="1.1"><span class="header-section-number">1.1</span> 4.1 Carga de datos, normalización, escalado y CCA</h2>
+<div id="carga-y-preprocesado-de-los-datasets-humano-y-murino" class="section level2" number="1.1">
+<h2 number="1.1"><span class="header-section-number">1.1</span> Carga y preprocesado de los datasets humano y murino</h2>
 <p>Primero cargamos las matrices de conteos de los datasets de interés:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -349,34 +349,52 @@ div.tocify {
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>mouse.data <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="st">&quot;./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_mouse.expressionMatrix.txt&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\t</span><span class="st">&quot;</span>)</span></code></pre></div>
 <p><br></p>
 <p>A continuación creamos dos objetos <code>seurat</code> a partir de dichas matrices de conteos y añadimos a sus metadatos la columna <code>species</code>, donde se recoge la información sobre la especie de la que provienen los datos. Nótese que las matrices de conteo de Butler <em>et al.</em> ya tienen filtradas las células mal secuenciadas, por lo que podemos omitir el paso del filtrado de células.</p>
-<p>Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que todas esas funciones están integradas en el comando <code>FindIntegrationAnchors()</code>, no es necesario hacerlo ahora (dejaremos las funciones <code>ScaleData</code> y <code>FindVariableFeatures</code> comentadas). No obstante, y al menos en <code>Seurat 3.2</code>, el paso de normalización de dicha función no parece funcionar correctamente (normalizando previamente, encuentra 4303 anchors; sin normalizar, 3200 anchors), por lo que normalizaremos los datos en el siguiente chunk.</p>
+<p>Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que todas esas funciones están integradas en el comando <code>FindIntegrationAnchors</code>, no es necesario hacerlo ahora (dejaremos las funciones <code>ScaleData</code> y <code>FindVariableFeatures</code> comentadas). No obstante, y al menos en <code>Seurat 3.2</code>, el paso de normalización de dicha función no parece funcionar correctamente*, por lo que normalizaremos los datos en el siguiente chunk.</p>
+<ul>
+<li>(normalizando previamente, encuentra 4303 células ancla o <em>anchors</em>; sin normalizar, 3200 <em>anchors</em>; anchor = pairs of cells from each dataset that are contained within each other’s neighborhoods (also known as mutual nearest neighbors).). Mirar Stuart T, Butler A, et al. Comprehensive Integration of Single-Cell Data. Cell. 2019;177:1888-1902 <a href="https://doi.org/10.1016/j.cell.2019.05.031" class="uri">https://doi.org/10.1016/j.cell.2019.05.031</a></li>
+</ul>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Seurat V3.2 no es compatible con la ultima version de spatstat (2.0-1). Puedes</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># instalar la versión previa con el siguiente comando:</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># devtools::install_version(package = &quot;spatstat&quot;, version = &quot;1.64-1&quot;)</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Objeto seurat del dataset humano</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>human <span class="ot">&lt;-</span> <span class="fu">CreateSeuratObject</span>(<span class="at">counts =</span> human.data)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>human<span class="sc">@</span>meta.data<span class="sc">$</span>species <span class="ot">&lt;-</span> <span class="st">&quot;human&quot;</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>human <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(human)</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># human &lt;- ScaleData(human)</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># human &lt;- FindVariableFeatures(human, selection.method = &quot;vst&quot;)</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Objeto seurat del dataset humano</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>human <span class="ot">&lt;-</span> <span class="fu">CreateSeuratObject</span>(<span class="at">counts =</span> human.data)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>human<span class="sc">@</span>meta.data<span class="sc">$</span>species <span class="ot">&lt;-</span> <span class="st">&quot;human&quot;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>human <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(human)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># human &lt;- ScaleData(human)</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># human &lt;- FindVariableFeatures(human, selection.method = &quot;vst&quot;)</span></span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Objeto seurat del dataset murino</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>mouse <span class="ot">&lt;-</span> <span class="fu">CreateSeuratObject</span>(<span class="at">counts =</span> mouse.data)</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>mouse<span class="sc">@</span>meta.data<span class="sc">$</span>species <span class="ot">&lt;-</span> <span class="st">&quot;mouse&quot;</span></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>mouse <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(mouse)</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># mouse &lt;- ScaleData(mouse)</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># mouse &lt;- FindVariableFeatures(mouse, selection.method = &quot;vst&quot;)</span></span></code></pre></div>
-<p>Hecho eso, ahora obtenemos los genes diferencialmente expresados (DEGs o <em>Differentially Expressed Genes</em>) en humano, los DEGs de ratón y los agrupamos en un único objeto mediante el comando <code>union</code>.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>pancreas.list <span class="ot">&lt;-</span> <span class="fu">list</span>(human, mouse)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(pancreas.list) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;human&quot;</span>, <span class="st">&quot;mouse&quot;</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>pancreas.anchors <span class="ot">&lt;-</span> <span class="fu">FindIntegrationAnchors</span>(<span class="at">object.list =</span> pancreas.list, <span class="at">scale =</span> T, <span class="at">normalization.method =</span> <span class="st">&quot;LogNormalize&quot;</span>, <span class="at">reduction =</span> <span class="st">&quot;cca&quot;</span>, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>) <span class="co"># ya escalé los datos al crear los objetos seurat. TMB ejecuta FindVariableFeatures si no lo hiciste</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>pancreas.integrated <span class="ot">&lt;-</span> <span class="fu">IntegrateData</span>(<span class="at">anchorset =</span> pancreas.anchors, <span class="at">new.assay.name =</span> <span class="st">&quot;integrated&quot;</span>, <span class="at">normalization.method =</span> <span class="st">&quot;LogNormalize&quot;</span>, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>)</span></code></pre></div>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Objeto seurat del dataset murino</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>mouse <span class="ot">&lt;-</span> <span class="fu">CreateSeuratObject</span>(<span class="at">counts =</span> mouse.data)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>mouse<span class="sc">@</span>meta.data<span class="sc">$</span>species <span class="ot">&lt;-</span> <span class="st">&quot;mouse&quot;</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>mouse <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(mouse)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># mouse &lt;- ScaleData(mouse)</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># mouse &lt;- FindVariableFeatures(mouse, selection.method = &quot;vst&quot;)</span></span></code></pre></div>
+<p><br></p>
+<hr />
+</div>
+<div id="integración-con-cca" class="section level2" number="1.2">
+<h2 number="1.2"><span class="header-section-number">1.2</span> Integración con CCA</h2>
+<p>Con los datasets ya cargados, procedemos a integrarlos en un único objeto seurat denominado <code>pancreas.integrated</code>. Para integrar los datasets, usaremos el ya mencionado comando <code>FindIntegrationAnchors</code>, el cual acepta como input una lista nombrada de los objetos seurat a integrar. Si bien ya comentamos en el párrafo anterior, el paso de normalizado ejecutado por dicho comando no parece funcionar correctamente en <code>Seurat V3.2</code>, pero incluiremos el comando completo por si funcionase en versiones superiores de Seurat.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Lista nombrada de objetos seurat</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>pancreas.list <span class="ot">&lt;-</span> <span class="fu">list</span>(human, mouse)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(pancreas.list) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;human&quot;</span>, <span class="st">&quot;mouse&quot;</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Buscamos anchors en ambos datasets y realizamos el CCA</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>pancreas.anchors <span class="ot">&lt;-</span> <span class="fu">FindIntegrationAnchors</span>(<span class="at">object.list =</span> pancreas.list, <span class="at">scale =</span> T, </span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">normalization.method =</span> <span class="st">&quot;LogNormalize&quot;</span>, </span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">reduction =</span> <span class="st">&quot;cca&quot;</span>, </span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Integramos ambos datasets en uno nuevo</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>pancreas.integrated <span class="ot">&lt;-</span> <span class="fu">IntegrateData</span>(<span class="at">anchorset =</span> pancreas.anchors, </span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">new.assay.name =</span> <span class="st">&quot;integrated&quot;</span>, </span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">normalization.method =</span> <span class="st">&quot;LogNormalize&quot;</span>, </span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>)</span></code></pre></div>
 <p>Ahora escalamos los datos, con la particularidad de que esta vez ajustamos para la covariable confusora “Especie”, codificada en la columna <code>orig.ident</code> del bolsillo <code>objeto@meta.data</code>. Tras ello crearemos una columna en los metadatos con información sobre la especie de la que provienen los datos:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(cowplot)</span>
