@@ -32,7 +32,7 @@ Integrar datasets en Seurat V2 era tedioso, pues había que ejecutar varias lín
 Dicho esto, usaremos para este informe 2 datasets de scRNA-seq provenientes del trabajo de [Butler _et al._](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6700744/) (2018). Los datasets en cuestión consisten en tejido pancreático de humano y de ratón, respectivamente. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.
 
 
-## Carga y preprocesado de los datasets humano y murino
+# Carga y preprocesado de los datasets humano y murino
 
 Primero cargamos las matrices de conteos de los datasets de interés:
 
@@ -49,7 +49,7 @@ mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 
 
 A continuación creamos dos objetos `seurat` a partir de dichas matrices de conteos y añadimos a sus metadatos la columna `species`, donde se recoge la información sobre la especie de la que provienen los datos. Nótese que las matrices de conteo de Butler _et al._ ya tienen filtradas las células mal secuenciadas, por lo que podemos omitir el paso del filtrado de células.
 
-Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que el comando `FindIntegrationAnchors` integra las funciones de escalado y detección de genes altamente variables, no es necesario hacerlo ahora (por tanto dejaremos las funciones `ScaleData` y `FindVariableFeatures` comentadas en el siguiente chunk).
+Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que el comando `FindIntegrationAnchors` integra las funciones de escalado y detección de genes altamente variables, no es necesario hacerlo ahora, aunque sería una buena práctica hacerlo (por tanto dejaremos las funciones `ScaleData` y `FindVariableFeatures` comentadas en el siguiente chunk).
 
 Téngase en cuenta que de acuerdo al paper de [Stuart _et al._, 2019](https://doi.org/10.1016/j.cell.2019.05.031 ), las células ancla o _anchors_ son pares de células de distintos datasets que presentan perfiles de expresión génica similares y por tanto son vecinas mutuas o _mutual nearest neighbours_. 
 
@@ -81,7 +81,7 @@ mouse <- NormalizeData(mouse)
 
 ***
 
-## Integración con CCA 
+# Integración con CCA 
 
 Con los datasets ya cargados, procedemos a integrarlos en un único objeto seurat denominado `pancreas.integrated`. Para integrar los datasets, usaremos el ya mencionado comando `FindIntegrationAnchors`, el cual acepta como input una lista nombrada de los objetos seurat a integrar. Nótese que en el parámetro `normalization.method` hay que indicar el algoritmo empleado para el normalizado de los datos en el paso previo (este puede ser el método `LogNormalize` o el método `SCT`).
 
@@ -135,6 +135,8 @@ DimPlot(pancreas.integrated, reduction = "umap", group.by = "species") +
   ggtitle("UMAP (20 componentes canónicas)") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
+# Clustering
+
 Ahora encontramos clusters de células como haríamos en un protocolo cualquiera de scRNA-seq. Dado que tenemos muchas células en el dataset integrado, y por motivos de eficiencia computacional, vamos a usar el método `igraph` en el comando `FindClusters` en lugar del método por defecto `matrix`:
 
 ```{r}
@@ -162,15 +164,40 @@ Tip: Use gene marker, e.g. PDX1.
 
 c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10")
 
+
+
 <br>
 
 __Solución:__
 
 
-FeaturePlot(object = pancreas.combined, reduction.use='umap',features.plot = c("PDX1","MAFA"), min.cutof4.1.
 
-```{r, eval = F}
-FeaturePlot(object = pancreas.combined, reduction.use='umap',features.plot = c("PDX1","MAFA"), min.cutof)
+```{r}
+# Seurat V2 usa los parámetros `reduction.use`, `features.plot` y `cols.use`;
+# Seurat V3 usa los parámetros `reduction`, `features` y `cols`, respectivamente
+
+FeaturePlot(pancreas.integrated, reduction ='umap', features = c("PDX1","MAFA"), 
+            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
+
+
+
+FeaturePlot(pancreas.integrated, reduction ='umap', features = c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10"), 
+            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
+```
+
+
+
+Ahora podemos comparar con las células $\beta$ del paper
+
+```{r}
+# The exact tSNE and clusters can vary slightly, below we load in the output from the manuscript
+pancreas.metadata <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/Supplementary_Table_PancreasCellData.tsv", sep = "\t", skip = 2, header = T, row.names = 1)
+
+pancreas.integrated <- AddMetaData(pancreas.integrated, metadata = pancreas.metadata)
+
+
+DimPlot(pancreas.integrated, group.by = "Cluster_ID", label = T, reduction = "tsne")
+DimPlot(pancreas.integrated, group.by = "Cluster_ID", label = T, reduction = "umap", pt.size = 0.3)
 ```
 
 
