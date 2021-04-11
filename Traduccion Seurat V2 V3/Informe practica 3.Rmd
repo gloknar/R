@@ -200,6 +200,12 @@ DimPlot(pancreas.integrated, group.by = "Cluster_ID", label = T, reduction = "ts
 DimPlot(pancreas.integrated, group.by = "Cluster_ID", label = T, reduction = "umap", pt.size = 0.3)
 ```
 
+```{r}
+cluster5.markers <- FindMarkers(pancreas.integrated, ident.1 = 5, min.pct = 0.25, only.pos = T)
+head(cluster5.markers)
+cluster5.markers
+which(rownames(cluster5.markers) == "PDX1")
+```
 
 
 </details>
