@@ -154,7 +154,7 @@ DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "seurat_c
 
 
 <details>
-<summary> __Ejercicio 3.1: Las células pancreáticas Beta (β) produce insulina (¿¿y las alfa y las Delta??). Puedes Identificar dichas células β en el dataset__ </summary>
+<summary> __Ejercicio 3.1: Las células β de los islotes de Langerhans producen insulina (¿¿y las alfa y las Delta??). ¿Puedes identificar dichas células en el dataset?__ </summary>
 
 
 Consulta la info de gen como __PDX1__ y __MAFA__ en _Genecards_ o similares, y luego la _Proteómic Tissue Expression Atlas_ o coom se llame
@@ -163,6 +163,10 @@ Tip: Use gene marker, e.g. PDX1.
 
 
 c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10")
+
+
+> nota: PDX1 es un gen arquitecto para la producción del páncreas, pero me interesa buscar el gen de la insulina (INS), que es carcaterístico de las células $\beta$ . Sinónimos de INS son IDDM2, ILPR, INS_HUMAN, IRDN y MODY10
+
 
 
 
@@ -175,6 +179,9 @@ __Solución:__
 ```{r}
 # Seurat V2 usa los parámetros `reduction.use`, `features.plot` y `cols.use`;
 # Seurat V3 usa los parámetros `reduction`, `features` y `cols`, respectivamente
+
+FeaturePlot(pancreas.integrated, reduction ='umap', features = c("PDX1","INS2"), 
+            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
 
 FeaturePlot(pancreas.integrated, reduction ='umap', features = c("PDX1","MAFA"), 
             min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
