@@ -157,44 +157,43 @@ DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "seurat_c
 <summary> __Ejercicio 3.1: Las células β de los islotes de Langerhans producen insulina (¿¿y las alfa y las Delta??). ¿Puedes identificar dichas células en el dataset?__ </summary>
 
 
-Consulta la info de gen como __PDX1__ y __MAFA__ en _Genecards_ o similares, y luego la _Proteómic Tissue Expression Atlas_ o coom se llame
-
-Tip: Use gene marker, e.g. PDX1. 
-
-
-c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10")
-
-
-> nota: PDX1 es un gen arquitecto para la producción del páncreas, pero me interesa buscar el gen de la insulina (INS), que es carcaterístico de las células $\beta$ . Sinónimos de INS son IDDM2, ILPR, INS_HUMAN, IRDN y MODY10
-
-
-
-
 <br>
 
 __Solución:__
 
 
+Pedro Madrigal nos recomienda aquí buscar aquellas células que expresan el gen arquitecto [PDX1](https://www.genecards.org/cgi-bin/carddisp.pl?gene=PDX1#function), el cual codifica para un factor de transcripción de los genes de la insulina y la somatostatina (entre otros) y que participa en la organogénesis del páncreas. No obstante, si en su lugar buscamos el propio gen de la insulina, __INS__, podremos mejorar la resolución del gráfico (pues es específico de las células $\beta$ y se expresa en mayor cantidad que PDX1, pues los genes que codifican para factores de transcripción suelen tener niveles bajos de expresión).
+
+
 
 ```{r}
+# Nota sobre `FeaturePlot`:
 # Seurat V2 usa los parámetros `reduction.use`, `features.plot` y `cols.use`;
 # Seurat V3 usa los parámetros `reduction`, `features` y `cols`, respectivamente
 
-FeaturePlot(pancreas.integrated, reduction ='umap', features = c("PDX1","INS2"), 
-            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
 
-FeaturePlot(pancreas.integrated, reduction ='umap', features = c("PDX1","MAFA"), 
-            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
+# Usamos el factor de transcripción PDX1. Al ser un TF, usamos un "min.cutoff"
+# pequeño:
+FeaturePlot(pancreas.integrated, reduction ='umap', features = "PDX1", 
+            min.cutoff = "q10", cols = c("lightgrey", "blue"), pt.size = 0.5)
 
 
+# Usamos la insulina. Al tener mayor expresión que un TF, usamos un "min.cutoff"
+# mayor:
+FeaturePlot(pancreas.integrated, reduction ='umap', features = "INS2", 
+            min.cutoff = "q60", cols = c("lightgrey", "blue"), pt.size = 0.5)
 
-FeaturePlot(pancreas.integrated, reduction ='umap', features = c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10"), 
-            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
+
+# Adicionalmente, podemos usar el factor de transcripción expecífico de células
+# Beta MAFA:
+FeaturePlot(pancreas.integrated, reduction ='umap', features = c("INS2"), 
+            min.cutoff = "q10", cols = c("lightgrey", "blue"), pt.size = 0.5, 
+            split.by = "species")
 ```
 
 
+En vista de los resultados obtenidos, parece ser que las células de los clusters 2, 5, 7, 8 y 10 (grupo de la derecha) corresponden a las células pancreáticas $\beta$. Podemos validar estos resultados con los metadatos proporcionados por el estudio original:
 
-Ahora podemos comparar con las células $\beta$ del paper
 
 ```{r}
 # The exact tSNE and clusters can vary slightly, below we load in the output from the manuscript
@@ -221,6 +220,14 @@ which(rownames(cluster5.markers) == "PDX1")
 <br>
 
 
+
+
+
+
+```{r, eval = F}
+FeaturePlot(pancreas.integrated, reduction ='umap', features = c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10"), 
+            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
+```
 
 
 
