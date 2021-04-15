@@ -32,6 +32,10 @@ Integrar datasets en Seurat V2 era tedioso, pues había que ejecutar varias lín
 Dicho esto, usaremos para este informe 2 datasets de scRNA-seq provenientes del trabajo de [Butler _et al._](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6700744/) (2018). Los datasets en cuestión consisten en tejido pancreático de humano y de ratón, respectivamente. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.
 
 
+<br>
+
+***
+
 # Carga y preprocesado de los datasets humano y murino
 
 Primero cargamos las matrices de conteos de los datasets de interés:
@@ -135,6 +139,10 @@ DimPlot(pancreas.integrated, reduction = "umap", group.by = "species") +
   ggtitle("UMAP (20 componentes canónicas)") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
+<br>
+
+***
+
 # Clustering
 
 Ahora encontramos clusters de células como haríamos en un protocolo cualquiera de scRNA-seq. Dado que tenemos muchas células en el dataset integrado, y por motivos de eficiencia computacional, vamos a usar el método `igraph` en el comando `FindClusters` en lugar del método por defecto `matrix`:
@@ -151,6 +159,12 @@ DimPlot(pancreas.integrated, reduction = "tsne", label = T, group.by = "seurat_c
 DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "seurat_clusters") +
   ggtitle("UMAP (20 componentes canónicas)") + theme(plot.title = element_text(hjust = 0.5))
 ```
+
+<br>
+
+***
+
+# Ejercicios
 
 
 <details>
@@ -182,18 +196,21 @@ FeaturePlot(pancreas.integrated, reduction ='umap', features = "PDX1",
 # mayor:
 FeaturePlot(pancreas.integrated, reduction ='umap', features = "INS2", 
             min.cutoff = "q60", cols = c("lightgrey", "blue"), pt.size = 0.5)
+```
 
 
+```{r, fig.width = 8}
 # Adicionalmente, podemos usar el factor de transcripción expecífico de células
-# Beta MAFA:
+# beta MAFA:
 FeaturePlot(pancreas.integrated, reduction ='umap', features = c("INS2"), 
             min.cutoff = "q10", cols = c("lightgrey", "blue"), pt.size = 0.5, 
             split.by = "species")
 ```
 
 
-En vista de los resultados obtenidos, parece ser que las células de los clusters 2, 5, 7, 8 y 10 (grupo de la derecha) corresponden a las células pancreáticas $\beta$. Podemos validar estos resultados con los metadatos proporcionados por el estudio original:
+<br>
 
+En vista de los resultados obtenidos, parece ser que las células de los clusters 2, 5, 7, 8 y 10 (grupo central derecho en la proyección del UMAP) corresponden a las células pancreáticas $\beta$. Podemos validar estas conclusiones con los metadatos proporcionados por el estudio original:
 
 ```{r}
 # The exact tSNE and clusters can vary slightly, below we load in the output from the manuscript
@@ -224,19 +241,23 @@ which(rownames(cluster5.markers) == "PDX1")
 
 
 
-```{r, eval = F}
-FeaturePlot(pancreas.integrated, reduction ='umap', features = c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10"), 
-            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
-```
-
-
-
 <details>
 <summary> __Ejercicio 3.2: Can you identify gene markers that are unique in the cluster of Pancreatic β cells?__ </summary>
 
 <br>
 
 __Solución:__
+
+
+
+
+
+
+```{r, eval = F}
+FeaturePlot(pancreas.integrated, reduction ='umap', features = c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10"), 
+            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
+```
+
 
 
 </details>
