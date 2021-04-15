@@ -176,7 +176,9 @@ DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "seurat_c
 __Solución:__
 
 
-Pedro Madrigal nos recomienda aquí buscar aquellas células que expresan el gen arquitecto [PDX1](https://www.genecards.org/cgi-bin/carddisp.pl?gene=PDX1#function), el cual codifica para un factor de transcripción de los genes de la insulina y la somatostatina (entre otros) y que participa en la organogénesis del páncreas. No obstante, si en su lugar buscamos el propio gen de la insulina, __INS__, podremos mejorar la resolución del gráfico (pues es específico de las células $\beta$ y se expresa en mayor cantidad que PDX1, pues los genes que codifican para factores de transcripción suelen tener niveles bajos de expresión).
+Pedro Madrigal nos recomienda aquí buscar aquellas células que expresan el gen arquitecto [PDX1](https://www.genecards.org/cgi-bin/carddisp.pl?gene=PDX1#function), el cual codifica para un factor de transcripción de los genes de la insulina y la somatostatina (entre otros) y que participa en la organogénesis del páncreas. 
+
+No obstante, si en su lugar buscamos el propio gen de la insulina, __INS__, podremos mejorar la resolución del gráfico (pues es específico de las células $\beta$ y se expresa en mayor cantidad que PDX1, pues los genes que codifican para factores de transcripción suelen tener niveles bajos de expresión).
 
 
 
@@ -223,12 +225,6 @@ DimPlot(pancreas.integrated, group.by = "Cluster_ID", label = T, reduction = "ts
 DimPlot(pancreas.integrated, group.by = "Cluster_ID", label = T, reduction = "umap", pt.size = 0.3)
 ```
 
-```{r}
-cluster5.markers <- FindMarkers(pancreas.integrated, ident.1 = 5, min.pct = 0.25, only.pos = T)
-head(cluster5.markers)
-cluster5.markers
-which(rownames(cluster5.markers) == "PDX1")
-```
 
 
 </details>
@@ -242,14 +238,19 @@ which(rownames(cluster5.markers) == "PDX1")
 
 
 <details>
-<summary> __Ejercicio 3.2: Can you identify gene markers that are unique in the cluster of Pancreatic β cells?__ </summary>
+<summary> __Ejercicio 3.2: ¿Puedes identificar genes marcadores específicos de las células pancreáticas β?__ </summary>
 
 <br>
 
 __Solución:__
 
 
-
+```{r}
+cluster5.markers <- FindMarkers(pancreas.integrated, ident.1 = 5, min.pct = 0.25, only.pos = T)
+head(cluster5.markers)
+cluster5.markers
+which(rownames(cluster5.markers) == "PDX1")
+```
 
 
 
