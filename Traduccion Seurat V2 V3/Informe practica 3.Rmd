@@ -254,20 +254,37 @@ En vista de la verdad empírica, confirmamos que hemos identificado en nuestro a
 __Solución:__
 
 
+Ahora que sabemos que los clusters 1 y 2 se corresponden con dichas células, podemos usar la función `FindMarkers` para detectar sus biomarcadores específicos.
+
 ```{r}
-cluster.beta.markers <- FindMarkers(pancreas.integrated, ident.1 = c(1,2), min.pct = 0.25, only.pos = T)
-head(cluster.beta.markers)
-cluster.beta.markers
-which(rownames(cluster.beta.markers) == "PDX1")
+cluster.beta.markers.integrated <- FindMarkers(pancreas.integrated, ident.1 = c(1,2), 
+                                      min.pct = 0.25, only.pos = T, assay = "integrated")
+
+head(cluster.beta.markers.integrated, n = 10)
 ```
 
 
+Nótese que no todos los genes de interés se encuentran en el ensayo `integrated`, pues tal y como vimos en el ejercicio anterior, los genes INS1 y MAFA se localizaban en el ensayo `RNA`. En el siguiente chunk comprobamos que, efectivamente, dichos biomarcadores están ausentes en el ensayo `integrated`:
 
-```{r, eval = F}
-FeaturePlot(pancreas.integrated, reduction ='umap', features = c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10"), 
-            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
+```{r}
+which(rownames(cluster.beta.markers.integrated) %in% c("INS1", "INS2", "MAFA"))
 ```
 
+Podemos solucionar esto cambiando el parámetro `assay` del comando en cuestión:
+
+```{r}
+cluster.beta.markers.RNA <- FindMarkers(pancreas.integrated, ident.1 = c(1,2), 
+                                      min.pct = 0.25, only.pos = T, assay = "RNA")
+
+head(cluster.beta.markers.RNA, n = 10)
+```
+
+
+Ahora debería detectar correctamente dichos biomarcadores:
+
+```{r}
+which(rownames(cluster.beta.markers.RNA) %in% c("INS1", "INS2", "MAFA"))
+```
 
 
 </details>
@@ -289,6 +306,13 @@ __Solución:__
 
 </details>
 
+
+
+
+```{r, eval = F}
+FeaturePlot(pancreas.integrated, reduction ='umap', features = c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10"), 
+            min.cutoff = "q9", cols = c("lightgrey", "blue"), pt.size = 0.5)
+```
 
 
 
