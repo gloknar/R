@@ -113,7 +113,7 @@ pancreas.integrated <- IntegrateData(anchorset = pancreas.anchors,
 Con los datasets ya integrados en un único objeto `seurat`, basta con escalar los datos y ya podemos emplear dicho objeto en nuestros protocolos de visualizado y clustering.
 
 ```{r}
-# Cargamos librerías gráficas
+# Cargamos librería gráfica
 library(ggplot2)
 
 
@@ -150,7 +150,7 @@ Ahora encontramos clusters de células como haríamos en un protocolo cualquiera
 ```{r}
 # Encontramos clusters
 pancreas.integrated <- FindNeighbors(pancreas.integrated, dims = 1:20)
-pancreas.integrated <- FindClusters(pancreas.integrated, resolution = 1, method = "igraph", algorithm = 1)
+pancreas.integrated <- FindClusters(pancreas.integrated, resolution = 0.25, method = "igraph", algorithm = 1)
 
 # Visualizamos los clusters
 DimPlot(pancreas.integrated, reduction = "tsne", label = T, group.by = "seurat_clusters") +
@@ -168,7 +168,7 @@ DimPlot(pancreas.integrated, reduction = "umap", label = T, group.by = "seurat_c
 
 
 <details>
-<summary> __Ejercicio 3.1: Las células β de los islotes de Langerhans producen insulina (¿¿y las alfa y las Delta??). ¿Puedes identificar dichas células en el dataset?__ </summary>
+<summary> __Ejercicio 3.1: Las células β de los islotes de Langerhans producen insulina. ¿Puedes identificar dichas células en el dataset?__ </summary>
 
 
 <br>
@@ -182,7 +182,7 @@ No obstante, si en su lugar buscamos el propio gen de la insulina, __INS__, podr
 
 
 
-```{r}
+```{r, fig.width = 8}
 # Nota sobre `FeaturePlot`:
 # Seurat V2 usa los parámetros `reduction.use`, `features.plot` y `cols.use`;
 # Seurat V3 usa los parámetros `reduction`, `features` y `cols`, respectivamente
@@ -196,43 +196,52 @@ FeaturePlot(pancreas.integrated, reduction ='umap', features = "PDX1",
 
 # Usamos la insulina. Al tener mayor expresión que un TF, usamos un "min.cutoff"
 # mayor:
-FeaturePlot(pancreas.integrated, reduction ='umap', features = "INS2", 
-            min.cutoff = "q60", cols = c("lightgrey", "blue"), pt.size = 0.5)
-```
+FeaturePlot(pancreas.integrated, reduction ='umap', features = "INS1", 
+            min.cutoff = "q60", cols = c("lightgrey", "blue"), pt.size = 0.5,
+            split.by = "species")
 
-
-```{r, fig.width = 8}
 # Adicionalmente, podemos usar el factor de transcripción expecífico de células
 # beta MAFA:
-FeaturePlot(pancreas.integrated, reduction ='umap', features = c("INS2"), 
-            min.cutoff = "q10", cols = c("lightgrey", "blue"), pt.size = 0.5, 
-            split.by = "species")
+FeaturePlot(pancreas.integrated, reduction ='umap', features = c("MAFA"), 
+            min.cutoff = "q5", cols = c("lightgrey", "blue"), pt.size = 0.5)
 ```
-
 
 <br>
 
-En vista de los resultados obtenidos, parece ser que las células de los clusters 2, 5, 7, 8 y 10 (grupo central derecho en la proyección del UMAP) corresponden a las células pancreáticas $\beta$. Podemos validar estas conclusiones con los metadatos proporcionados por el estudio original:
+En vista de los resultados obtenidos, parece ser que las células de los clusters 1 y 2 (grupo central derecho en la proyección del UMAP) corresponden a las células pancreáticas $\beta$. Podemos validar estas conclusiones con los metadatos proporcionados por el estudio original:
 
 ```{r}
-# The exact tSNE and clusters can vary slightly, below we load in the output from the manuscript
+# Puede haber ligeras discrepancias entre el resultado del paper y los nuestros,
+# de ahí que surjan NAs
 pancreas.metadata <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/Supplementary_Table_PancreasCellData.tsv", sep = "\t", skip = 2, header = T, row.names = 1)
-
 pancreas.integrated <- AddMetaData(pancreas.integrated, metadata = pancreas.metadata)
 
 
 DimPlot(pancreas.integrated, group.by = "Cluster_ID", label = T, reduction = "tsne")
-DimPlot(pancreas.integrated, group.by = "Cluster_ID", label = T, reduction = "umap", pt.size = 0.3)
+DimPlot(pancreas.integrated, group.by = "Cluster_ID", label = T, 
+        reduction = "umap", pt.size = 0.3)
 ```
 
+<br>
+
+Adicionalmente, podemos inspeccionar la tabla de metadatos en busca de la correspondencia de cada clúster con la verdad experimental:
+
+```{r}
+# Seleccionamos las células que pertenecen a los clusters 1 y 2
+celulas.clusters.1.2 <- which(pancreas.integrated@meta.data[,6] == 1 | pancreas.integrated@meta.data[,6] == 2)
+
+head(pancreas.integrated@meta.data[celulas.clusters.1.2, c(6,9)], n = 20)
+```
+
+<br>
+
+En vista de la verdad empírica, confirmamos que hemos identificado en nuestro análisis las células β de los islotes de Langerhans como los clusters 1 y 2.
 
 
 </details>
 
 
 <br>
-
-
 
 
 
@@ -246,10 +255,10 @@ __Solución:__
 
 
 ```{r}
-cluster5.markers <- FindMarkers(pancreas.integrated, ident.1 = 5, min.pct = 0.25, only.pos = T)
-head(cluster5.markers)
-cluster5.markers
-which(rownames(cluster5.markers) == "PDX1")
+cluster.beta.markers <- FindMarkers(pancreas.integrated, ident.1 = c(1,2), min.pct = 0.25, only.pos = T)
+head(cluster.beta.markers)
+cluster.beta.markers
+which(rownames(cluster.beta.markers) == "PDX1")
 ```
 
 
