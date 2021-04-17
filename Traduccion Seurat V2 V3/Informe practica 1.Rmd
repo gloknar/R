@@ -1,5 +1,5 @@
 ---
-title: "Informe práctica 1"
+title: "Informe práctica 1 - Análisis de datos scRNA-seq en Seurat V3"
 author: "Adam Casas"
 date: 'Compilado: `r format(Sys.Date(), "%d de %B del %Y")`'
 output: 
