@@ -1,0 +1,85 @@
+---
+title: "Informe práctica 4 - Constructing Single Cell Trajectories with Monocle3"
+author: "Adam Casas"
+date: 'Compilado: `r format(Sys.Date(), "%d de %B del %Y")`'
+output: 
+  html_document:
+    df_print: paged
+    highlight: kate
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+---
+
+```{r configuracion_inicial, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F,
+                      warning = F,
+                      tidy = F)
+##################################################
+#######        Encoded in UTF-8        ###########
+##################################################
+```
+
+***
+
+# Constructing Single Cell Trajectories with Monocle3
+
+
+In this practical we will use the Nakamura dataset ( Practical 1 ) to infer a differentiation (developmental) trajectory from the data using Monocle3. This exercise is based on the Tutorial 1 found at:
+http://cole-trapnell-lab.github.io/monocle-release/monocle3/. The web includes installation instructions.
+
+# Introducción
+  
+```{r, message = F}
+library("SingleCellExperiment")
+library("TSCAN")
+library("destiny")
+library("SLICER")
+library("ouija")
+library("scater")
+library("ggplot2")
+library("ggthemes")
+library("ggbeeswarm")
+library("corrplot")
+# library("M3Drop")
+# library("monocle)
+set.seed(1)
+```
+
+
+
+
+# The Monocle 3 workflow
+
+eee
+
+
+
+## Step 1: Normalizing and pre-processing the data
+
+
+e
+
+## Step 2: Reducing the dimensionality of the data
+
+
+ee
+
+
+***
+
+<br>
+
+# sessionInfo()
+
+<details>
+
+<summary> __Click para mostrar__ </summary>
+
+```{r, echo = F}
+sessionInfo()
+```
+
+</details>
