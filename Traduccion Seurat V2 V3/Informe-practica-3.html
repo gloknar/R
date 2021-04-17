@@ -441,7 +441,7 @@ div.tocify {
 ## Running Louvain algorithm...
 ## Maximum modularity in 10 random starts: 0.9529
 ## Number of communities: 11
-## Elapsed time: 0 seconds</code></pre>
+## Elapsed time: 1 seconds</code></pre>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualizamos los clusters</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">DimPlot</span>(pancreas.integrated, <span class="at">reduction =</span> <span class="st">&quot;tsne&quot;</span>, <span class="at">label =</span> T, <span class="at">group.by =</span> <span class="st">&quot;seurat_clusters&quot;</span>) <span class="sc">+</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">&quot;t-SNE (20 componentes canónicas)&quot;</span>) <span class="sc">+</span> <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>))</span></code></pre></div>
@@ -597,7 +597,7 @@ div.tocify {
 <span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="co"># VWF o Factor de Von Willebrand, glicoproteína transportadora del Factor VIII</span></span>
 <span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="co"># plasmático (hemostasis). Se expresa en casi todo el cuerpo, aunque aquí se detecta en las células endoteliales</span></span>
 <span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="co"># SOX10, detectado en algunas células &quot;stellate&quot;</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="co"># SOX10, detectado en algunas células &quot;stellate&quot; (¿neuronas o pancreatic stellate cell?). This protein acts as a nucleocytoplasmic shuttle protein and is important for neural crest and peripheral nervous system development</span></span>
 <span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a><span class="fu">FeaturePlot</span>(pancreas.integrated, <span class="at">reduction =</span><span class="st">&#39;umap&#39;</span>, </span>
 <span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>            <span class="at">features =</span> <span class="fu">c</span>(<span class="st">&quot;REG1A&quot;</span>, <span class="st">&quot;PPY&quot;</span>, <span class="st">&quot;SST&quot;</span>, <span class="st">&quot;GHRL&quot;</span>, <span class="st">&quot;VWF&quot;</span>, <span class="st">&quot;SOX10&quot;</span>), </span>
