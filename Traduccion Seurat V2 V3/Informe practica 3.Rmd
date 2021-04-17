@@ -349,7 +349,7 @@ head(biomarcadores.diferenciales, n = 10)
 # VWF o Factor de Von Willebrand, glicoproteína transportadora del Factor VIII
 # plasmático (hemostasis). Se expresa en casi todo el cuerpo, aunque aquí se detecta en las células endoteliales
 
-# SOX10, detectado en algunas células "stellate"
+# SOX10, detectado en algunas células "stellate" (¿neuronas o pancreatic stellate cell?). This protein acts as a nucleocytoplasmic shuttle protein and is important for neural crest and peripheral nervous system development
 
 FeaturePlot(pancreas.integrated, reduction ='umap', 
             features = c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10"), 
