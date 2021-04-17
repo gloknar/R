@@ -1,5 +1,5 @@
 ---
-title: "Informe práctica 3"
+title: "Informe práctica 3 - Integración de datasets de distintas especies con Análisis de Correlación Canónica (CCA)"
 author: "Adam Casas"
 date: 'Compilado: `r format(Sys.Date(), "%d de %B del %Y")`'
 output: 
@@ -24,12 +24,27 @@ knitr::opts_chunk$set(echo = TRUE,
 
 ***
 
-# Integración de datasets de distintas especies con Análisis de Correlación Canónica (CCA)
+# Introducción
 
 
 Integrar datasets en Seurat V2 era tedioso, pues había que ejecutar varias líneas de código para obtener los resultados deseados. La 3ª versión de Seurat simplificó enormemente el protocolo con la aparición de los comandos `FindIntegrationAnchors()` y `IntegrateData`, pues ejecutan automáticamente la retahíla de pasos necesarios en Seurat V2.
 
 Dicho esto, usaremos para este informe 2 datasets de scRNA-seq provenientes del trabajo de [Butler _et al._](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6700744/) (2018). Los datasets en cuestión consisten en tejido pancreático de humano y de ratón, respectivamente. Aplicaremos el análisis de correlación canónica (CCA) para integrar sendos datasets.
+
+
+```{r}
+library(future)
+
+# Usar "multicore" en Linux y "multisession" en Windows
+parallel_plan <- plan(strategy = "multisession", workers = 4)
+
+# Ampliamos el límite de RAM de cada trabajador de R (500 MBs por defecto) a
+# 1 GBs
+options(future.globals.maxSize = 1 * 1024^3)
+
+# Comprobamos el parámetro "estrategy" y el nº de hilos de nuestro plan actual
+plan()
+```
 
 
 <br>
@@ -349,7 +364,7 @@ head(biomarcadores.diferenciales, n = 10)
 # VWF o Factor de Von Willebrand, glicoproteína transportadora del Factor VIII
 # plasmático (hemostasis). Se expresa en casi todo el cuerpo, aunque aquí se detecta en las células endoteliales
 
-# SOX10, detectado en algunas células "stellate" (¿neuronas o pancreatic stellate cell?). This protein acts as a nucleocytoplasmic shuttle protein and is important for neural crest and peripheral nervous system development
+# SOX10, detectado en algunas células "stellate" (¿neuronas o pancreatic stellate cell?). This protein acts as a nucleocytoplasmic shuttle protein and is important for neural crest and peripheral nervous system development.
 
 FeaturePlot(pancreas.integrated, reduction ='umap', 
             features = c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10"), 
