@@ -1,5 +1,5 @@
 ---
-title: "Informe práctica 2"
+title: "Informe práctica 2 - Métodos para inferencia de la trayectoria en procesos biológicos"
 author: "Adam Casas"
 date: 'Compilado: `r format(Sys.Date(), "%d de %B del %Y")`'
 output: 
