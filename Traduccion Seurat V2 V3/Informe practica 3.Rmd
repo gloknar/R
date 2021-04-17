@@ -211,8 +211,8 @@ FeaturePlot(pancreas.integrated, reduction ='umap', features = c("MAFA"),
 En vista de los resultados obtenidos, parece ser que las células de los clusters 1 y 2 (grupo central derecho en la proyección del UMAP) corresponden a las células pancreáticas $\beta$. Podemos validar estas conclusiones con los metadatos proporcionados por el estudio original:
 
 ```{r}
-# Puede haber ligeras discrepancias entre el resultado del paper y los nuestros,
-# de ahí que surjan NAs
+# Puede haber ligeras discrepancias entre las proyecciones t-SNE y UMAP del
+# paper y las nuestros, de ahí que surjan NAs
 pancreas.metadata <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/Supplementary_Table_PancreasCellData.tsv", sep = "\t", skip = 2, header = T, row.names = 1)
 pancreas.integrated <- AddMetaData(pancreas.integrated, metadata = pancreas.metadata)
 
@@ -310,6 +310,14 @@ __Solución:__
 Recordemos que las células α expresan el glucagón, mientras que las células β producen insulina, por lo que esperamos ver en la siguiente lista los genes INS1 y GCG. Podemos identificar las células α de la misma manera que hicimos en el ejercicio anterior, pero ahora que hemos cargado los metadatos del estudio original, podemos averiguar de un vistazo que el clúster 0 se corresponde con las células α.
 
 ```{r}
+FeaturePlot(pancreas.integrated, reduction ='umap', 
+            features = "GCG", 
+            min.cutoff = "q9", cols = c("lightgrey", "blue"), 
+            pt.size = 0.5)
+```
+
+
+```{r}
 # "only.pos" devuelve sólo los genes sobreexpresados en "ident.1" respecto los
 # niveles de expresión en "ident.2"
 biomarcadores.diferenciales <- FindMarkers(pancreas.integrated, ident.1 = c(1,2), ident.2 =  0, 
@@ -330,30 +338,24 @@ head(biomarcadores.diferenciales, n = 10)
 ```{r}
 # REG1A se expresa en células acinares (páncreas exocrino)
 
-# PPY se produce en las células PP de los islotes y genera sensación de estar
+# PPY se produce en las células PP de los islotes (anotadas en el paper como "gamma") y genera sensación de estar
 # lleno (inhibe ingestión de alimentos)
 
 # SST somatostatina, producida por células delta. Inhibe producción de glucagón
 # e insulina
 
-# GHRL codifica el péptido precursor o pre-proteína grelina-obestatina
+# GHRL codifica el péptido precursor o pre-proteína grelina-obestatina (se detecta en unas pocas células PP o gamma)
 
 # VWF o Factor de Von Willebrand, glicoproteína transportadora del Factor VIII
-# plasmático (hemostasis). Se expresa en casi todo el cuerpo
+# plasmático (hemostasis). Se expresa en casi todo el cuerpo, aunque aquí se detecta en las células endoteliales
 
-# SOX10
+# SOX10, detectado en algunas células "stellate"
 
 FeaturePlot(pancreas.integrated, reduction ='umap', 
             features = c("REG1A", "PPY", "SST", "GHRL", "VWF", "SOX10"), 
             min.cutoff = "q9", cols = c("lightgrey", "blue"), 
             pt.size = 0.5,
             combine = F)
-
-FeaturePlot(pancreas.integrated, reduction ='umap', 
-            features = c("GCG", "Gcg", "SST"), 
-            min.cutoff = "q9", cols = c("lightgrey", "blue"), 
-            pt.size = 0.5)
-
 ```
 
 
