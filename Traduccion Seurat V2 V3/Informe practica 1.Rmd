@@ -26,11 +26,11 @@ knitr::opts_chunk$set(echo = TRUE,
 
 # Introducción y pre-requisitos
 
-En este documento se muestran las prácticas y ejercicios de Pedro Madrigal, traducidas de Seurat V2 a Seurat V3, ya que Pedro usaba la versión 2 pese a estar obsoleta y tener dependencias obsoletas y difíciles de instalar en equipos actuales.
+En este documento se muestran las prácticas y ejercicios de Análisis de datos scRNA-seq, traducidas de Seurat V2 a Seurat V3, ya que las prácticas usaban la versión 2 de `Seurat`, la cual está actualmente obsoleta y tiene dependencias obsoletas.
 
-__Las prácticas 1 y 2__ se basan (incluyen modificaciones) en el código aportado por el Dr. Martin Hemberg del Instituto Wellcome Sanger en el curso de dos días de análisis de scRNA-seq impartido por la unidad de enseñanza de bioinformática de la Universidad de Cambridge.
+__Las prácticas 1 y 2__ se basan en el código modificado de las prácticas originales.
 
-__En la práctica 3__ aprenderemos a integrar en Seurat datos de scRNA-seq de páncreas humano y de ratón siguiendo la metodología de Butler _et al._, 2018.
+__En la práctica 3__  se integran en Seurat datos de scRNA-seq de páncreas humano y de ratón ( _mus musculus_) siguiendo la metodología de [Butler _et al._, 2018](https://www.nature.com/articles/nbt.4096).
 
 __En la práctica 4__ aprenderemos a inferir trayectorias celulares a partir de datos de expresión single cell usando Monocle3.
 
@@ -211,7 +211,7 @@ cm <- NormalizeData(cm, normalization.method = "LogNormalize", scale.factor = 10
 
 # Genes altamente variables
 
-Seurat calcula los genes altamente variables y centra los posteriores análisis en ellos. Pedro usa el método `mvp` (mean.var.plot) del comando `FindVariableGenes`, el cual calcula la expresión media y la dispersión (desviación estándar) de cada gen, luego coloca los genes en grupos (bins) y finalmente calcula el z-score para la dispersión dentro de cada grupo. Esto permite controlar la fuerte relación entre la varianza y la expresión media de cada gen. No obstante, el método por defecto en Seurat V3 es `vst`.
+Seurat calcula los genes altamente variables y centra los posteriores análisis en ellos. Seurat V2 usa el método `mvp` (mean.var.plot) del comando `FindVariableGenes`, el cual calcula la expresión media y la dispersión (desviación estándar) de cada gen, luego coloca los genes en grupos (bins) y finalmente calcula el z-score para la dispersión dentro de cada grupo. Esto permite controlar la fuerte relación entre la varianza y la expresión media de cada gen. No obstante, el método por defecto en Seurat V3 es `vst`.
 
 
 ```{r, message = F}
@@ -536,6 +536,13 @@ saveRDS(object = cm, file = "./Archivos accesorios/Codigo y datos de las Practic
 ***
 
 <br>
+
+# Referencias
+
+* Butler, A., Hoffman, P., Smibert, P. et al. Integrating single-cell transcriptomic data across different conditions, technologies, and species. Nat Biotechnol 36, 411–420 (2018). https://doi.org/10.1038/nbt.4096
+
+* e
+
 
 # sessionInfo()
 
