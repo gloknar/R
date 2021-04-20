@@ -93,11 +93,22 @@ Once this is complete, you can run tests for genes that are specific to each clu
 ## Load Monocle package and raw data from a Seurat object
 
 ```{r, fig.width=6, warning = F}
-# Load Monocle 3
+# Cargamos monocle 3 y otras librerías
+
 library(monocle)
 library(reticulate)
 library(devtools)
 library(Seurat)
+BiocManager::install("spatstat", version = "1.64-1")
+install.packages("http://cran.r-project.org/src/contrib/Archive/RNetLogo/RNetLogo_0.9-6.tar.gz", repo=NULL, type="source")
+BiocManager::install()
+
+#devtools::install_github(http://rcppcore.github.io/RcppParallel/)
+?repositories
+# BiocManager::install()
+# remotes::install_version("Seurat", version = "3.2")
+# devtools::install_github('cole-trapnell-lab/leidenbase')
+# devtools::install_github('cole-trapnell-lab/monocle3')
 # options(warn=-1)
 # repositories
 # ojo spatstat actualizado
