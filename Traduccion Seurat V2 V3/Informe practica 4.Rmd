@@ -41,12 +41,12 @@ No obstante, cuando una célula transiciona de un estado a otro, esta sufre una 
 
 # The Monocle 3 workflow
 
-The ordering workflow shown in Figure 5.1 has five main steps:
+El protocolo de Monocle consta de 5 pasos principales, detallados a continuación:
 
 ![ja](./Cosas accesorias Informe 4/monocle.png)
 
 
-## Step 1: Normalizing and pre-processing the data
+## Paso 1: Preprocesamiento y normalizado de los datos
 
 
 To analyze a single-cell dataset, Monocle first normalizes expression values to account for technical variation

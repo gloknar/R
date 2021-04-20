@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = TRUE,
                       warning = FALSE,
                       tidy = F)
+set.seed(1)
 ##################################################
 #######        Encoded in UTF-8        ###########
 ##################################################
@@ -518,8 +519,8 @@ RidgePlot(cm, features = c("PCNA", "MCM6", "TOP2A", "MKI67"), group.by = "Phase"
 
 Por último procedemos a guardar el trabajo realizado hasta ahora, pues lo necesitaremos en la práctica 4
 
-```{r, eval = F}
-saveRDS(object = cm, file = "./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/nakamura_P4.rds")
+```{r}
+saveRDS(object = cm, file = "./Cosas accesorias Informe 1/nakamura_P4.rds")
 ```
 
 
