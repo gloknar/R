@@ -59,7 +59,6 @@
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
@@ -330,48 +329,254 @@ div.tocify {
 
 <h1 class="title toc-ignore">Informe práctica 4 - Constructing Single Cell Trajectories with Monocle3</h1>
 <h4 class="author">Adam Casas</h4>
-<h4 class="date">Compilado: 18 de abril del 2021</h4>
+<h4 class="date">Compilado: 20 de abril del 2021</h4>
 
 </div>
 
 
 <hr />
-<div id="constructing-single-cell-trajectories-with-monocle3" class="section level1" number="1">
-<h1 number="1"><span class="header-section-number">1</span> Constructing Single Cell Trajectories with Monocle3</h1>
-<p>In this practical we will use the Nakamura dataset ( Practical 1 ) to infer a differentiation (developmental) trajectory from the data using Monocle3. This exercise is based on the Tutorial 1 found at: <a href="http://cole-trapnell-lab.github.io/monocle-release/monocle3/" class="uri">http://cole-trapnell-lab.github.io/monocle-release/monocle3/</a>. The web includes installation instructions.</p>
+<div id="introducción" class="section level1" number="1">
+<h1 number="1"><span class="header-section-number">1</span> Introducción</h1>
+<p>En esta práctica usaremos los mismos datos que empleamos en la práctica 1, o sea el dataset de SC3-seq (un tipo de scRNA-seq) del desarrollo embrionario en <em>Macaca fascicularis</em> (Nakamura et al., 2016). Usaremos el protocolo de Monocle sobre estos datos para inferir la trayectoria del desarrollo embrionario.</p>
+<p>Las células cambian de un estado funcional a otro en respuesta a estímulos, durante patologías o a lo largo del desarrollo vital del individuo. Cada estado funcional expresa un conjunto de genes concretos, lo que dota a la célula en cuestión un repertorio de proteínas y metabolitos específicos para llevar a cabo la tarea para la cual esté diseñado el estado en cuestión.</p>
+<p>No obstante, cuando una célula transiciona de un estado a otro, esta sufre una reconfiguración transcripcional gradual, con genes que se silencian y genes que se activan. Purificar células en transformación puede resultar difícil, lo que dificulta la caracterización de dichos estados transitorios. Por suerte, este problema no lo tenemos con scRNA-seq, dado que no es necesario purificar poblaciones celulares.</p>
+<hr />
+<p><br></p>
 </div>
-<div id="introducción" class="section level1" number="2">
-<h1 number="2"><span class="header-section-number">2</span> Introducción</h1>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;SingleCellExperiment&quot;</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;TSCAN&quot;</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;destiny&quot;</span>)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;SLICER&quot;</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;ouija&quot;</span>)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;scater&quot;</span>)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;ggplot2&quot;</span>)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;ggthemes&quot;</span>)</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;ggbeeswarm&quot;</span>)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;corrplot&quot;</span>)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># library(&quot;M3Drop&quot;)</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># library(&quot;monocle)</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span></code></pre></div>
+<div id="the-monocle-3-workflow" class="section level1" number="2">
+<h1 number="2"><span class="header-section-number">2</span> The Monocle 3 workflow</h1>
+<p>The ordering workflow shown in Figure 5.1 has five main steps:</p>
+<p><a href="%22./Cosas%20accesorias%20Informe%204/monocle.png%22">ja</a></p>
+<div id="step-1-normalizing-and-pre-processing-the-data" class="section level2" number="2.1">
+<h2 number="2.1"><span class="header-section-number">2.1</span> Step 1: Normalizing and pre-processing the data</h2>
+<p>To analyze a single-cell dataset, Monocle first normalizes expression values to account for technical variation in RNA recovery and sequencing depth.</p>
 </div>
-<div id="the-monocle-3-workflow" class="section level1" number="3">
-<h1 number="3"><span class="header-section-number">3</span> The Monocle 3 workflow</h1>
-<p>eee</p>
-<div id="step-1-normalizing-and-pre-processing-the-data" class="section level2" number="3.1">
-<h2 number="3.1"><span class="header-section-number">3.1</span> Step 1: Normalizing and pre-processing the data</h2>
-<p>e</p>
+<div id="step-2-reducing-the-dimensionality-of-the-data" class="section level2" number="2.2">
+<h2 number="2.2"><span class="header-section-number">2.2</span> Step 2: Reducing the dimensionality of the data</h2>
+<p>Next, to eliminate noise and make downstream computations more tractable, it projects each cell onto the top 50 (by default) principal components. Then, you as the user choose whether to reduce the dimensionality further using one of two non-linear methods for dimensionality reduction: t-SNE or UMAP. The former is an extremely popular and widely accepted technique for visualizing single-cell RNA-seq data. The latter is faster, and often better preserves the global structure of the data but is also newer and therefore less well tested by the single-cell community. Then, Monocle 3 will cluster your cells, organize them into trajectories, or both. ee</p>
 </div>
-<div id="step-2-reducing-the-dimensionality-of-the-data" class="section level2" number="3.2">
-<h2 number="3.2"><span class="header-section-number">3.2</span> Step 2: Reducing the dimensionality of the data</h2>
-<p>ee</p>
+<div id="step-3-clustering-and-partitioning-the-cells" class="section level2" number="2.3">
+<h2 number="2.3"><span class="header-section-number">2.3</span> Step 3: Clustering and partitioning the cells</h2>
+<p>Monocle 3 can learn multiple disconnected or “disjoint” trajectories. This is important because many experiments will capture a community of cells that are responding to a stimulus or undergoing differentiation, with each type of cell responding differently. Because Monocle version 2 assumes that all of your data is part of a single trajectory, in order to construct individual trajectories you would have to manually split up each group of related cell types and stages into different sets, and then run the trajectory analysis separately on each group of cells. In contrast, Monocle 3 can detect that some cells are part of a different process than others in the dataset, and can therefore build multiple trajectories in parallel from a single dataset. Monocle 3 achieves this by “partitioning” the cells into “supergroups” using a method derived from “approximate graph abstraction” (AGA) <span class="citation">[@Wolf208819]</span>. Cells from different supergroups cannot be part of the same trajectory.</p>
+</div>
+<div id="step-4-learning-the-principal-graph" class="section level2" number="2.4">
+<h2 number="2.4"><span class="header-section-number">2.4</span> Step 4: Learning the principal graph</h2>
+<p>Monocle 3 provides three different ways to organize cells into trajectories, all of which are based on the concept of “reversed graph embedding”. DDRTree is the method used in Monocle 2 to learn tree-like trajectories, and has received some important updates in Monocle 3. In particular, these updates have massively improved the throughout of DDRTree, which can now process millions of cells in minutes. SimplePPT works similarly to DDRTree in that it learns a tree-like trajectory, but it does not attempt to further reduce the dimensionality of the data. L1Graph is an advanced optimization method that can learn trajectories that have loops in them (that is, trajectories that aren’t trees).</p>
+<p>Once Monocle 3 has learned a principal graph that fits within the data, each cell is projected onto the graph. Then, the user selects one or more positions on the graph that define the starting points of the trajectory. Monocle measures the distance from these start points to each cell, traveling along the graph as it does so. A cell’s pseudotime is simply the distance from each cell to the closest starting point on the graph.</p>
+</div>
+<div id="step-5-differential-expression-analysis-and-visualization" class="section level2" number="2.5">
+<h2 number="2.5"><span class="header-section-number">2.5</span> Step 5: Differential expression analysis and visualization</h2>
+<p>Once this is complete, you can run tests for genes that are specific to each cluster, find genes that vary over the course of a trajectory, and plot your data in many different ways. Monocle 3 provides a suite of regression tests to find genes that differ between clusters and over trajectories. Monocle 3 also introduces a new test that uses the principal graph directly and can help find genes that vary in complex ways over a trajectory with loops and more intricate structures.</p>
 <hr />
 <p><br></p>
 </div>
 </div>
-<div id="sessioninfo" class="section level1" number="4">
-<h1 number="4"><span class="header-section-number">4</span> sessionInfo()</h1>
+<div id="load-monocle-package-and-raw-data-from-a-seurat-object" class="section level1" number="3">
+<h1 number="3"><span class="header-section-number">3</span> Load Monocle package and raw data from a Seurat object</h1>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Instalación de Monocle 3</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="fu">c</span>(<span class="st">&#39;BiocGenerics&#39;</span>, <span class="st">&#39;DelayedArray&#39;</span>, <span class="st">&#39;DelayedMatrixStats&#39;</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                       <span class="st">&#39;limma&#39;</span>, <span class="st">&#39;S4Vectors&#39;</span>, <span class="st">&#39;SingleCellExperiment&#39;</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>                       <span class="st">&#39;SummarizedExperiment&#39;</span>, <span class="st">&#39;batchelor&#39;</span>, <span class="st">&#39;Matrix.utils&#39;</span>))</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;devtools&quot;</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&#39;cole-trapnell-lab/leidenbase&#39;</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&#39;cole-trapnell-lab/monocle3&#39;</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Si usas R 3.6, instala spatstat 1.64-1, ya que R 3.6 no es compatible con</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># versiones posteriores de spatstat</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;https://cran.r-project.org/src/contrib/Archive/spatstat/spatstat_1.64-1.tar.gz&quot;</span>, <span class="at">repo=</span><span class="cn">NULL</span>, <span class="at">type=</span><span class="st">&quot;source&quot;</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Instalación de Monocle 2.14 en BioConductor 3.10</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;monocle&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Cargamos monocle 3 y otras librerías</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># library(monocle3)</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(monocle)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(devtools)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Importamos el dataset de Seurat a Monocle  </span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">&#39;Archivos accesorios/Codigo y datos de las Practicas 1-4/data/nakamura_P4.rds&#39;</span>)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(data<span class="sc">@</span>meta.data)</span></code></pre></div>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["nGene"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["nUMI"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["orig.ident"],"name":[3],"type":["fct"],"align":["left"]},{"label":["res.0.6"],"name":[4],"type":["fct"],"align":["left"]},{"label":["clusterNakamura"],"name":[5],"type":["fct"],"align":["left"]},{"label":["S.Score"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["G2M.Score"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["Phase"],"name":[8],"type":["fct"],"align":["left"]},{"label":["old.ident"],"name":[9],"type":["chr"],"align":["left"]}],"data":[{"1":"12498","2":"1550130","3":"nakamura","4":"EXMC","5":"EXMC","6":"-0.26036358","7":"0.21065872","8":"G2M","9":"EXMC","_rn_":"EXMC"},{"1":"11653","2":"1424387","3":"nakamura","4":"EXMC","5":"EXMC","6":"0.12298196","7":"-0.15590375","8":"S","9":"EXMC","_rn_":"EXMC.1"},{"1":"11992","2":"1539123","3":"nakamura","4":"EXMC","5":"EXMC","6":"-0.20534536","7":"0.04428730","8":"G2M","9":"EXMC","_rn_":"EXMC.2"},{"1":"11696","2":"1552205","3":"nakamura","4":"EXMC","5":"EXMC","6":"-0.13410480","7":"0.27423295","8":"G2M","9":"EXMC","_rn_":"EXMC.3"},{"1":"12146","2":"1907244","3":"nakamura","4":"EXMC","5":"EXMC","6":"0.09987526","7":"-0.04876683","8":"S","9":"EXMC","_rn_":"EXMC.4"},{"1":"12393","2":"2709124","3":"nakamura","4":"EXMC","5":"EXMC","6":"0.08991633","7":"-0.21156160","8":"S","9":"EXMC","_rn_":"EXMC.5"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a new CellDataSet (Monocle):</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>c3 <span class="ot">&lt;-</span> <span class="fu">importCDS</span>(data, <span class="at">import_all =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">pData</span>(c3)<span class="sc">$</span>res.<span class="fl">0.6</span></span></code></pre></div>
+<pre><code>##   [1] EXMC      EXMC      EXMC      EXMC      EXMC      EXMC      EXMC     
+##   [8] EXMC      EXMC      EXMC      EXMC      EXMC      EXMC      EXMC     
+##  [15] EXMC      EXMC      EXMC      EXMC      EXMC      EXMC      EXMC     
+##  [22] EXMC      EXMC      EXMC      EXMC      EXMC      EXMC      EXMC     
+##  [29] EXMC      EXMC      EXMC      EXMC      Gast      Gast      Gast     
+##  [36] Gast      Gast      Gast      Gast      Gast      Gast      Gast     
+##  [43] Gast      Gast      PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI
+##  [50] PostL-EPI Gast      Gast      Gast      Gast      Gast      Gast     
+##  [57] Gast      Gast      Gast      Gast      Gast      Gast      Gast     
+##  [64] Gast      Gast      Gast      Gast      Gast      Gast      Gast     
+##  [71] Gast      Gast      Gast      Gast      Gast      Gast      Hypoblast
+##  [78] Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast
+##  [85] Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast
+##  [92] Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast
+##  [99] Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast
+## [106] Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast
+## [113] Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast
+## [120] Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast Hypoblast
+## [127] Hypoblast Hypoblast Hypoblast Hypoblast ICM       ICM       ICM      
+## [134] ICM       ICM       ICM       ICM       ICM       ICM       ICM      
+## [141] ICM       ICM       ICM       ICM       ICM       ICM       ICM      
+## [148] PreE-TE   ICM       ICM       ICM       ICM       ICM       ICM      
+## [155] ICM       ICM       ICM       ICM       ICM       ICM       Post-paTE
+## [162] Post-paTE Post-paTE Post-paTE Post-paTE Post-paTE Post-paTE Post-paTE
+## [169] Post-paTE Post-paTE Post-paTE PostE-EPI Gast      PostE-EPI PostE-EPI
+## [176] PostE-EPI PostE-EPI PostE-EPI Gast      PostE-EPI PostE-EPI PostE-EPI
+## [183] Gast      PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI
+## [190] PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI
+## [197] PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI
+## [204] PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI
+## [211] PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI
+## [218] PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI PostE-EPI
+## [225] PostE-EPI PostE-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI
+## [232] PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI
+## [239] PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI
+## [246] PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI
+## [253] PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI
+## [260] PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI
+## [267] PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI PostL-EPI
+## [274] PostL-EPI PostL-EPI PostL-EPI Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI  
+## [281] Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI  
+## [288] Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI  
+## [295] Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI  
+## [302] Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI   Pre-EPI  
+## [309] Pre-EPI   Pre-EPI   PreE-TE   PreE-TE   PreE-TE   PreE-TE   PreE-TE  
+## [316] PreE-TE   PreE-TE   PreE-TE   PreE-TE   PreE-TE   PreE-TE   PreE-TE  
+## [323] PreE-TE   PreE-TE   PreE-TE   PreE-TE   PreE-TE   PreE-TE   PreE-TE  
+## [330] PreE-TE   PreE-TE   PreE-TE   PreE-TE   PreL-TE   PreL-TE   PreL-TE  
+## [337] PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE  
+## [344] PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE  
+## [351] PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE  
+## [358] PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE  
+## [365] PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE  
+## [372] PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE  
+## [379] PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE   PreL-TE  
+## [386] VEYE      VEYE      VEYE      VEYE      VEYE      Gast      Gast     
+## [393] Gast      Gast      Gast      Gast      Gast      Gast      Gast     
+## 11 Levels: EXMC Gast Hypoblast ICM Post-paTE PostE-EPI PostL-EPI ... VEYE</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(<span class="fu">pData</span>(c3))</span></code></pre></div>
+<pre><code>##  [1] &quot;nGene&quot;           &quot;nUMI&quot;            &quot;orig.ident&quot;      &quot;res.0.6&quot;        
+##  [5] &quot;clusterNakamura&quot; &quot;S.Score&quot;         &quot;G2M.Score&quot;       &quot;Phase&quot;          
+##  [9] &quot;old.ident&quot;       &quot;Size_Factor&quot;</code></pre>
+<hr />
+<p><br></p>
+</div>
+<div id="step-1-normalize-and-pre-process-the-data" class="section level1" number="4">
+<h1 number="4"><span class="header-section-number">4</span> Step 1: Normalize and pre-process the data</h1>
+<p>We then estimate size factors for each cell and dispersion function for the genes in <em>c3</em> . Monocle 3 now performs these operations using the <em>DelayedArray</em> packages so they work on datasets with millions of cells. The dispersion calculation and several other operations rely on the DelayedArray package in Bioconductor, which splits the operation into blocks in order to avoid exhausting the computer’s memory. You can control the block size and the verbosity of these operations as shown below:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">############################</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Normalize and pre-process the data</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="do">############################</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Pass TRUE if you want to see progress output on some of Monocle 3&#39;s operations</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>DelayedArray<span class="sc">:::</span><span class="fu">set_verbose_block_processing</span>(<span class="cn">TRUE</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Passing a higher value will make some computations faster but use more memory. Adjust with caution!</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">DelayedArray.block.size=</span><span class="fl">1000e6</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>c3 <span class="ot">&lt;-</span> <span class="fu">estimateSizeFactors</span>(c3)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>c3 <span class="ot">&lt;-</span> <span class="fu">estimateDispersions</span>(c3)</span></code></pre></div>
+<p>Next, run the preprocessCDS() function to project the data onto the top principal components:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># function to project the data onto the top principal components:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>c3 <span class="ot">&lt;-</span> <span class="fu">preprocessCDS</span>(c3, <span class="at">num_dim =</span> <span class="dv">20</span>)</span></code></pre></div>
+<hr />
+<p><br></p>
+</div>
+<div id="step-2-reduce-the-dimensionality-of-the-data" class="section level1" number="5">
+<h1 number="5"><span class="header-section-number">5</span> Step 2: Reduce the dimensionality of the data</h1>
+<p>Then, apply a further round of (nonlinear) dimensionality reduction using t-SNE:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>c3 <span class="ot">&lt;-</span> <span class="fu">reduceDimension</span>(c3, <span class="at">reduction_method =</span> <span class="st">&#39;tSNE&#39;</span>)</span></code></pre></div>
+<div id="step-3-partition-the-cells-into-supergroups" class="section level2" number="5.1">
+<h2 number="5.1"><span class="header-section-number">5.1</span> Step 3: Partition the cells into supergroups</h2>
+<p>Rather than forcing all cells into a single developmental trajectory, Monocle 3 enables you to learn a set of trajectories that describe the biological process you’re studying. For example, if you’re looking at a community of immune cells responding to infection, each cell type will respond to antigen (and each other) in a different way, so they should be organized into distinct trajectories. This can also be helpful when you have small groups of outlier cells that for either technical or biological reasons are very dissimilar from the rest of the cells in your experiment. They can confuse a trajectory analysis. Monocle 3’s partitioning strategy circumvents this issue because such groups often wind up in their own partition. In the Paul data, there is a small outgroup the authors classified as dendritic cells that Monocle automatically partitions away from the main trajectory.</p>
+<p>In Monocle 3, we recognize “disjoint” trajectories by drawing on ideas from Alex Wolf and colleagues, who recently introduced the concept of abstract graph participation <span class="citation">[@Wolf208819]</span>. Monocle 3 implements the test for cell community connectedness from Wolf et al. via the partitionCells() function, which divides the cells into “supergroups”.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>c3 <span class="ot">&lt;-</span> <span class="fu">partitionCells</span>(c3, <span class="at">use_pca =</span><span class="cn">TRUE</span> )</span></code></pre></div>
+<hr />
+<p><br></p>
+</div>
+</div>
+<div id="step-4-learn-the-principal-graph" class="section level1" number="6">
+<h1 number="6"><span class="header-section-number">6</span> Step 4: Learn the principal graph</h1>
+<p>Now that the cells are partitioned, we can organize each supergroup into a separate trajectory. The default method for doing this in Monocle 3 is <em>SimplePPT</em>, which assumes that each trajectory is a tree (albeit one that may have multiple roots). Here we will use <em>DDRTree</em> for the reasons mentioned above. Learn these trees with the learnGraph function:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>c3 <span class="ot">&lt;-</span> <span class="fu">learnGraph</span>(c3,  <span class="at">RGE_method =</span> <span class="st">&#39;DDRTree&#39;</span> ) </span></code></pre></div>
+<hr />
+<p><br></p>
+</div>
+<div id="step-5-visualize-the-trajectory" class="section level1" number="7">
+<h1 number="7"><span class="header-section-number">7</span> Step 5: Visualize the trajectory</h1>
+<p>Once the you’ve learned the trajectory, you can visualize the it:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>cell_type_color <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;EXMC&quot;</span> <span class="ot">=</span> <span class="st">&quot;blue&quot;</span>,</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Gast&quot;</span>  <span class="ot">=</span> <span class="st">&quot;#46C7EF&quot;</span>,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;PostL-EPI&quot;</span> <span class="ot">=</span> <span class="st">&quot;magenta&quot;</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Hypoblast&quot;</span> <span class="ot">=</span> <span class="st">&quot;red&quot;</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;ICM&quot;</span> <span class="ot">=</span> <span class="st">&quot;darkgreen&quot;</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;PreE-TE&quot;</span> <span class="ot">=</span> <span class="st">&quot;#4EB859&quot;</span>,</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Post-paTE&quot;</span> <span class="ot">=</span> <span class="st">&quot;#EFAD1E&quot;</span>,</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;PostE-EPI&quot;</span> <span class="ot">=</span> <span class="st">&quot;gold&quot;</span>,</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Pre-EPI&quot;</span> <span class="ot">=</span> <span class="st">&quot;gray&quot;</span>,</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;PreL-TE&quot;</span> <span class="ot">=</span> <span class="st">&quot;black&quot;</span>,</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;VEYE&quot;</span> <span class="ot">=</span> <span class="st">&#39;purple&#39;</span> )</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">plot_cell_trajectory</span>(c3, <span class="at">color_by =</span> <span class="st">&quot;res.0.6&quot;</span>) <span class="sc">+</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> cell_type_color)</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>p1</span></code></pre></div>
+<p><strong>Exercise 4.1 What do you think about the trajectory? Is it in agreement with previous biological knowledge? </strong></p>
+<p><strong>Adjusting the start of pseudotime with orderCells</strong></p>
+<p>We know that ICM (inner cell mass) will give rise to the pre-implantation epiblast and the hypoblast. We need to tell Monocle that these cells are the “beginning” of the trajectory. In Monocle 2, this wouldn’t be possible, because the software required that the root be one of the leaves of the tree. Monocle 3 allows you to specify an internal part of the tree as the root.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>icm_node_ids <span class="ot">=</span> <span class="fu">get_correct_root_state</span>(c3,</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">cell_phenotype =</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                        <span class="st">&#39;res.0.6&#39;</span>, <span class="st">&quot;ICM&quot;</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>c3 <span class="ot">&lt;-</span> <span class="fu">orderCells</span>(c3, <span class="at">root_pr_nodes =</span> icm_node_ids)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_cell_trajectory</span>(c3)</span></code></pre></div>
+<hr />
+<p><br></p>
+</div>
+<div id="identifying-genes-that-vary-in-expression-over-a-trajectory" class="section level1" number="8">
+<h1 number="8"><span class="header-section-number">8</span> Identifying genes that vary in expression over a trajectory</h1>
+<p>We are often interested in finding genes that are differentially expressed across a single-cell trajectory. Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have similar (or dissimilar) expression levels for the gene being tested. Although both Pearson correlation and Moran’s I ranges from -1 to 1, the interpretation of Moran’s I is slightly different: +1 means that nearby cells will have perfectly similar expression (as in the right panel below); 0 represents no correlation (center), and -1 means that neighboring cells will be <em>anti-correlated</em> (left).</p>
+<div class="figure">
+<img src="data:image/png;base64,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" alt="Moran’s I test example." width="90%" />
+<p class="caption">
+Moran’s I test example.
+</p>
+</div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Identifying genes that vary in expression over a trajectory  (Moran&#39;s I test)</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>pr_graph_test <span class="ot">&lt;-</span> <span class="fu">principalGraphTest</span>(c3, <span class="at">k=</span><span class="dv">25</span>, <span class="at">cores=</span><span class="dv">1</span>, </span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">interactive =</span> <span class="cn">FALSE</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+<p>We can easily view the top differentially expressed genes as follows:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># &#39;pr_graph_test&#39; returns a data frame containing the p values and q-values </span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># from the Moran&#39;s I test on the parallel arrays of models</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pr_graph_test )</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(pr_graph_test )</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">add_rownames</span>(pr_graph_test) <span class="sc">%&gt;%</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(plyr<span class="sc">::</span><span class="fu">desc</span>(morans_test_statistic), plyr<span class="sc">::</span><span class="fu">desc</span>(<span class="sc">-</span>qval)) <span class="co"># %&gt;% head(30)</span></span></code></pre></div>
+<p>Once you’ve identified differentially expressed genes, you’ll often want to visualize their expression levels on the trajectory. The plots below show the top 2 most differentially expressed genes along the trajectory.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>Y <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(X)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># DE genes over the whole trajectory:</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>sig <span class="ot">&lt;-</span> <span class="fu">nrow</span>(<span class="fu">subset</span>(pr_graph_test, qval <span class="sc">&lt;</span> <span class="fl">0.01</span>))</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_cell_trajectory</span>(c3, <span class="at">markers=</span>Y<span class="sc">$</span>gene_short_name[<span class="dv">1</span>] , </span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>                     <span class="at">use_color_gradient =</span> <span class="cn">TRUE</span>, <span class="at">alpha=</span><span class="fl">0.7</span>)</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_cell_trajectory</span>(c3, <span class="at">markers=</span>Y<span class="sc">$</span>gene_short_name[<span class="dv">2</span>] , </span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>                     <span class="at">use_color_gradient =</span> <span class="cn">TRUE</span>, <span class="at">alpha=</span><span class="fl">0.7</span>)</span></code></pre></div>
+<p><strong>Exercise 4.2 Repeat the analysis using UMAP instead of t-SNE dimensionality reduction. </strong></p>
+<hr />
+<p><br></p>
+</div>
+<div id="sessioninfo" class="section level1" number="9">
+<h1 number="9"><span class="header-section-number">9</span> sessionInfo()</h1>
 <details>
 <summary>
 <strong>Click para mostrar</strong>
@@ -388,74 +593,59 @@ div.tocify {
 ## [5] LC_TIME=Spanish_Spain.1252    
 ## 
 ## attached base packages:
-## [1] parallel  stats4    stats     graphics  grDevices utils     datasets 
-## [8] methods   base     
+##  [1] splines   stats4    parallel  stats     graphics  grDevices utils    
+##  [8] datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] corrplot_0.84               ggbeeswarm_0.6.0           
-##  [3] ggthemes_4.2.4              scater_1.14.6              
-##  [5] ggplot2_3.3.3               ouija_0.99.1               
-##  [7] Rcpp_1.0.6                  SLICER_0.2.0               
-##  [9] destiny_3.0.1               TSCAN_1.24.0               
-## [11] SingleCellExperiment_1.8.0  SummarizedExperiment_1.16.1
-## [13] DelayedArray_0.12.3         BiocParallel_1.20.1        
-## [15] matrixStats_0.58.0          Biobase_2.46.0             
-## [17] GenomicRanges_1.38.0        GenomeInfoDb_1.22.1        
-## [19] IRanges_2.20.2              S4Vectors_0.24.4           
-## [21] BiocGenerics_0.32.0        
+##  [1] Seurat_3.2.0        devtools_2.4.0      usethis_2.0.1      
+##  [4] reticulate_1.18     monocle_2.14.0      DDRTree_0.1.5      
+##  [7] irlba_2.3.3         VGAM_1.1-5          ggplot2_3.3.3      
+## [10] Biobase_2.46.0      BiocGenerics_0.32.0 Matrix_1.3-2       
 ## 
 ## loaded via a namespace (and not attached):
-##   [1] utf8_1.2.1               R.utils_2.10.1           tidyselect_1.1.0        
-##   [4] grid_3.6.3               combinat_0.0-8           ranger_0.12.1           
-##   [7] munsell_0.5.0            codetools_0.2-18         withr_2.4.1             
-##  [10] colorspace_2.0-0         fastICA_1.2-2            knitr_1.31              
-##  [13] robustbase_0.93-7        vcd_1.4-8                tensor_1.5              
-##  [16] VIM_6.1.0                TTR_0.24.2               rstan_2.21.2            
-##  [19] splancs_2.01-40          GenomeInfoDbData_1.2.2   polyclip_1.10-0         
-##  [22] coda_0.19-4              vctrs_0.3.7              generics_0.1.0          
-##  [25] xfun_0.22                R6_2.5.0                 rsvd_1.0.3              
-##  [28] RcppEigen_0.3.3.9.1      bitops_1.0-6             spatstat.utils_2.1-0    
-##  [31] promises_1.2.0.1         scales_1.1.1             nnet_7.3-15             
-##  [34] beeswarm_0.3.1           gtable_0.3.0             processx_3.5.0          
-##  [37] goftest_1.2-2            rlang_0.4.10             scatterplot3d_0.3-41    
-##  [40] splines_3.6.3            hexbin_1.28.2            inline_0.3.17           
-##  [43] yaml_2.2.1               abind_1.4-5              httpuv_1.5.5            
-##  [46] tensorA_0.36.2           tools_3.6.3              cubature_2.0.4.1        
-##  [49] ellipsis_0.3.1           gplots_3.1.1             jquerylib_0.1.3         
-##  [52] proxy_0.4-25             MCMCglmm_2.32            plyr_1.8.6              
-##  [55] zlibbioc_1.32.0          purrr_0.3.4              RCurl_1.98-1.3          
-##  [58] ps_1.6.0                 prettyunits_1.1.1        rpart_4.1-15            
-##  [61] alphahull_2.2            deldir_0.2-10            viridis_0.5.1           
-##  [64] cowplot_1.1.1            zoo_1.8-9                haven_2.3.1             
-##  [67] magrittr_2.0.1           data.table_1.14.0        RSpectra_0.16-0         
-##  [70] openxlsx_4.2.3           lmtest_0.9-38            pcaMethods_1.78.0       
-##  [73] lle_1.1                  hms_1.0.0                mime_0.10               
-##  [76] evaluate_0.14            xtable_1.8-4             smoother_1.1            
-##  [79] rio_0.5.26               mclust_5.4.7             readxl_1.3.1            
-##  [82] gridExtra_2.3            compiler_3.6.3           tibble_3.1.0            
-##  [85] KernSmooth_2.23-18       V8_3.4.0                 crayon_1.4.1            
-##  [88] R.oo_1.24.0              StanHeaders_2.21.0-7     htmltools_0.5.1.1       
-##  [91] mgcv_1.8-34              corpcor_1.6.9            later_1.1.0.1           
-##  [94] tidyr_1.1.3              RcppParallel_5.0.3       MASS_7.3-53.1           
-##  [97] boot_1.3-27              Matrix_1.3-2             car_3.0-10              
-## [100] cli_2.4.0                sgeostat_1.0-27          R.methodsS3_1.8.1       
-## [103] igraph_1.2.6             forcats_0.5.1            pkgconfig_2.0.3         
-## [106] foreign_0.8-75           laeken_0.5.1             sp_1.4-5                
-## [109] vipor_0.4.5              bslib_0.2.4              XVector_0.26.0          
-## [112] stringr_1.4.0            callr_3.6.0              digest_0.6.27           
-## [115] spatstat.data_2.1-0      rmarkdown_2.7            cellranger_1.1.0        
-## [118] DelayedMatrixStats_1.8.0 curl_4.3                 shiny_1.6.0             
-## [121] gtools_3.8.2             ggplot.multistats_1.0.0  lifecycle_1.0.0         
-## [124] nlme_3.1-152             jsonlite_1.7.2           carData_3.0-4           
-## [127] BiocNeighbors_1.4.2      viridisLite_0.3.0        fansi_0.4.2             
-## [130] pillar_1.5.1             lattice_0.20-41          loo_2.4.1               
-## [133] fastmap_1.1.0            DEoptimR_1.0-8           pkgbuild_1.2.0          
-## [136] glue_1.4.2               xts_0.12.1               zip_2.1.1               
-## [139] spatstat_1.64-1          class_7.3-18             stringi_1.5.3           
-## [142] sass_0.3.1               RcppHNSW_0.3.0           BiocSingular_1.2.2      
-## [145] caTools_1.18.2           snowfall_1.84-6.1        dplyr_1.0.5             
-## [148] irlba_2.3.3              e1071_1.7-6              ape_5.4-1               
-## [151] tripack_1.3-9.1</code></pre>
+##   [1] plyr_1.8.6           igraph_1.2.6         lazyeval_0.2.2      
+##   [4] densityClust_0.3     listenv_0.8.0        fastICA_1.2-2       
+##   [7] digest_0.6.27        htmltools_0.5.1.1    viridis_0.6.0       
+##  [10] fansi_0.4.2          magrittr_2.0.1       memoise_2.0.0       
+##  [13] tensor_1.5           cluster_2.1.2        ROCR_1.0-11         
+##  [16] limma_3.42.2         remotes_2.3.0        globals_0.14.0      
+##  [19] matrixStats_0.58.0   docopt_0.7.1         prettyunits_1.1.1   
+##  [22] colorspace_2.0-0     ggrepel_0.9.1        xfun_0.22           
+##  [25] dplyr_1.0.5          sparsesvd_0.2        callr_3.6.0         
+##  [28] crayon_1.4.1         jsonlite_1.7.2       spatstat_1.64-1     
+##  [31] spatstat.data_2.1-0  survival_3.2-10      zoo_1.8-9           
+##  [34] ape_5.4-1            glue_1.4.2           polyclip_1.10-0     
+##  [37] gtable_0.3.0         leiden_0.3.7         pkgbuild_1.2.0      
+##  [40] future.apply_1.7.0   abind_1.4-5          scales_1.1.1        
+##  [43] pheatmap_1.0.12      miniUI_0.1.1.1       Rcpp_1.0.6          
+##  [46] viridisLite_0.4.0    xtable_1.8-4         rsvd_1.0.3          
+##  [49] htmlwidgets_1.5.3    httr_1.4.2           FNN_1.1.3           
+##  [52] RColorBrewer_1.1-2   ellipsis_0.3.1       ica_1.0-2           
+##  [55] pkgconfig_2.0.3      uwot_0.1.10          deldir_0.2-10       
+##  [58] sass_0.3.1           utf8_1.2.1           tidyselect_1.1.0    
+##  [61] rlang_0.4.10         reshape2_1.4.4       later_1.1.0.1       
+##  [64] munsell_0.5.0        tools_3.6.3          cachem_1.0.4        
+##  [67] cli_2.4.0            generics_0.1.0       ggridges_0.5.3      
+##  [70] evaluate_0.14        stringr_1.4.0        fastmap_1.1.0       
+##  [73] yaml_2.2.1           goftest_1.2-2        processx_3.5.1      
+##  [76] knitr_1.32           fs_1.5.0             fitdistrplus_1.1-3  
+##  [79] purrr_0.3.4          RANN_2.6.1           pbapply_1.4-3       
+##  [82] future_1.21.0        nlme_3.1-152         mime_0.10           
+##  [85] slam_0.1-48          compiler_3.6.3       plotly_4.9.3        
+##  [88] png_0.1-7            testthat_3.0.2       spatstat.utils_2.1-0
+##  [91] tibble_3.1.1         bslib_0.2.4          stringi_1.5.3       
+##  [94] highr_0.9            ps_1.6.0             desc_1.3.0          
+##  [97] lattice_0.20-41      HSMMSingleCell_1.6.0 vctrs_0.3.7         
+## [100] pillar_1.6.0         lifecycle_1.0.0      combinat_0.0-8      
+## [103] lmtest_0.9-38        jquerylib_0.1.3      RcppAnnoy_0.0.18    
+## [106] data.table_1.14.0    cowplot_1.1.1        httpuv_1.5.5        
+## [109] patchwork_1.1.1      R6_2.5.0             promises_1.2.0.1    
+## [112] KernSmooth_2.23-18   gridExtra_2.3        parallelly_1.24.0   
+## [115] sessioninfo_1.1.1    codetools_0.2-18     MASS_7.3-53.1       
+## [118] pkgload_1.2.1        rprojroot_2.0.2      withr_2.4.2         
+## [121] qlcMatrix_0.9.7      sctransform_0.3.2    mgcv_1.8-35         
+## [124] grid_3.6.3           rpart_4.1-15         tidyr_1.1.3         
+## [127] rmarkdown_2.7        Rtsne_0.15           shiny_1.6.0</code></pre>
 </details>
 </div>
 

@@ -34,46 +34,35 @@ __En la práctica 3__  se integran en Seurat datos de scRNA-seq de páncreas hum
 
 __En la práctica 4__ aprenderemos a inferir trayectorias celulares a partir de datos de expresión single cell usando Monocle3.
 
-__Los archivos necesarios para realizar las prácticas se pueden encontrar en [Dropbox](https://www.dropbox.com/sh/3gbbrz8go3fki29/AACJnK2StRDtXPBrMK110QEGa?dl=0) o en mi repositorio de [GitHub](https://github.com/gloknar/R-Utilities/tree/master/Traduccion%20Seurat%20V2%20V3/Archivos%20accesorios).__
+__Los archivos necesarios para realizar las prácticas se pueden encontrar en [Dropbox](https://www.dropbox.com/sh/3gbbrz8go3fki29/AACJnK2StRDtXPBrMK110QEGa?dl=0) o en [GitHub](https://github.com/gloknar/R-Utilities/tree/master/Traduccion%20Seurat%20V2%20V3/Archivos%20accesorios).__
 
 ```{r instalacion_paquetes, eval = F}
-# Instalación monocle3 en R 3.6.1
-if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
-BiocManager::install(version = "3.10")
-
-BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
-                       'limma', 'S4Vectors', 'SingleCellExperiment',
-                       'SummarizedExperiment', 'batchelor', 'Matrix.utils'))
-
-install.packages("devtools")
-devtools::install_github('cole-trapnell-lab/leidenbase')
-devtools::install_github('cole-trapnell-lab/monocle3')
-
-
-# Instalación Seurat V3 en R 3.6.1
+# Instalación Seurat V3 en R 3.6
 remotes::install_version("Seurat", version = "3.2")
+
+# Si usas R 3.6, instala spatstat 1.64-1, ya que R 3.6 no es compatible con
+# versiones posteriores de spatstat
+install.packages("https://cran.r-project.org/src/contrib/Archive/spatstat/spatstat_1.64-1.tar.gz", repo=NULL, type="source")
+
 ```
 
 
 <br>
 
-Comenzamos cargando Seurat y Monocle3.
+Comenzamos cargando Seurat
 
 ```{r, message = F}
 # Cargamos librerías
 library("Seurat")
-library("monocle3")
 library("ggplot2")
 ```
 
 <br>
 
-Hemos cargado las siguientes versiones:
+Hemos cargado la siguiente versión de Seurat:
 
 ```{r}
 packageVersion("Seurat")
-packageVersion("monocle3")
 ```
 
 <br>
@@ -533,15 +522,23 @@ Por último procedemos a guardar el trabajo realizado hasta ahora, pues lo neces
 saveRDS(object = cm, file = "./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/nakamura_P4.rds")
 ```
 
+
 ***
 
 <br>
 
-# Referencias
+# Bibliografía
 
 * Butler, A., Hoffman, P., Smibert, P. et al. Integrating single-cell transcriptomic data across different conditions, technologies, and species. Nat Biotechnol 36, 411–420 (2018). https://doi.org/10.1038/nbt.4096
 
-* e
+* Nakamura, T., Okamoto, I., Sasaki, K., Yabuta, Y., Iwatani, C., Tsuchiya, H., Seita, Y., Nakamura, S., Yamamoto, T., and Saitou, M. (2016). A developmental coordinate of pluripotency among mice, monkeys and humans. Nature, 537(7618):57–62
+
+
+
+
+***
+
+<br>
 
 
 # sessionInfo()
