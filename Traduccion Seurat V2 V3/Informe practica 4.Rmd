@@ -49,14 +49,15 @@ El protocolo de Monocle consta de 5 pasos principales, detallados a continuació
 ## Paso 1: Preprocesamiento y normalizado de los datos
 
 
-To analyze a single-cell dataset, Monocle first normalizes expression values to account for technical variation
-in RNA recovery and sequencing depth.
+Primero Monocle normaliza los valores de expresión génica para controlar la varianza técnica debida a la profundidad del secuenciado y la recuperación del ARN de la muestra.
 
 
-## Step 2: Reducing the dimensionality of the data
+## Paso 2: Reducir la dimensionalidad de los datos
 
-Next, to eliminate noise and make downstream computations more tractable, it projects each cell onto the
-top 50 (by default) principal components. Then, you as the user choose whether to reduce the dimensionality
+
+Luego se proyectan las células al espacio del PCA (por defecto se calculan las 50 1<sup>as</sup> componentes) para eliminar ruido y facilitar la computación de los siguientes pasos.
+
+Then, you as the user choose whether to reduce the dimensionality
 further using one of two non-linear methods for dimensionality reduction: t-SNE or UMAP. The former is
 an extremely popular and widely accepted technique for visualizing single-cell RNA-seq data. The latter is
 faster, and often better preserves the global structure of the data but is also newer and therefore less well tested by the single-cell community. Then, Monocle 3 will cluster your cells, organize them into trajectories,
