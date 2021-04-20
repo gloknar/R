@@ -114,8 +114,12 @@ data <- readRDS(file = "./Cosas accesorias Informe 1/nakamura_P4.rds")
 head(data@meta.data)
 
 
-# Creamos un nuevo objeto CellDataSet a partir del objeto seurat:
-#c3 <- monocle::importCDS(data, import_all = FALSE) borrar?
+# Creamos un nuevo objeto CellDataSet a partir del objeto seurat. Nótese que
+# tenemos que añadir la columna "gene_short_name" dado que varios métodos de
+# Monocle 3 lo usan por ejemplo, plot_cells(c3, genes = "ZNF692")
+
+data@assays$RNA@meta.features$gene_short_name <-  rownames(data@assays$RNA@meta.features)
+
 c3 <- new_cell_data_set(expression_data = data@assays$RNA@counts,
                         cell_metadata = data@meta.data,
                         gene_metadata = data@assays$RNA@meta.features)
@@ -172,11 +176,15 @@ plot_pc_variance_explained(c3)
 
 Then, apply a further round of (nonlinear) dimensionality reduction using UMAP:
 
-```{r}
+```{r, warning = F}
 c3 <- reduce_dimension(c3, preprocess_method = "PCA", 
                        reduction_method = "UMAP",
                        umap.fast_sgd = F,
                        cores = 1) # umap.fast_sgd = F y cores = 1 para reproducibilidad
+
+plot_cells(c3, color_cells_by = "Cell.Identity")
+
+plot_cells(c3, genes = "ZNF692")
 ```
 
 
@@ -201,26 +209,18 @@ c3 <- cluster_cells(c3, reduction_method = "UMAP",
 
 Now that the cells are partitioned, we can organize each supergroup into a separate trajectory. The default method for doing this in Monocle 3 is _SimplePPT_, which assumes that each trajectory is a tree (albeit one that may have multiple roots). Here we will use _DDRTree_ for the reasons mentioned above. Learn these trees with the learnGraph function:
 
-```{r, fig.width=6, fig.height=6.5, eval = F}
+```{r}
 c3 <- learn_graph(c3, use_partition = T,
                   close_loop = T, verbose = T)
 
+# c3 <- order_cells(c3, reduction_method = "UMAP", verbose = T) Mirar luego
 
-c3 <- order_cells(c3, reduction_method = "UMAP", verbose = T)
-
-plot_cells(c3) 
-
+plot_cells(c3)
 
 
 # With graph autocorrelation:
-pr_test_res <- graph_test(c3,  neighbor_graph="principal_graph", cores=4)
-pr_deg_ids <- row.names(subset(pr_test_res, q_value < 0.05))
-
-c3 <- learnGraph(c3,  RGE_method = 'DDRTree' ) 
-
-
-gene_annotation
-gene_annotation <- readRDS(url("http://staff.washington.edu/hpliner/data/cao_l2_rowData.rds"))
+#pr_test_res <- graph_test(c3,  neighbor_graph="principal_graph", cores=4)
+#pr_deg_ids <- row.names(subset(pr_test_res, q_value < 0.05))
 ```
 
 
