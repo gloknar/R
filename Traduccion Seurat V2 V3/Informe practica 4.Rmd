@@ -156,7 +156,7 @@ c3 <- new_cell_data_set(expression_data = data@assays$RNA@counts,
 
 <br>
 
-Para los objetos de tipo `CellDataSet`, podemos acceder a su información con los métodos `pData()` y `fData()` de Monocle 3:
+Para los objetos de tipo `CellDataSet`, podemos acceder a su información con los métodos `pData()`, `fData()` y `exprs()` de Monocle 3:
 
 ```{r}
 # Vemos los nombres de las columnas de los metadatos del objeto seurat. Estos
@@ -173,6 +173,9 @@ head(pData(c3)$Cell.Identity)
 # Ídem para los metadatos de los genes con fData:
 colnames(fData(c3))
 head(fData(c3))
+
+# Visualizamos una parte de la matriz de conteos
+head(exprs(c3))
 ```
 
 
@@ -182,7 +185,7 @@ head(fData(c3))
 
 ## Paso 1: Preprocesamiento y normalizado de los datos
 
-En este paso estimamos los factores de tamaño para cada célula (????) y la dispersión de los genes en el objeto `c3`. Monocle 3 realiza estas y otras operaciones con el paquete `DelayedArray`, lo que le permite escalar con millones de células. Dicho paquete divide las operaciones en bloques para prevenir el consumo excesivo de RAM del ordenador. Puedes controlar el tamaño de cada bloque y los mensajes que se devuelven por consola con los siguientes comandos:
+En este paso estimamos los factores de tamaño para cada célula (https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1874-1  “size factors” ) y la dispersión (=varianza) de los genes en el objeto `c3`. Monocle 3 realiza estas y otras operaciones con el paquete `DelayedArray`, lo que le permite escalar con millones de células. Dicho paquete divide las operaciones en bloques para prevenir el consumo excesivo de RAM del ordenador. Puedes controlar el tamaño de cada bloque y los mensajes que se devuelven por consola con los siguientes comandos:
 
 
 ```{r}
@@ -200,21 +203,9 @@ DelayedArray::setAutoBlockSize(1e9)
 # options(DelayedArray.block.size=1e9)
 ```
 
-
-<br>
-
-```{r}
-#c3 <- estimateSizeFactors(c3)
-#c3 <- estimateDispersions(c3)
-
-
-
-```
-
-Next, run the preprocessCDS() function to project the data onto the top principal components:
+Establecido el tamaño de bloque y los mensajes por consola, procedemos al normalizado de los datos con el comando `preprocess_cds`. Nótese que se recomienda usar el método PCA para datos de RNA-seq y LSI para datos de ATAC-seq.
 
 ```{r}
-# function to project the data onto the top principal components:
 c3 <- preprocess_cds(c3, method = "PCA", num_dim = 20,
                      norm_method = "log")
 
@@ -229,7 +220,8 @@ plot_pc_variance_explained(c3)
 
 ## Paso 2: Reducir la dimensionalidad de los datos
 
-Then, apply a further round of (nonlinear) dimensionality reduction using UMAP:
+Ahora procedemos a computar la proyección no lineal de los datos en t-SNE o UMAP (por defecto en Monocle 3 1.0.0) con el comando `reduce_dimension()`.
+
 
 ```{r, warning = F}
 c3 <- reduce_dimension(c3, preprocess_method = "PCA", 
@@ -243,6 +235,7 @@ plot_cells(c3, genes = "GBX2", group_label_size = 6, cell_size = 1) # Biomarcado
 
 plot_cells(c3, genes = "GATA3", norm_method = "log",
            group_label_size = 6, cell_size = 1) # Biomarcador del hipoblasto
+# Mas biomarcadores: https://discovery.lifemapsc.com/in-vivo-development/inner-cell-mass/inner-cell-mass
 ```
 
 
@@ -257,6 +250,8 @@ In Monocle 3, we recognize "disjoint" trajectories by drawing on ideas from Alex
 ```{r}
 c3 <- cluster_cells(c3, reduction_method = "UMAP",
                     verbose = T)
+
+plot_cells(c3, color_cells_by = "partition")
 ```
 
 ***
