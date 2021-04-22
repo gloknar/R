@@ -224,6 +224,9 @@ DelayedArray::setAutoBlockSize(2e8)
 Establecido el tamaño de bloque y los mensajes por consola, procedemos al normalizado de los datos con el comando `preprocess_cds`. Nótese que se recomienda usar el método PCA para datos de RNA-seq y LSI para datos de ATAC-seq.
 
 ```{r}
+# Si no se ha calculado previamente el size factor de cada muestra/célula, se
+# puede calcular aquí con el comando:
+# c3 <- estimate_size_factors(c3)
 c3 <- preprocess_cds(c3, method = "PCA", num_dim = 20,
                      norm_method = "log")
 
@@ -315,35 +318,17 @@ head(partitions(c3))
 ## Paso 4: Aprender el grafo principal
 
 
-Como ya se comentó en la sección 2.4, emplearemos UMAP + SimplePPT para generar el grafo a partir del cual inferiremos la trayectoria(s). Cada supergrupo genera su propia trayectoria, y puesto que nuestros datos forman parte de un único supergrupo, esta vez generaremos una única trayectoria.
+Como ya se comentó en la sección 2.4, emplearemos UMAP + SimplePPT para generar el grafo a partir del cual inferiremos la trayectoria(s). Cada supergrupo genera su propia trayectoria, y puesto que nuestros datos forman parte de un único supergrupo, esta vez generaremos una única trayectoria. Esto se consigue con el comando `learn_graph()`:
 
 ```{r}
 c3 <- learn_graph(c3, use_partition = T,
                   close_loop = T, verbose = T)
-
-# c3 <- order_cells(c3, reduction_method = "UMAP", verbose = T) Mirar luego
-
-# With regression:
-# 
-# gene_fits <- fit_models(c3, model_formula_str = "~Cell.Identity")
-# fit_coefs <- coefficient_table(gene_fits)
-# emb_time_terms <- fit_coefs %>% filter(term == "Cell.Identity")
-# emb_time_terms <- emb_time_terms %>% mutate(q_value = p.adjust(p_value))
-# sig_genes <- emb_time_terms %>% filter (q_value < 0.05) %>% pull(gene_short_name)
-
-# With graph autocorrelation:
-#pr_test_res <- graph_test(c3,  neighbor_graph="principal_graph", cores=4)
-#pr_deg_ids <- row.names(subset(pr_test_res, q_value < 0.05))
 ```
 
 
-<br>
+Ahora cada vez que llamemos a `plot_cells()`, veremos el grafo aprendido, y como ya comentamos en el párrafo anterior, en nuestro caso constará de una única trayectoria:
 
-## Paso 5: Visualizar la trayectoria
-
-Ahora cada evz que llamemos a `plot_cells()`, veremos la trayectoria inferida, y como ya comentamos en el párrafo anterior, en nuestro caso será una única trayectoria:
-
-```{r}
+```{r, warning = F}
 cell_type_color <- c("EXMC" = "blue",
                      "Gast"  = "#46C7EF",
                      "PostL-EPI" = "magenta",
@@ -354,53 +339,131 @@ cell_type_color <- c("EXMC" = "blue",
                      "PostE-EPI" = "gold",
                      "Pre-EPI" = "gray",
                      "PreL-TE" = "black",
-                     "VEYE" = 'purple' )
+                     "VEYE" = "purple")
 
 plot_cells(c3, color_cells_by = "Cell.Identity", cell_size = 2, 
-           label_cell_groups = F) +
+           label_cell_groups = F, graph_label_size = 3, 
+           label_branch_points = T, label_leaves = T) +
   scale_color_manual(values = cell_type_color)
 ```
 
+En el grafo superior, los números encapsulados en círculos negros son los puntos donde se ramifica el grafo/árbol/trayectoria (aquí son términos intercambiables), mientras que los círculos grises corresponden a las hojas del árbol, _i.e._ los posibles destinos que pueden tomar nuestras células al final de la trayectoria (lo que en ouija se conocen como __estados metaestables__). A continuación desglosamos el grafo anterior para hacerlo más comprensible. Se observa que el árbol presenta 4 puntos de ramificación, y 6 destinos celulares (=hojas).
 
+```{r, echo = F}
+plot_cells(c3, color_cells_by = "Cell.Identity", cell_size = 2, 
+           label_cell_groups = F, graph_label_size = 3, label_branch_points = T, label_leaves = F) +
+  scale_color_manual(values = cell_type_color) + ggtitle("Puntos de ramificación") +
+  theme(plot.title = element_text(hjust = .5))
 
-<details>
-<summary> __Ejercicio 4.1: ¿Qué piensas de la trayectoria? ¿Concuerda con el conocimiento biológico preestablecido hasta la fecha?__ </summary>
-
-<br>
-
-__Solución:__
-
-
-**Adjusting the start of pseudotime with orderCells**
-
-We know that ICM (inner cell mass) will give rise to the pre-implantation epiblast and the hypoblast. We need to tell Monocle that these cells are the "beginning" of the trajectory. In Monocle 2, this wouldn't be possible, because the software required that the root be one of the leaves of the tree. Monocle 3 allows you to specify an internal part of the tree as the root. 
-
-
-```{r, fig.width=5, fig.height=5.5, eval = F}
-icm_node_ids = get_correct_root_state(c3,
-                                      cell_phenotype =
-                                        'res.0.6', "ICM")
-c3 <- orderCells(c3, root_pr_nodes = icm_node_ids)
-plot_cell_trajectory(c3)
+plot_cells(c3, color_cells_by = "Cell.Identity", cell_size = 2, 
+           label_cell_groups = F, graph_label_size = 3, label_branch_points = F, label_leaves = T) +
+  scale_color_manual(values = cell_type_color) + ggtitle("Hojas del árbol (=destinos celulares)") +
+  theme(plot.title = element_text(hjust = .5))
 ```
 
 
-</details>
+Se observa también que Monocle 3 no asigna automáticamente el nodo raíz del árbol. Para ello y con ayuda del comando `order_cells()` elegiremos en el gráfico el nodo raíz, a partir del cual Monocle 3 calculará el pseudotiempo y ordenará en él las células. Si no se proporcionan los nodos/células a esta función, se abrirá una ventana interactiva mediante la cual podremos elegir visualmente los nodos raíz. Este modo interactivo es incompatible con el compilado de informes, por lo que cuando ejecutes el código en tu máquina, podrás hacerlo en modo interactivo, pero en mi caso le pasaré a la función los nodos raíz en forma de argumento. Para ello, graficaré el grafo, pero esta vez mostrando los nombres de los puntos principales.
+
+Téngase en cuenta que a diferencia de Monocle 2, Monocle 2 1.0.0 permite elegir nodos internos como nodos raíz (en Monocle 2, sólo los nodos distales podían ser elegidos como nodos raíz, de manera similar a como pasaba con los mapas de difusión en la práctica 2). Además, como Monocle 3 puede generar más de una trayectoria, resulta coherente que se puedan elegir más de un nodo raíz.
+
+
+```{r}
+plot_cells(c3, label_principal_points = T, cell_size = 2)
+```
+
+A priori sabemos que la masa interna de células (ICM o _inner cell mass_) del embrión dará lugar al hipoblasto y al epiblasto. Por tanto para ajustar el comienzo del pseudotiempo, tenemos que especificarle a Monocle 3 que dichas células son los nodos raíz del grafo. En este caso, el punto principal `Y_67` se corresponde con la ICM, por lo que se lo pasaremos al comando `order_cells()` a través del argumento `root_pr_nodes`:
+
+```{r}
+c3 <- order_cells(c3, reduction_method = "UMAP", root_pr_nodes = "Y_67")
+
+plot_cells(c3, color_cells_by = "pseudotime", cell_size = 2,
+           label_leaves = F, label_branch_points = F,
+           graph_label_size = 3)
+```
+
+
+En la [página web](https://cole-trapnell-lab.github.io/monocle3/docs/trajectories/#order-cells) de Monocle 3 se facilita una función auxiliar para facilitar la extracción de nodos raíz en el grafo, cortesía del autor de Monocle 3, Cole Trapnell. Dicha función se ha modificado ligeramente para adaptarla a nuestro caso, en el cual elegimos como nodo raíz aquellas células etiquetadas como `ICM`:
+
+```{r}
+# a helper function to identify the root principal points:
+get_earliest_principal_node <- function(cds, cell_identity="ICM"){
+  cell_ids <- which(colData(cds)[, "Cell.Identity"] == cell_identity) 
+  # Cambiar "Cell.Identity" y cell_identity según convenga al estudio a mano
+  closest_vertex <-
+  cds@principal_graph_aux[["UMAP"]]$pr_graph_cell_proj_closest_vertex
+  closest_vertex <- as.matrix(closest_vertex[colnames(cds), ])
+  root_pr_nodes <-
+  igraph::V(principal_graph(cds)[["UMAP"]])$name[as.numeric(names
+  (which.max(table(closest_vertex[cell_ids,]))))]
+  
+  root_pr_nodes
+}
+
+# Ordenamos las células con el uso de la función auxiliar
+c3 <- order_cells(c3, root_pr_nodes = get_earliest_principal_node(c3))
+
+# Graficamos
+plot_cells(c3, color_cells_by = "pseudotime", cell_size = 2,
+           label_leaves = F, label_branch_points = F,
+           graph_label_size = 3)
+```
+
+<br>
+
+Por último, comentar que el pseudotiempo se almacena en el bolsillo `c3@principal_graph_aux$UMAP$pseudotime`:
+
+```{r}
+head(c3@principal_graph_aux$UMAP$pseudotime)
+```
 
 
 
-***
+### Visualización de la trayectoria en 3D
+
+Monocle 3 también permite la visualización de las trayectorias en 3D. Para ello, durante la reducción de la dimensionalidad tenemos que pedirle a la función `reduce_dimension()` que guarde como máximo 3 dimensiones mediante el parámetro `max_components`:
+
+```{r, warning = F}
+# Protocolo resumido de Monocle 3 para generar gráficos en 3D
+cds_3d <- reduce_dimension(c3, max_components = 3, 
+                           reduction_method = "UMAP", preprocess_method = "PCA")
+cds_3d <- cluster_cells(cds_3d, reduction_method = "UMAP")
+cds_3d <- learn_graph(cds_3d)
+cds_3d <- order_cells(cds_3d, root_pr_nodes=get_earliest_principal_node(cds_3d))
+
+# Generamos el gráfico 3D y lo visualizamos:
+cds_3d_plot_obj <- plot_cells_3d(cds_3d, color_cells_by="pseudotime")
+cds_3d_plot_obj
+
+# También podemos usar el comando plot_cells_3d():
+plot_cells_3d(cds_3d, color_cells_by = "Cell.Identity", 
+              color_palette = cell_type_color)
+```
+
 
 <br>
 
 
+## Paso 5: Análisis de expresión diferencial
 
-# Identifying genes that vary in expression over a trajectory
 
 We are often interested in finding genes that are differentially expressed across a single-cell trajectory. Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have similar (or dissimilar) expression levels for the gene being tested. Although both Pearson correlation and Moran’s I ranges from -1 to 1, the interpretation of Moran’s I is slightly different: +1 means that nearby cells will have perfectly similar expression (as in the right panel below); 0 represents no correlation (center), and -1 means that neighboring cells will be *anti-correlated* (left).
 
 ```{r monocle.figure2, out.width = '90%', fig.cap="Moran’s I test example.", echo=FALSE}
 knitr::include_graphics("./Cosas accesorias Informe 4/moran.png")
+```
+
+
+```{r, eval = F}
+# With regression:
+gene_fits <- fit_models(c3, model_formula_str = "~Cell.Identity")
+fit_coefs <- coefficient_table(gene_fits)
+emb_time_terms <- fit_coefs %>% filter(term == "Cell.Identity")
+emb_time_terms <- emb_time_terms %>% mutate(q_value = p.adjust(p_value))
+sig_genes <- emb_time_terms %>% filter (q_value < 0.05) %>% pull(gene_short_name)
+
+# With graph autocorrelation:
+pr_test_res <- graph_test(c3,  neighbor_graph="principal_graph", cores=4)
+pr_deg_ids <- row.names(subset(pr_test_res, q_value < 0.05))
 ```
 
 
