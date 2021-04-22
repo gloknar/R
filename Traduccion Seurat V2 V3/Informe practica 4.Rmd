@@ -79,7 +79,13 @@ Monocle 2 asume que todos tus datos son parte de una única trayectoria, por lo 
 ## Paso 4: Generar el grafo principal
 
 
-Monocle 3 dispone de 3 maneras distintas de organizarlas las células en trayectorias, todas ellas basadas en el concepto de embebimiento en grafo reverso o "_reversed graph embedding_". __DDRTree__ es el método usado por Monocle 2 para generar trayectorias con forma de árbol, y este algoritmo ha sido mejorado en Monocle 3. En concreto, se ha optimizado su rendimiento, lo que le permite procesar millones de células en minutos. __SimplePPT__ genera también trayectorias en forma de árbol, pero a diferencia de DDRTree, no aplica reducciones de la dimensionalidad adicionales. __L1Graph__ es un algoritmo de optimización avanzado capaz de generar trayectorias que incluyan bucles.
+Versiones anteriores de Monocle 3 y Monocle 2 disponían de 3 maneras distintas de organizarlas las células en trayectorias, todas ellas basadas en el concepto de embebimiento en grafo reverso o "_reversed graph embedding_". __DDRTree__ era el método usado por Monocle 2 para generar trayectorias con forma de árbol, y este algoritmo fue mejorado en veriones anteriores de Monocle 3. En concreto, se optimizó su rendimiento, lo que le permitía procesar millones de células en minutos. __SimplePPT__ genera también trayectorias en forma de árbol, pero a diferencia de DDRTree, no aplica reducciones de la dimensionalidad adicionales. __L1Graph__ es un algoritmo de optimización avanzado capaz de generar trayectorias que incluyan bucles.
+
+No obstante, el autor [ha expresado](https://github.com/cole-trapnell-lab/monocle3/issues/187) recientemente que Monocle 3 1.0.0 en adelante incorporará sólo SimplePPT, puesto que al combinarlo con UMAP, es más rápido, robusto y fácil de interpretar que DDRTree. 
+
+> "DDRTree is not likely to be included in Monocle 3 going forward, because it doesn't scale well to the kind of datasets Monocle 3 is designed to process. Beyond a 100,000 cells DDRTree is impractically slow. However, SimplePPT and DDRTree are closely related techniques, and in our experience, UMAP + SimplePPT is faster, more robust, and gives easier to interpret trajectories than UMAP or PCA + DDRTree."
+>
+> -- <cite>Cole Trapnell, 2019</cite>
 
 Una vez que Monocle ha aprendido un grafo principal que se ajusta a los datos, se proyecta cada célula al susodicho grafo. A continuación el usuario selecciona uno o más puntos en el grafo que definan los puntos de partida de la trayectoria. Monocle define entonces el pseudotiempo como la distancia de cada célula al punto de inicio más cercano.
 
@@ -207,7 +213,7 @@ DelayedArray:::set_verbose_block_processing(TRUE)
 # tamaño del bloque, más rápidas serán algunos cálculos pero usará más memoria
 # RAM, así que ajústalo con cautela.
 DelayedArray::getAutoBlockSize()
-DelayedArray::setAutoBlockSize(1e9)
+DelayedArray::setAutoBlockSize(2e8)
 
 # Alternativamente:
 # getOption("DelayedArray.block.size")
@@ -269,23 +275,38 @@ plot_cells(c3, genes = "GATA6", color_cells_by = "Cell.Identity", group_label_si
 
 <br>
 
-## Paso 3: Partición de las células en supergrupos
+## Paso 3: Partición de las células en supergrupos/particiones
 
 
-En vez de forzar a todas las células en una única trayectoria, Monocle 3 permite inferir un conjunto de trayectorias, de manera que te permite estudiar varios procesos biológicos simultáneos con un mismo dataset. Por ejemplo, durante una infección (ya sea vírica, bacteriana, fúngica...), el sistema inmune responde a varios estímulos (antígenos, citocinas, superantígenos...), por lo que cada célula inmune ejercerá un rol determinado. Por ende, dicho proceso se caracteriza mejor por un conjunto de trayectorias, en lugar de una única trayectoria.
+En vez de forzar a todas las células en una única trayectoria, Monocle 3 permite inferir un conjunto de trayectorias, de manera que te permite estudiar varios procesos biológicos simultáneos con un mismo dataset. Por ejemplo, durante una infección (ya sea vírica, bacteriana, fúngica...), los diversos componentes del sistema inmune responden a un cóctel de estímulos (antígenos, citocinas, superantígenos...), por lo que cada célula inmune ejercerá un rol determinado. Por ende, dicho proceso se caracteriza mejor por un conjunto de trayectorias, en lugar de una única trayectoria.
 
-Otra ventaja de inferir más de una trayectoria es que el algoritmo se vuelve resistente a la presencia de células extremas o _outliers_, las cuales normalmente confundirían a la trayectoria original. Al particionar las células en supergrupos, Monocle 3 agrupa entre sí dichas células extremas y las diferencia de otros supergrupos.
+Otra ventaja de inferir más de una trayectoria es que el algoritmo se vuelve resistente a la presencia de células extremas o _outliers_, las cuales normalmente confundirían a la trayectoria original. Al particionar las células en supergrupos o particiones, Monocle 3 agrupa entre sí dichas células extremas y las diferencia de otros supergrupos.
 
-En Monocle 3, las trayectorias independientes o disjuntas (_disjoint_)
+Monocle 3 incluye un test para la conectividad de comunidades celulares el cual divide las células en los ya mencionados supergrupos. Este test se deriva del concepto de participación en grafos abstractos (_abstract graph participation_), desarrollado por [Wolf _et al._ (2019)](https://doi.org/10.1186/s13059-019-1663-x) para su algoritmo [PAGA](https://github.com/theislab/paga). Para realizar dicho clustering, basta con llamar a la función `cluster_cells()`.
 
-In Monocle 3, we recognize "disjoint" trajectories by drawing on ideas from Alex Wolf and colleagues, who recently introduced the concept of abstract graph participation [@Wolf208819]. Monocle 3 implements the test for cell community connectedness from Wolf et al. via the partitionCells() function, which divides the cells into "supergroups".
+Maticemos que la función `cluster_cells()` genera clusters mediante el método de Leiden ([Traag _et al._, 2019](https://doi.org/10.1038/s41598-019-41695-z)), mientras que los supergrupos, particiones o superclusters son generados mediante el ya mencionado algoritmo de Wolf _et al._.
 
 
-```{r}
-c3 <- cluster_cells(c3, reduction_method = "UMAP",
+```{r, message = F}
+c3 <- cluster_cells(c3, reduction_method = "UMAP", 
+                    cluster_method = "leiden", 
                     verbose = T)
 
-plot_cells(c3, color_cells_by = "partition")
+plot_cells(c3, color_cells_by = "cluster", group_label_size = 4) + 
+  ggtitle("Clusters generados") +
+  theme(plot.title = element_text(hjust = .5))
+
+plot_cells(c3, color_cells_by = "partition", group_label_size = 4) + 
+  ggtitle("Particiones generadas") +
+  theme(plot.title = element_text(hjust = .5))
+```
+
+
+Una vez calculados los clusters y las particiones, podemos acceder a ellas mediante los siguientes comandos de Monocle 3:
+
+```{r}
+head(clusters(c3))
+head(partitions(c3))
 ```
 
 
@@ -293,7 +314,8 @@ plot_cells(c3, color_cells_by = "partition")
 
 ## Paso 4: Aprender el grafo principal
 
-Now that the cells are partitioned, we can organize each supergroup into a separate trajectory. The default method for doing this in Monocle 3 is _SimplePPT_, which assumes that each trajectory is a tree (albeit one that may have multiple roots). Here we will use _DDRTree_ for the reasons mentioned above. Learn these trees with the learnGraph function:
+
+Como ya se comentó en la sección 2.4, emplearemos UMAP + SimplePPT para generar el grafo a partir del cual inferiremos la trayectoria(s). Cada supergrupo genera su propia trayectoria, y puesto que nuestros datos forman parte de un único supergrupo, esta vez generaremos una única trayectoria.
 
 ```{r}
 c3 <- learn_graph(c3, use_partition = T,
@@ -301,7 +323,6 @@ c3 <- learn_graph(c3, use_partition = T,
 
 # c3 <- order_cells(c3, reduction_method = "UMAP", verbose = T) Mirar luego
 
-plot_cells(c3)
 # With regression:
 # 
 # gene_fits <- fit_models(c3, model_formula_str = "~Cell.Identity")
@@ -316,33 +337,38 @@ plot_cells(c3)
 ```
 
 
-
 <br>
 
 ## Paso 5: Visualizar la trayectoria
 
-Once the you've learned the trajectory, you can visualize the it:
+Ahora cada evz que llamemos a `plot_cells()`, veremos la trayectoria inferida, y como ya comentamos en el párrafo anterior, en nuestro caso será una única trayectoria:
 
-```{r, fig.width=7, fig.height=8, eval = F}
+```{r}
 cell_type_color <- c("EXMC" = "blue",
-                      "Gast"  = "#46C7EF",
-                      "PostL-EPI" = "magenta",
-                      "Hypoblast" = "red",
-                      "ICM" = "darkgreen",
-                      "PreE-TE" = "#4EB859",
-                      "Post-paTE" = "#EFAD1E",
-                      "PostE-EPI" = "gold",
-                      "Pre-EPI" = "gray",
-                      "PreL-TE" = "black",
-                      "VEYE" = 'purple' )
+                     "Gast"  = "#46C7EF",
+                     "PostL-EPI" = "magenta",
+                     "Hypoblast" = "red",
+                     "ICM" = "darkgreen",
+                     "PreE-TE" = "#4EB859",
+                     "Post-paTE" = "#EFAD1E",
+                     "PostE-EPI" = "gold",
+                     "Pre-EPI" = "gray",
+                     "PreL-TE" = "black",
+                     "VEYE" = 'purple' )
 
-p1 <- plot_cell_trajectory(c3, color_by = "res.0.6") +
+plot_cells(c3, color_cells_by = "Cell.Identity", cell_size = 2, 
+           label_cell_groups = F) +
   scale_color_manual(values = cell_type_color)
-
-p1
 ```
 
-**Exercise 4.1 What do you think about the trajectory? Is it in agreement with previous biological knowledge? **
+
+
+<details>
+<summary> __Ejercicio 4.1: ¿Qué piensas de la trayectoria? ¿Concuerda con el conocimiento biológico preestablecido hasta la fecha?__ </summary>
+
+<br>
+
+__Solución:__
 
 
 **Adjusting the start of pseudotime with orderCells**
@@ -359,9 +385,15 @@ plot_cell_trajectory(c3)
 ```
 
 
+</details>
+
+
+
 ***
 
 <br>
+
+
 
 # Identifying genes that vary in expression over a trajectory
 
@@ -420,6 +452,8 @@ plot_cell_trajectory(c3, markers=Y$gene_short_name[2] ,
 * Nakamura, T., Okamoto, I., Sasaki, K., Yabuta, Y., Iwatani, C., Tsuchiya, H., Seita, Y., Nakamura, S., Yamamoto, T., and Saitou, M. (2016). A developmental coordinate of pluripotency among mice, monkeys and humans. Nature, 537(7618):57–62.
 
 * Wolf, F.A., Hamey, F.K., Plass, M. et al. PAGA: graph abstraction reconciles clustering with trajectory inference through a topology preserving map of single cells. Genome Biol 20, 59 (2019). https://doi.org/10.1186/s13059-019-1663-x
+
+* Traag, V.A., Waltman, L. & van Eck, N.J. From Louvain to Leiden: guaranteeing well-connected communities. Sci Rep 9, 5233 (2019). https://doi.org/10.1038/s41598-019-41695-z
 
 
 ***
