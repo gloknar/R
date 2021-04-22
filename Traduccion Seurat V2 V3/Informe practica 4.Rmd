@@ -46,6 +46,7 @@ El protocolo de Monocle consta de 5 pasos principales, detallados a continuació
 
 ![Protocolo de Monocle. Sacado de [Trapnell _et al._ (2014)](http://cole-trapnell-lab.github.io/monocle-release/monocle3/)](./Cosas accesorias Informe 4/monocle.png)
 
+
 <br>
 
 ## Paso 1: Preprocesamiento y normalizado de los datos
@@ -53,11 +54,14 @@ El protocolo de Monocle consta de 5 pasos principales, detallados a continuació
 
 Primero Monocle normaliza los valores de expresión génica para controlar la varianza técnica debida a la profundidad del secuenciado y la recuperación del ARN de la muestra.
 
+
+
 <br>
 
 ## Paso 2: Reducir la dimensionalidad de los datos
 
 Luego se proyectan las células al espacio del PCA (por defecto se calculan las 50 1<sup>as</sup> componentes) para eliminar ruido y facilitar la computación de los siguientes pasos. Tras esto, y de manera optativa, puedes reducir la dimensionalidad más aún con t-SNE o UMAP. Sea como sea, después de la reducción de la dimensionalidad Monocle puede aplicar un clustering a las células, inferir la trayectoria, o hacer ambas.
+
 
 <br>
 
@@ -69,8 +73,8 @@ Monocle 3 puede aprender múltiples trayectorias desconectadas, lo cual es impor
 
 Monocle 2 asume que todos tus datos son parte de una única trayectoria, por lo que para construir varias trayectorias individuales, se tendría que dividir manualmente cada grupo de células, generar datasets de manera acorde y ejecutar Monocle 2 sobre cada dataset. Por otro lado, Monocle 3 puede detectar que algunas células forman parte de un proceso biológico distinto y generar acordemente varias trayectorias en paralelo, sin tener que manipular y dividir el dataset como sería el caso con Monocle 2. Monocle 3 consigue esto particionando las células en supergrupos usando un método derivado del AGA o _Approximate Graph Abstraction_ ([Wolf _et al._, 2019](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1663-x)). Células de supergrupos distintos no pueden ser parte de la misma trayectoria.
 
-<br>
 
+<br>
 
 ## Paso 4: Generar el grafo principal
 
@@ -78,6 +82,7 @@ Monocle 2 asume que todos tus datos son parte de una única trayectoria, por lo 
 Monocle 3 dispone de 3 maneras distintas de organizarlas las células en trayectorias, todas ellas basadas en el concepto de embebimiento en grafo reverso o "_reversed graph embedding_". __DDRTree__ es el método usado por Monocle 2 para generar trayectorias con forma de árbol, y este algoritmo ha sido mejorado en Monocle 3. En concreto, se ha optimizado su rendimiento, lo que le permite procesar millones de células en minutos. __SimplePPT__ genera también trayectorias en forma de árbol, pero a diferencia de DDRTree, no aplica reducciones de la dimensionalidad adicionales. __L1Graph__ es un algoritmo de optimización avanzado capaz de generar trayectorias que incluyan bucles.
 
 Una vez que Monocle ha aprendido un grafo principal que se ajusta a los datos, se proyecta cada célula al susodicho grafo. A continuación el usuario selecciona uno o más puntos en el grafo que definan los puntos de partida de la trayectoria. Monocle define entonces el pseudotiempo como la distancia de cada célula al punto de inicio más cercano.
+
 
 <br>
 
@@ -131,16 +136,15 @@ Hecho eso, procedemos a cargar las librerías de interés y cargar los datos:
 library(monocle3)
 library(reticulate)
 library(Seurat)
+library(ggplot2)
 
-# Cargamos en memoria el dataset de Seurat 3  
+# Cargamos en memoria el objeto seurat de la práctica 1  
 data <- readRDS(file = "./Cosas accesorias Informe 1/nakamura_P4.rds")
 head(data@meta.data)
-
 
 # Creamos un nuevo objeto CellDataSet a partir del objeto seurat. Nótese que
 # tenemos que añadir la columna "gene_short_name" dado que varios métodos de
 # Monocle 3 lo usan, como por ejemplo plot_cells(c3, genes = "ZNF692")
-
 gene.annotation <- data.frame(gene_short_name = rownames(data@assays$RNA@meta.features), 
            row.names = rownames(data@assays$RNA@meta.features))
 
@@ -156,40 +160,47 @@ c3 <- new_cell_data_set(expression_data = data@assays$RNA@counts,
 
 <br>
 
-Para los objetos de tipo `CellDataSet`, podemos acceder a su información con los métodos `pData()`, `fData()` y `exprs()` de Monocle 3:
+Para los objetos de tipo `CellDataSet`, podemos acceder a su información con los métodos `pData()`, `fData()` y `exprs()` de Monocle 3 (nótese que al crear un nuevo objeto `CellDataSet`, Monocle 3 ha calculado automáticamente el `Size_Factor` de las células, pues esa columna no la generamos en la práctica 1 y por tanto no ha aparecido al examinar el bolsillo `@meta.data` de nuestro objeto `seurat`):
 
 ```{r}
-# Vemos los nombres de las columnas de los metadatos del objeto seurat. Estos
-# son los metadatos de las células
-colnames(pData(c3))
+# Vemos los metadatos de las células
+head(pData(c3))
 
-# Accedemos a la columna Cell.Identity para ver a qué tejido pertenecen las células
+# Accedemos a la columna Cell.Identity para ver a qué tejido pertenecen las
+# células
 head(pData(c3)$Cell.Identity)
 
 # Alternativamente:
 # c3$Cell.Identity
-
 
 # Ídem para los metadatos de los genes con fData:
 colnames(fData(c3))
 head(fData(c3))
 
 # Visualizamos una parte de la matriz de conteos
-head(exprs(c3))
+exprs(c3)[1:5,1:5]
 ```
 
 
-***
 
 <br>
 
 ## Paso 1: Preprocesamiento y normalizado de los datos
 
-En este paso estimamos los factores de tamaño para cada célula (https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1874-1  “size factors” ) y la dispersión (=varianza) de los genes en el objeto `c3`. Monocle 3 realiza estas y otras operaciones con el paquete `DelayedArray`, lo que le permite escalar con millones de células. Dicho paquete divide las operaciones en bloques para prevenir el consumo excesivo de RAM del ordenador. Puedes controlar el tamaño de cada bloque y los mensajes que se devuelven por consola con los siguientes comandos:
+
+En el preprocesamiento y normalizado de datos se suele proceder a estimar el factor de tamaño de las muestras y la dispersión (=varianza) de la expresión de los genes. Monocle 3 realiza estas y otras operaciones con el paquete `DelayedArray`, lo que le permite escalar con millones de células. Dicho paquete divide las operaciones en bloques para prevenir el consumo excesivo de RAM del ordenador. Puedes controlar el tamaño de cada bloque y los mensajes que se devuelven por consola con los siguientes comandos:
+
+> Nota: Puesto que la estimación del factor de tamaño de las muestras se realiza automáticamente al generar un nuevo objeto `CellDataSet`, podríamos incluir el siguiente chunk de código antes de la carga de datos, pero en aras de mantener un orden, lo incluiremos aquí. Si tienes experiencia trabajando con Monocle 3, puedes correr este chunk antes de generar el susodicho objeto.
+
+```{r, echo = F, eval = F}
+# http://hartleys.github.io/JunctionSeq/Rhtml/estimateJunctionSeqSizeFactors.html
+# Explicación de size factors
+```
 
 
 ```{r}
-# Selecciona TRUE para ver en consola el progreso de algunas operaciones de Monocle 3
+# Selecciona TRUE para ver en consola el progreso de algunas operaciones de
+# Monocle 3
 DelayedArray:::set_verbose_block_processing(TRUE)
 
 # Tamaño de cada bloque, en bytes (es 1e8 bytes = 95.37MBs por defecto). A mayor
@@ -203,6 +214,7 @@ DelayedArray::setAutoBlockSize(1e9)
 # options(DelayedArray.block.size=1e9)
 ```
 
+
 Establecido el tamaño de bloque y los mensajes por consola, procedemos al normalizado de los datos con el comando `preprocess_cds`. Nótese que se recomienda usar el método PCA para datos de RNA-seq y LSI para datos de ATAC-seq.
 
 ```{r}
@@ -213,36 +225,58 @@ plot_pc_variance_explained(c3)
 ```
 
 
-***
-
 <br>
 
 
 ## Paso 2: Reducir la dimensionalidad de los datos
 
-Ahora procedemos a computar la proyección no lineal de los datos en t-SNE o UMAP (por defecto en Monocle 3 1.0.0) con el comando `reduce_dimension()`.
+Ahora procedemos a computar la proyección de los datos en un espacio de dimensionalidad reducida (la proyección por defecto en Monocle 3 1.0.0 es UMAP, pero también podemos calcular el t-SNE, PCA, LSI o Aligned) con el comando `reduce_dimension()`. Tras calcular la proyección, podemos visualizarla con el comando `plot_cells()`. 
+
+Nótese que si calculamos el UMAP, podemos acelerar su computación modificando los parámetros `umap.fast_sgd` y `cores`, pero hacer esto incurre en que cada vez que calculemos el UMAP, generaremos proyecciones ligeramente distintas, aunque sólo hayamos modificado uno de los 2 parámetros mentados. Esto puede ser aceptable según la situación, pero por motivos de reproducibilidad de este informe, optaremos por no modificar ninguno de esos 2 parámetros Por fortuna, el dataset de Nakamura _et al._ es relativamente pequeño, por lo que no notaremos mucho la diferencia.
 
 
-```{r, warning = F}
+```{r, message = F}
 c3 <- reduce_dimension(c3, preprocess_method = "PCA", 
                        reduction_method = "UMAP",
                        umap.fast_sgd = F,
-                       cores = 1) # umap.fast_sgd = F y cores = 1 para reproducibilidad
+                       cores = 1)
 
-plot_cells(c3, color_cells_by = "Cell.Identity")
+plot_cells(c3, color_cells_by = "Cell.Identity", 
+           group_label_size = 3, norm_method = "log") + 
+  ggtitle("Tejidos embrionarios (UMAP)") + 
+  theme(plot.title = element_text(hjust = 0.5))
 
-plot_cells(c3, genes = "GBX2", group_label_size = 6, cell_size = 1) # Biomarcador de early epiblast
 
-plot_cells(c3, genes = "GATA3", norm_method = "log",
-           group_label_size = 6, cell_size = 1) # Biomarcador del hipoblasto
+# Biomarcador de early epiblast, expresado en tejidos Pre-EPI y PostE-EPI 
+plot_cells(c3, genes = "GBX2", color_cells_by = "Cell.Identity",  group_label_size = 3, 
+           norm_method = "log", cell_size = 1) +
+  ggtitle("Expresión de GBX2, biomarcador del epiblasto temprano (UMAP)") +
+  theme(plot.title = element_text(hjust = .5))
+
+
+# Biomarcador del hipoblasto 
+plot_cells(c3, genes = "GATA6", color_cells_by = "Cell.Identity", group_label_size = 3, 
+           norm_method = "log", cell_size = 1) +
+  ggtitle("Expresión de GATA6, biomarcador del hipoblasto (UMAP)") +
+  theme(plot.title = element_text(hjust = .5))
+```
+
+```{r, echo = F, eval = F}
 # Mas biomarcadores: https://discovery.lifemapsc.com/in-vivo-development/inner-cell-mass/inner-cell-mass
 ```
 
 
 
+<br>
+
 ## Paso 3: Partición de las células en supergrupos
 
-Rather than forcing all cells into a single developmental trajectory, Monocle 3 enables you to learn a set of trajectories that describe the biological process you're studying. For example, if you're looking at a community of immune cells responding to infection, each cell type will respond to antigen (and each other) in a different way, so they should be organized into distinct trajectories. This can also be helpful when you have small groups of outlier cells that for either technical or biological reasons are very dissimilar from the rest of the cells in your experiment. They can confuse a trajectory analysis. Monocle 3's partitioning strategy circumvents this issue because such groups often wind up in their own partition. In the Paul data, there is a small outgroup the authors classified as dendritic cells that Monocle automatically partitions away from the main trajectory.
+
+En vez de forzar a todas las células en una única trayectoria, Monocle 3 permite inferir un conjunto de trayectorias, de manera que te permite estudiar varios procesos biológicos simultáneos con un mismo dataset. Por ejemplo, durante una infección (ya sea vírica, bacteriana, fúngica...), el sistema inmune responde a varios estímulos (antígenos, citocinas, superantígenos...), por lo que cada célula inmune ejercerá un rol determinado. Por ende, dicho proceso se caracteriza mejor por un conjunto de trayectorias, en lugar de una única trayectoria.
+
+Otra ventaja de inferir más de una trayectoria es que el algoritmo se vuelve resistente a la presencia de células extremas o _outliers_, las cuales normalmente confundirían a la trayectoria original. Al particionar las células en supergrupos, Monocle 3 agrupa entre sí dichas células extremas y las diferencia de otros supergrupos.
+
+En Monocle 3, las trayectorias independientes o disjuntas (_disjoint_)
 
 In Monocle 3, we recognize "disjoint" trajectories by drawing on ideas from Alex Wolf and colleagues, who recently introduced the concept of abstract graph participation [@Wolf208819]. Monocle 3 implements the test for cell community connectedness from Wolf et al. via the partitionCells() function, which divides the cells into "supergroups".
 
@@ -254,7 +288,6 @@ c3 <- cluster_cells(c3, reduction_method = "UMAP",
 plot_cells(c3, color_cells_by = "partition")
 ```
 
-***
 
 <br>
 
@@ -283,7 +316,6 @@ plot_cells(c3)
 ```
 
 
-***
 
 <br>
 
