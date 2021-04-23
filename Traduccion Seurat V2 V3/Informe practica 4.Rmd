@@ -362,9 +362,9 @@ plot_cells(c3, color_cells_by = "Cell.Identity", cell_size = 2,
 ```
 
 
-Se observa también que Monocle 3 no asigna automáticamente el nodo raíz del árbol. Para ello y con ayuda del comando `order_cells()` elegiremos en el gráfico el nodo raíz, a partir del cual Monocle 3 calculará el pseudotiempo y ordenará en él las células. Si no se proporcionan los nodos/células a esta función, se abrirá una ventana interactiva mediante la cual podremos elegir visualmente los nodos raíz. Este modo interactivo es incompatible con el compilado de informes, por lo que cuando ejecutes el código en tu máquina, podrás hacerlo en modo interactivo, pero en mi caso le pasaré a la función los nodos raíz en forma de argumento. Para ello, graficaré el grafo, pero esta vez mostrando los nombres de los puntos principales.
+Se observa también que Monocle 3 no asigna automáticamente el nodo raíz del árbol. Para ello y con ayuda del comando `order_cells()` elegiremos en el gráfico el nodo raíz, a partir del cual Monocle 3 calculará el pseudotiempo y ordenará en él las células. Si no se proporcionan los nodos/células a esta función, se abrirá una ventana interactiva mediante la cual podremos elegir visualmente los nodos raíz. Este modo interactivo es incompatible con el compilado de informes, por lo que cuando ejecutes el código en tu máquina, podrás hacerlo en modo interactivo, pero en mi caso le pasaré a la función los nodos raíz en forma de argumento. Para ello, Visualizaremos el grafo, pero esta vez mostrando los nombres de los puntos principales.
 
-Téngase en cuenta que a diferencia de Monocle 2, Monocle 2 1.0.0 permite elegir nodos internos como nodos raíz (en Monocle 2, sólo los nodos distales podían ser elegidos como nodos raíz, de manera similar a como pasaba con los mapas de difusión en la práctica 2). Además, como Monocle 3 puede generar más de una trayectoria, resulta coherente que se puedan elegir más de un nodo raíz.
+Téngase en cuenta que a diferencia de Monocle 2, Monocle 3 1.0.0 permite elegir nodos internos como nodos raíz (en Monocle 2, sólo los nodos distales podían ser elegidos como nodos raíz, de manera similar a como pasaba con los mapas de difusión en la práctica 2). Además, como Monocle 3 puede generar más de una trayectoria, resulta coherente que se puedan elegir más de un nodo raíz.
 
 
 ```{r}
@@ -378,7 +378,7 @@ c3 <- order_cells(c3, reduction_method = "UMAP", root_pr_nodes = "Y_67")
 
 plot_cells(c3, color_cells_by = "pseudotime", cell_size = 2,
            label_leaves = F, label_branch_points = F,
-           graph_label_size = 3)
+           label_roots = T, graph_label_size = 3)
 ```
 
 
@@ -445,15 +445,7 @@ plot_cells_3d(cds_3d, color_cells_by = "Cell.Identity",
 
 ## Paso 5: Análisis de expresión diferencial
 
-
-We are often interested in finding genes that are differentially expressed across a single-cell trajectory. Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have similar (or dissimilar) expression levels for the gene being tested. Although both Pearson correlation and Moran’s I ranges from -1 to 1, the interpretation of Moran’s I is slightly different: +1 means that nearby cells will have perfectly similar expression (as in the right panel below); 0 represents no correlation (center), and -1 means that neighboring cells will be *anti-correlated* (left).
-
-```{r monocle.figure2, out.width = '90%', fig.cap="Moran’s I test example.", echo=FALSE}
-knitr::include_graphics("./Cosas accesorias Informe 4/moran.png")
-```
-
-
-```{r, eval = F}
+```{r, eval = F, echo = F}
 # With regression:
 gene_fits <- fit_models(c3, model_formula_str = "~Cell.Identity")
 fit_coefs <- coefficient_table(gene_fits)
@@ -464,6 +456,15 @@ sig_genes <- emb_time_terms %>% filter (q_value < 0.05) %>% pull(gene_short_name
 # With graph autocorrelation:
 pr_test_res <- graph_test(c3,  neighbor_graph="principal_graph", cores=4)
 pr_deg_ids <- row.names(subset(pr_test_res, q_value < 0.05))
+```
+
+
+Un análisis típico en estos casos es la detección de genes expresados diferencialmente a lo largo de la trayectoria. Monocle 3 incluye un novedoso método para detectar dichos genes.
+
+Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have similar (or dissimilar) expression levels for the gene being tested. Although both Pearson correlation and Moran’s I ranges from -1 to 1, the interpretation of Moran’s I is slightly different: +1 means that nearby cells will have perfectly similar expression (as in the right panel below); 0 represents no correlation (center), and -1 means that neighboring cells will be *anti-correlated* (left).
+
+```{r monocle.figure2, out.width = '90%', fig.cap="Moran’s I test example.", echo=FALSE}
+knitr::include_graphics("./Cosas accesorias Informe 4/moran.png")
 ```
 
 
