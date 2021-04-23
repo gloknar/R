@@ -315,7 +315,7 @@ head(partitions(c3))
 
 <br>
 
-## Paso 4: Aprender el grafo principal
+## Paso 4: Generar el grafo principal
 
 
 Como ya se comentó en la sección 2.4, emplearemos UMAP + SimplePPT para generar el grafo a partir del cual inferiremos la trayectoria(s). Cada supergrupo genera su propia trayectoria, y puesto que nuestros datos forman parte de un único supergrupo, esta vez generaremos una única trayectoria. Esto se consigue con el comando `learn_graph()`:
@@ -347,7 +347,7 @@ plot_cells(c3, color_cells_by = "Cell.Identity", cell_size = 2,
   scale_color_manual(values = cell_type_color)
 ```
 
-En el grafo superior, los números encapsulados en círculos negros son los puntos donde se ramifica el grafo/árbol/trayectoria (aquí son términos intercambiables), mientras que los círculos grises corresponden a las hojas del árbol, _i.e._ los posibles destinos que pueden tomar nuestras células al final de la trayectoria (lo que en ouija se conocen como __estados metaestables__). A continuación desglosamos el grafo anterior para hacerlo más comprensible. Se observa que el árbol presenta 4 puntos de ramificación, y 6 destinos celulares (=hojas).
+En el grafo superior, los números encapsulados en círculos negros son los puntos donde se ramifica el grafo/árbol/trayectoria (aquí son términos intercambiables), mientras que los círculos grises corresponden a las hojas del árbol, _i.e._ los posibles destinos que pueden tomar nuestras células al final de la trayectoria. A continuación desglosamos el grafo anterior para hacerlo más comprensible. Se observa que el árbol presenta 4 puntos de ramificación, y 6 destinos celulares (=hojas).
 
 ```{r, echo = F}
 plot_cells(c3, color_cells_by = "Cell.Identity", cell_size = 2, 
