@@ -97,7 +97,7 @@ Una vez que Monocle ha aprendido un grafo principal que se ajusta a los datos, s
 
 Por último, detectamos biomarcadores específicos de cada clúster celular, genes con expresión cambiante a lo largo de la trayectoria y graficamos los resultados.
 
-Monocle 3 provee una suite de tests estadísticos de regresión para detectar genes que difieren entre clusters y a lo largo de las trayectorias. Además, Monocle 3 incluye un novedoso test que usa el grafo principal directamente y permite detectar genes cuyas expresiones varían de manera compleja a lo largo de trayectorias con bucles y estructuras más complicadas.
+Monocle 3 provee una suite de tests estadísticos para detectar genes que difieren entre clusters y condiciones experimentales (covariables tales como tratamiento, tiempo, género...). Además, Monocle 3 incluye un novedoso test que usa el grafo principal directamente y permite detectar genes cuyas expresiones varían de manera compleja a lo largo de trayectorias con bucles y estructuras más complicadas.
 
 
 ***
@@ -450,13 +450,15 @@ plot_cells_3d(cds_3d, color_cells_by = "Cell.Identity",
 ## Paso 5: Análisis de expresión diferencial
 
 
-Un análisis típico en estos casos es la detección de genes expresados diferencialmente a lo largo de la trayectoria. Monocle 3 permite afrontar este problema de dos maneras:
+Monocle 3 permite afrontar este problema mediante dos funciones distintas:
 
-* Usando modelos de regresión mediante `fit_models()` para evaluar si la expresión de un gen varía en función de covariables tales como tratamiento, tiempo, edad, etc...
+* Usando modelos de regresión mediante la función `fit_models()` para evaluar si la expresión de un gen varía en función de covariables tales como tratamiento, género, edad, etc...
 
-* Mediante el análisis de autocorrelación del grafo usando `graph_test()` (función paralelizable en UNIX pero no en Windows) para encontrar genes que varían entre clusters o a lo largo de la trayectoria.
+* Mediante el análisis de autocorrelación del grafo usando el comando `graph_test()` (función paralelizable en UNIX pero no en Windows) para encontrar genes que varían entre clusters o a lo largo de la trayectoria.
 
 <br>
+
+En esta práctica cubriremos el uso del comando `graph_test()`, pues permite detectar genes diferencialmente expresados tanto en clusters como a lo largo de la trayectoria.
 
 La segunda manera consiste en un novedoso método basado en el test I de Moran. La I de Moran I es un estadístico que mide autocorrelaciones espaciales multidimensionales y multidireccionales. Esta medida indica si señales espaciales colindantes (en este caso, las células del grafo y sus vecinas) tienen valores similares (=niveles de expresión similares u opuestos para el gen testeado). Si bien la correlación de Pearson y la I de Moran devuelven medidas entre -1 y 1, la interpretación de la I de Moran es ligeramente distinta: +1 significa que células adyacentes tienen una expresión génica idéntica (imagen inferior, panel derecho); 0 indica que no hay correlación alguna (panel central) y -1 significa que las células vecinas están inversamente correlacionadas (panel izquierdo).
 
@@ -469,7 +471,7 @@ knitr::include_graphics("./Cosas accesorias Informe 4/moran.png")
 En esta práctica nos centraremos en el análisis de autocorrelación espacial, puesto que [Cao _et al._(2017)](https://science.sciencemag.org/content/357/6352/661) demostraron su exitosa aplicabilidad a datasets de scRNA-seq para el análisis de expresión diferencial. Según busquemos variaciones entre clusters o a lo largo de la trayectoria, tendremos que cambiar ligeramente el código empleado. Nosotros mostraremos cómo buscar genes que varían a lo largo de la trayectoria:
 
 
-```{r, message = F}
+```{r, results = "hide"}
 # Expresión génica diferencial a lo largo de la trayectoria (test de la I de
 # Moran)
 pr_test_res <- graph_test(c3,  neighbor_graph = "principal_graph", cores = 1, verbose = F)
