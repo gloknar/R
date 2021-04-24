@@ -385,10 +385,12 @@ plot_cells(c3, color_cells_by = "pseudotime", cell_size = 2,
 En la [página web](https://cole-trapnell-lab.github.io/monocle3/docs/trajectories/#order-cells) de Monocle 3 se facilita una función auxiliar para facilitar la extracción de nodos raíz en el grafo, cortesía del autor de Monocle 3, Cole Trapnell. Dicha función se ha modificado ligeramente para adaptarla a nuestro caso, en el cual elegimos como nodo raíz aquellas células etiquetadas como `ICM`:
 
 ```{r}
-# a helper function to identify the root principal points:
-get_earliest_principal_node <- function(cds, cell_identity="ICM"){
-  cell_ids <- which(colData(cds)[, "Cell.Identity"] == cell_identity) 
-  # Cambiar "Cell.Identity" y cell_identity según convenga al estudio a mano
+# Función auxiliar para identificar nodos raíz:
+get_earliest_principal_node <- function(cds, cell_metadata, cell_identity){
+  # El argumento cell_metadata recibe el nombre de la columna en pData(c3)
+  # El argumento cell_identity recibe el valor a buscar en dicha columna
+  
+  cell_ids <- which(colData(cds)[, cell_metadata] == cell_identity) 
   closest_vertex <-
   cds@principal_graph_aux[["UMAP"]]$pr_graph_cell_proj_closest_vertex
   closest_vertex <- as.matrix(closest_vertex[colnames(cds), ])
@@ -398,14 +400,16 @@ get_earliest_principal_node <- function(cds, cell_identity="ICM"){
   
   root_pr_nodes
 }
+pData(c3)
 
 # Ordenamos las células con el uso de la función auxiliar
-c3 <- order_cells(c3, root_pr_nodes = get_earliest_principal_node(c3))
+c3 <- order_cells(c3, 
+                  root_pr_nodes = get_earliest_principal_node(c3, cell_metadata = "Cell.Identity", cell_identity = "ICM"))
 
 # Graficamos
 plot_cells(c3, color_cells_by = "pseudotime", cell_size = 2,
            label_leaves = F, label_branch_points = F,
-           graph_label_size = 3)
+           label_roots = T, graph_label_size = 3)
 ```
 
 <br>
@@ -420,7 +424,7 @@ head(c3@principal_graph_aux$UMAP$pseudotime)
 
 ### Visualización de la trayectoria en 3D
 
-Monocle 3 también permite la visualización de las trayectorias en 3D. Para ello, durante la reducción de la dimensionalidad tenemos que pedirle a la función `reduce_dimension()` que guarde como máximo 3 dimensiones mediante el parámetro `max_components`:
+Monocle 3 también permite la visualización de las trayectorias en gráficos 3D interactivos. Para ello, durante la reducción de la dimensionalidad tenemos que pedirle a la función `reduce_dimension()` que guarde como máximo 3 dimensiones mediante el parámetro `max_components`:
 
 ```{r, warning = F}
 # Protocolo resumido de Monocle 3 para generar gráficos en 3D
@@ -428,7 +432,7 @@ cds_3d <- reduce_dimension(c3, max_components = 3,
                            reduction_method = "UMAP", preprocess_method = "PCA")
 cds_3d <- cluster_cells(cds_3d, reduction_method = "UMAP")
 cds_3d <- learn_graph(cds_3d)
-cds_3d <- order_cells(cds_3d, root_pr_nodes=get_earliest_principal_node(cds_3d))
+cds_3d <- order_cells(cds_3d, root_pr_nodes=get_earliest_principal_node(cds_3d, cell_metadata = "Cell.Identity", cell_identity = "ICM"))
 
 # Generamos el gráfico 3D y lo visualizamos:
 cds_3d_plot_obj <- plot_cells_3d(cds_3d, color_cells_by="pseudotime")
@@ -445,45 +449,51 @@ plot_cells_3d(cds_3d, color_cells_by = "Cell.Identity",
 
 ## Paso 5: Análisis de expresión diferencial
 
-```{r, eval = F, echo = F}
-# With regression:
-gene_fits <- fit_models(c3, model_formula_str = "~Cell.Identity")
-fit_coefs <- coefficient_table(gene_fits)
-emb_time_terms <- fit_coefs %>% filter(term == "Cell.Identity")
-emb_time_terms <- emb_time_terms %>% mutate(q_value = p.adjust(p_value))
-sig_genes <- emb_time_terms %>% filter (q_value < 0.05) %>% pull(gene_short_name)
 
-# With graph autocorrelation:
-pr_test_res <- graph_test(c3,  neighbor_graph="principal_graph", cores=4)
-pr_deg_ids <- row.names(subset(pr_test_res, q_value < 0.05))
-```
+Un análisis típico en estos casos es la detección de genes expresados diferencialmente a lo largo de la trayectoria. Monocle 3 permite afrontar este problema de dos maneras:
 
+* Usando modelos de regresión mediante `fit_models()` para evaluar si la expresión de un gen varía en función de covariables tales como tratamiento, tiempo, edad, etc...
 
-Un análisis típico en estos casos es la detección de genes expresados diferencialmente a lo largo de la trayectoria. Monocle 3 incluye un novedoso método para detectar dichos genes.
+* Mediante el análisis de autocorrelación del grafo usando `graph_test()` (función paralelizable en UNIX pero no en Windows) para encontrar genes que varían entre clusters o a lo largo de la trayectoria.
 
-Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have similar (or dissimilar) expression levels for the gene being tested. Although both Pearson correlation and Moran’s I ranges from -1 to 1, the interpretation of Moran’s I is slightly different: +1 means that nearby cells will have perfectly similar expression (as in the right panel below); 0 represents no correlation (center), and -1 means that neighboring cells will be *anti-correlated* (left).
+<br>
+
+La segunda manera consiste en un novedoso método basado en el test I de Moran. La I de Moran I es un estadístico que mide autocorrelaciones espaciales multidimensionales y multidireccionales. Esta medida indica si señales espaciales colindantes (en este caso, las células del grafo y sus vecinas) tienen valores similares (=niveles de expresión similares u opuestos para el gen testeado). Si bien la correlación de Pearson y la I de Moran devuelven medidas entre -1 y 1, la interpretación de la I de Moran es ligeramente distinta: +1 significa que células adyacentes tienen una expresión génica idéntica (imagen inferior, panel derecho); 0 indica que no hay correlación alguna (panel central) y -1 significa que las células vecinas están inversamente correlacionadas (panel izquierdo).
+
 
 ```{r monocle.figure2, out.width = '90%', fig.cap="Moran’s I test example.", echo=FALSE}
 knitr::include_graphics("./Cosas accesorias Informe 4/moran.png")
 ```
 
 
+En esta práctica nos centraremos en el análisis de autocorrelación espacial, puesto que [Cao _et al._(2017)](https://science.sciencemag.org/content/357/6352/661) demostraron su exitosa aplicabilidad a datasets de scRNA-seq para el análisis de expresión diferencial. Según busquemos variaciones entre clusters o a lo largo de la trayectoria, tendremos que cambiar ligeramente el código empleado. Nosotros mostraremos cómo buscar genes que varían a lo largo de la trayectoria:
 
-```{r, warning=FALSE, results='hide', echo=TRUE, eval =F}
-#Identifying genes that vary in expression over a trajectory  (Moran's I test)
-pr_graph_test <- principalGraphTest(c3, k=25, cores=1, 
-                                    interactive = FALSE, verbose = FALSE)
+
+```{r, message = F}
+# Expresión génica diferencial a lo largo de la trayectoria (test de la I de
+# Moran)
+pr_test_res <- graph_test(c3,  neighbor_graph = "principal_graph", cores = 1, verbose = F)
 ```
+
 
 We can easily view the top differentially expressed genes as follows:
 
-```{r, fig.width=5, fig.height=5.5, eval = F}
-# 'pr_graph_test' returns a data frame containing the p values and q-values 
+```{r}
+# 'pr_test_res' returns a data frame containing the p values and q-values 
 # from the Moran's I test on the parallel arrays of models
-head(pr_graph_test )
-dim(pr_graph_test )
-X <- dplyr::add_rownames(pr_graph_test) %>%
-  dplyr::arrange(plyr::desc(morans_test_statistic), plyr::desc(-qval)) # %>% head(30)
+head(pr_test_res)
+
+# Nos quedamos con los descubrimientos con un q-valor menor a 0.05
+pr_deg_ids <- row.names(subset(pr_test_res, q_value < 0.05))
+
+
+
+# Ver qué hace aquí
+library("dplyr")
+X <- dplyr::add_rownames(pr_test_res) %>%
+  dplyr::arrange(plyr::desc(morans_test_statistic), plyr::desc(-q_value))
+
+head(X, n = 30)
 ```
 
 Once you've identified differentially expressed genes, you'll often want to visualize their expression levels on the trajectory. The plots below show the top 2 most differentially expressed genes along the trajectory.
@@ -491,20 +501,29 @@ Once you've identified differentially expressed genes, you'll often want to visu
 ```{r, fig.width=5, fig.height=5.5, eval = F}
 Y <- as.data.frame(X)
 # DE genes over the whole trajectory:
-sig <- nrow(subset(pr_graph_test, qval < 0.01))
+sig <- nrow(subset(pr_test_res, q_value < 0.01))
 
-plot_cell_trajectory(c3, markers=Y$gene_short_name[1] , 
-                     use_color_gradient = TRUE, alpha=0.7)
-plot_cell_trajectory(c3, markers=Y$gene_short_name[2] , 
-                     use_color_gradient = TRUE, alpha=0.7)
+plot_cells(c3, genes = Y$gene_short_name[1], alpha = 0.7)
+
+
+plot_cells(c3, genes = Y$gene_short_name[2], alpha = 0.7)
 ```
 
 
+Al igual que hicimos en la práctica 2 con `scatter` y `ouija`, Monocle 3 1.0.0 te permite visualizar cómo cambia la expresión génica a lo largo del pseudotiempo:
+
+```{r, eval = F}
+AFD_genes <- c("HMGA2")
+AFD_lineage_cds <- c3[rowData(c3)$gene_short_name %in% AFD_genes,
+                       colData(c3)$cell.type %in% c("AFD")]
 
 
-**Exercise 4.2 Repeat the analysis using UMAP instead of t-SNE dimensionality reduction. **
+plot_genes_in_pseudotime(c3, color_cells_by = "pseudotime")
 
-
+plot_genes_in_pseudotime(AFD_lineage_cds,
+                         color_cells_by= "pseudotime",
+                         min_expr=0.5)
+```
 
 
 ***
@@ -519,6 +538,7 @@ plot_cell_trajectory(c3, markers=Y$gene_short_name[2] ,
 
 * Traag, V.A., Waltman, L. & van Eck, N.J. From Louvain to Leiden: guaranteeing well-connected communities. Sci Rep 9, 5233 (2019). https://doi.org/10.1038/s41598-019-41695-z
 
+* Cao J, Packer JS, Ramani V, Cusanovich DA, Huynh C, Daza R, Qiu X, Lee C, Furlan SN, Steemers FJ, Adey A, Waterston RH, Trapnell C, Shendure J. Comprehensive single-cell transcriptional profiling of a multicellular organism. Science. 2017 Aug 18;357(6352):661-667. doi: 10.1126/science.aam8940. PMID: 28818938; PMCID: PMC5894354.
 
 ***
 
