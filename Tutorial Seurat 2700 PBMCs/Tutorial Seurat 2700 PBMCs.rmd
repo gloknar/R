@@ -513,7 +513,7 @@ head(cluster5.markers, n = 5)
 # y reportamos solo los marcadores positivos (`only.pos = T`).
 pbmc.markers <- FindAllMarkers(pbmc, min.pct = 0.25, logfc.threshold = 0.25, 
                                only.pos = T)
-pbmc.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC)
+pbmc.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
 ```
 
 Seurat tiene varios tests para evaluar la expresión diferencial de los marcadores y puedes seleccionar el test a usar con el parámetro `test.use` del comando `FindMarkers` (mira la [viñeta de expresión diferencial](https://satijalab.org/seurat/v3.0/de_vignette.html) del laboratorio Satija para más detalles). Por ejemplo, el test de la curva ROC devuelve el poder de clasificación de cada marcador (yendo desde 0 (aleatorio) hasta 1 (perfecto) ).
@@ -565,7 +565,7 @@ DotPlot(pbmc, features = c("LYZ", "CD3E"))
 El comando `DoHeatmap` genera un heatmap de expresión génica para las células y genes seleccionados. En este caso graficamos los top 10 biomarcadores de cada clúster (el siguiente código es una modificación del encontrado en la sección _2.6 Reducción de la dimensionalidad del dataset (PCA)_):
 
 ```{r}
-top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_log2FC)
 DoHeatmap(pbmc, features = top10$gene) # + NoLegend() para eliminar la leyenda
 ```
 
@@ -664,6 +664,7 @@ grafico_umap_clustify <- DimPlot(pbmc,
                                  xlab("UMAP 1") + 
                                  ylab("UMAP 2") + 
                                  theme(legend.text = element_text(size = 10))
+grafico_umap_clustify
 ```
 
 Ahora comparamos las anotaciones de 10X Genomics con las predichas por `clustifyr`. Vemos que las anotaciones de 10X Genomics son más detalladas, no obstante `clustifyr` no lo ha hecho nada mal. Podría servirnos para una primera toma de contacto y orientarnos para futuros análisis.
@@ -672,6 +673,7 @@ Nótese que `clustifyr` ha cometido un error al clasificar el clúster 4. Este c
 
 ```{r}
 grafico_umap_clustify <- grafico_umap_clustify + ggtitle("Anotación automática clustifyr")
+
 grafico_umap <- grafico_umap + ggtitle("Anotación manual 10X Genomics")
 
 grafico_umap_clustify / grafico_umap # Usamos operador "/" del paquete `patchwork`
@@ -681,4 +683,17 @@ grafico_umap_clustify / grafico_umap # Usamos operador "/" del paquete `patchwor
 </details>
 
 
+***
 
+<br>
+
+# sessionInfo()
+
+<details>
+<summary>Click para mostrar</summary>
+
+```{r}
+sessionInfo()
+```
+
+</details>
