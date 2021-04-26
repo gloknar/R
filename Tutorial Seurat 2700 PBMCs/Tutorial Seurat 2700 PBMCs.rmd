@@ -126,7 +126,12 @@ La previamente mencionada matriz de conteos de UMIs se guardó en el objeto `dat
 ```{r}
 # Veamos la expresión de 4 genes concretos en las primeras 30 células
 datos.pbmc[c("SERPINC1", "CD3D", "TCL1A", "MS4A1"), 1:30]
+
+# En caso de no encontrar los genes de interés, Seurat V3 incluye el siguiente
+# comando para buscar sus sinónimos:
+GeneSymbolThesarus(symbols = c("SERPINC1", "CD3D", "TCL1A", "MS4A1"))
 ```
+
 Los puntos (".") de la matriz representan ceros (no se detectaron transcritos de ARNm de ese gen, en esa célula). Así, vemos que en la primera célula sólo se detectaron 4 moléculas de ARNm del gen CD3D, mientras que en la 9ª célula se encontraron transcritos de CD3D, TCL1A y MS4A1.
 
 Dado que la mayoría de valores en una matriz de scRNA-seq suelen ser 0, Seurat usa una "sparse-matrix" o matriz dispersa siempre que sea posible (como es en este caso). Ello disminuye la cantidad de memoria usada y acelera el procesado de los datos.

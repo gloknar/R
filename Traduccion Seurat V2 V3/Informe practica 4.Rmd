@@ -579,16 +579,6 @@ En el gráfico se observa que MPEG1 y LOC102145562 muestran una tendencia a la b
 
 
 
-```{r, echo = F, eval = F}
-pr_graph_test_res <- graph_test(c3, neighbor_graph="knn", cores = 1)
-pr_deg_ids <- row.names(subset(pr_graph_test_res, q_value < 0.05))
-
-gene_module_df <- find_gene_modules(c3[pr_deg_ids,], resolution=1e-2)
-
-
-```
-
-
 ***
 
 <br>

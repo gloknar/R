@@ -1,3 +1,9 @@
 https://sites.google.com/site/findcommunities/
 
 metodo usado en clustering para optimizar la modularidad de los clusters.
+
+
+
+https://www.nature.com/articles/s41598-019-41695-z
+
+El método de Leiden es mejor que el de Louvain, de acuerdo a ese artículo de Nature
