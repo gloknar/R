@@ -44,7 +44,6 @@ remotes::install_version("Seurat", version = "3.2")
 # Si usas R 3.6, instala spatstat 1.64-1, ya que R 3.6 no es compatible con
 # versiones posteriores de spatstat
 install.packages("https://cran.r-project.org/src/contrib/Archive/spatstat/spatstat_1.64-1.tar.gz", repo=NULL, type="source")
-
 ```
 
 
@@ -105,7 +104,7 @@ A continuación leemos la matriz de conteos de UMIs, almacenada en el archivo "D
 
 ```{r}
 # Leemos matriz de conteos UMIs (contiene valores separados por tabuladores)
-sc3 <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/D3Ecounts.txt", sep = "\t", header = T)
+sc3 <- read.table("./Cosas accesorias Informe 1/D3Ecounts.txt", sep = "\t", header = T)
 
 head(sc3[1:10, 1:10])
 ```
@@ -453,7 +452,7 @@ DoHeatmap(cm, features = top5$gene)
 Ahora podemos asignar las etiquetas dadas a las células (disponibles en el archivo accesorio `colnames.txt`):
 
 ```{r}
-archivo_etiquetas_celulas <- t(read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/colnames.txt"))
+archivo_etiquetas_celulas <- t(read.table("./Cosas accesorias Informe 1/colnames.txt"))
 
 # Descartamos el primer elemento del archivo dado que no es un nombre de célula
 NewIdent <- as.factor(archivo_etiquetas_celulas[2:length(archivo_etiquetas_celulas)])
@@ -496,7 +495,7 @@ Los biomarcadores de estos puntos de control en _Macaca fascicularis_ se encuent
 ```{r}
 # Leemos el archivo de texto con los biomarcadores y separamos los genes de cada
 # fase
-cellcycle.genes <- readLines(con = "./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/regev_lab_cell_cycle_genes.txt")
+cellcycle.genes <- readLines(con = "./Cosas accesorias Informe 1/regev_lab_cell_cycle_genes.txt")
 s.genes <- cellcycle.genes[1:43]
 g2.m.genes <- cellcycle.genes[44:97]
 
