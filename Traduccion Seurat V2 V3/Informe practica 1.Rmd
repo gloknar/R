@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = TRUE,
                       warning = FALSE,
                       tidy = F)
-set.seed(1)
+set.seed(1234567)
 ##################################################
 #######        Encoded in UTF-8        ###########
 ##################################################
@@ -27,7 +27,7 @@ set.seed(1)
 
 # Introducción y pre-requisitos
 
-En este documento se muestran las prácticas y ejercicios de Análisis de datos scRNA-seq, traducidas de Seurat V2 a Seurat V3, ya que las prácticas usaban la versión 2 de `Seurat`, la cual está actualmente obsoleta y tiene dependencias obsoletas.
+En este documento se muestran las prácticas y ejercicios de Análisis de datos scRNA-seq, traducidas de Seurat 2 a Seurat 3, ya que las prácticas usaban la versión 2 de `Seurat`, la cual está actualmente obsoleta y tiene dependencias obsoletas.
 
 __Las prácticas 1 y 2__ se basan en el código modificado de las prácticas originales.
 
@@ -55,6 +55,7 @@ Comenzamos cargando Seurat
 # Cargamos librerías
 library("Seurat")
 library("ggplot2")
+library("dplyr")
 ```
 
 <br>
@@ -69,7 +70,7 @@ packageVersion("Seurat")
 
 ## Matriz de conteos de UMIs
 
-En la práctica 1 de Seurat usaremos datos de SC3-seq (un tipo de scRNA-seq con amplificación del extremo 3 prima del ARNm de la célula) de embriones del macaco cangrejero _Macaca fascicularis_ (Nakamura et al., 2016). Los datos se encuentran en el archivo "D3Ecounts.txt " (tiene valores separados por tabuladores) y vienen en forma de matriz de conteos de UMIs en las que las filas son los genes y las columnas son las células. El dataset consta de 399 células y les aplicaremos reducción de la dimensionalidad, clustering e identificación de genes marcadores.
+En la práctica 1 de Seurat usaremos datos de SC3-seq (un tipo de scRNA-seq con amplificación del extremo 3 prima del ARNm de la célula) de embriones del macaco cangrejero _Macaca fascicularis_ ([Nakamura _et al._, 2016](https://www.nature.com/articles/nature19096)). Los datos se encuentran en el archivo `D3Ecounts.txt` (tiene valores separados por tabuladores) y vienen en forma de matriz de conteos de UMIs en las que las filas son los genes y las columnas son las células. El dataset consta de 399 células y les aplicaremos reducción de la dimensionalidad, clustering e identificación de genes marcadores.
 
 La tabla 2.1 muestra detalles sobre los tipos celulares encontrados en el dataset.
 
@@ -79,11 +80,11 @@ La tabla 2.1 muestra detalles sobre los tipos celulares encontrados en el datase
 
 ## Preprocesado del dataset (ya realizado)
 
-El dataset empleado se descargó del GEO en formato FastQ y contenía originalmente 474 células. Las células de tipo cyESC, ePGC e IPGC fueron filtradas y eliminadas del dataset, lo que generó el tamaño actual de 399 células. Tal como se hizo en Nakamura et al., 2016,  las lecturas de ARNm fueron preprocesadas con cutadapt 1.16 para eliminar el adaptador, la cola poli-A y los nucleótidos mal secuenciados (baja calidad) con 'cutadapt -colorspace -e 0.1 -q 20 -n 2 -O 1 -m 30 -a CTCGAGGGCGCGCCGGATCCATATACGCCTTGGCCGTACAGCAG -a “A{100}” -g CTCGAGGGCGCGCCGGATCCATATACGCCTTGGCCGTACAGCAG'.
+El dataset empleado se descargó del GEO en formato FastQ y contenía originalmente 474 células. Las células de tipo cyESC, ePGC e IPGC fueron filtradas y eliminadas del dataset, lo que generó el tamaño actual de 399 células. Tal como se hizo en el artículo de Nakamura _et al._, las lecturas de ARNm fueron preprocesadas con `cutadapt 1.16` para eliminar el adaptador, la cola poli-A y los nucleótidos mal secuenciados (baja calidad) con `cutadapt -colorspace -e 0.1 -q 20 -n 2 -O 1 -m 30 -a CTCGAGGGCGCGCCGGATCCATATACGCCTTGGCCGTACAGCAG -a “A{100}” -g CTCGAGGGCGCGCCGGATCCATATACGCCTTGGCCGTACAGCAG`.
 
-Posteriormente las lecturas se mapearon al genoma de Macaca_fascicularis_5.0 descargado de ftp://ftp.ncbi.nih.gov/genomes/Macaca_fascicularis/Assembled_chromosomes/seq/ (chr1-20, chrX y chrMT) y a las secuencias ERCC spike-in RNA obtenidas de https://tools.thermofisher.com/content/sfs/manuals/cms_095047.txt. Para el mapeado, se empleó el programa Bowtie V1.2.2 con los parámetros 'bowtie -q -C -S -k 1 -p 1'.
+Posteriormente las lecturas se mapearon al genoma de `Macaca_fascicularis_5.0` descargado de ftp://ftp.ncbi.nih.gov/genomes/Macaca_fascicularis/Assembled_chromosomes/seq/ (chr1-20, chrX y chrMT) y a las secuencias `ERCC spike-in RNA` obtenidas de https://tools.thermofisher.com/content/sfs/manuals/cms_095047.txt. Para el mapeado, se empleó el programa `Bowtie V1.2.2` con los parámetros `bowtie -q -C -S -k 1 -p 1`.
 
-Tras el mapeado, analizamos aquellas lecturas alineadas que tenían una Mapping Quality >= 10. Para la cuantificación de genes se usó el programa featureCounts v1.6.0 con los parámetros '-T 2 -t exon -g gene' y el archivo de anotación génica "macFas5_Annot_wo_pseudo_v1e_add10k.gtf" (disponible gracias a Tomonori Nakamura y Mitinori Saitou).
+Tras el mapeado, analizamos aquellas lecturas alineadas que tenían una calidad de mapeado o _Mapping Quality_ >= 10. Para la cuantificación de genes se usó el programa `featureCounts v1.6.0` con los parámetros `-T 2 -t exon -g gene` y el archivo de anotación génica `macFas5_Annot_wo_pseudo_v1e_add10k.gtf` (disponible gracias a Tomonori Nakamura y Mitinori Saitou).
 
 ***
 
@@ -92,29 +93,21 @@ Tras el mapeado, analizamos aquellas lecturas alineadas que tenían una Mapping 
 
 # Comenzamos el workflow
 
-Antes de nada, establecemos la semilla de aleatoriedad para poder replicar los resultados.
-
-```{r}
-# Establecemos semilla de aleatoriedad
-set.seed(1234567)
-```
-
-
-A continuación leemos la matriz de conteos de UMIs, almacenada en el archivo "D3Ecounts.txt", y observamos los 10 primeros genes y células.
+Primero leemos la matriz de conteos de UMIs, almacenada en el archivo `D3Ecounts.txt`, y observamos los 10 primeros genes y células.
 
 ```{r}
 # Leemos matriz de conteos UMIs (contiene valores separados por tabuladores)
-sc3 <- read.table("./Cosas accesorias Informe 1/D3Ecounts.txt", sep = "\t", header = T)
+matriz_umis_nakamura <- read.table("./Cosas accesorias Informe 1/D3Ecounts.txt", sep = "\t", header = T)
 
-head(sc3[1:10, 1:10])
+head(matriz_umis_nakamura[1:10, 1:10])
 ```
 
 
 Ahora formateamos la matriz para que quede más bonita y ordenada. Dado que cada fila corresponde a un gen, vamos a renombrar las filas con los nombres de los susodichos genes:
 ```{r}
-rownames(sc3) <- sc3$Geneid
-sc3 <- sc3[,2:ncol(sc3)]
-head(sc3[1:10, 1:10])
+rownames(matriz_umis_nakamura) <- matriz_umis_nakamura$Geneid
+matriz_umis_nakamura <- matriz_umis_nakamura[,2:ncol(matriz_umis_nakamura)]
+head(matriz_umis_nakamura[1:10, 1:10])
 ```
 
 ***
@@ -123,14 +116,13 @@ head(sc3[1:10, 1:10])
 
 # El objeto Seurat
 
-El paquete `Seurat` no contiene una de las clases más usadas en Bioconductor, `SingleCellExperiment`. En su lugar usa su propio tipo de objeto, `seurat`. Todos los cálculos realizados en esta práctica se ejecutan sobre este objeto. Para comenzar el análisis primero tenemos que crear el objeto de tipo `seurat` a partir de los datos sc3 crudos ( _i.e._ no normalizados). Conservaremos todos los genes expresados en >= 3 células (parámetro `min.cells`) y todas las células que expresen como mínimo 200 genes (parámetro `min.features`). Esto se hace para evitar analizar células mal secuenciadas.
+El paquete `Seurat` no contiene una de las clases más usadas en Bioconductor, `SingleCellExperiment`. En su lugar usa su propio tipo de objeto, `seurat`. Todos los cálculos realizados en esta práctica se ejecutan sobre este objeto. Para comenzar el análisis primero tenemos que crear el objeto de tipo `seurat` a partir de los datos SC3-seq crudos ( _i.e._ no normalizados). Conservaremos todos los genes expresados en >= 3 células (parámetro `min.cells`) y todas las células que expresen como mínimo 200 genes (parámetro `min.features`). Esto se hace para evitar analizar células mal secuenciadas.
 
 ```{r, message = F}
-library(dplyr)
-cm <- CreateSeuratObject(counts = sc3, 
-                         project = "Nakamura", 
-                         min.cells = 3, 
-                         min.features = 200)
+nakamura_seurat <- CreateSeuratObject(counts = matriz_umis_nakamura, 
+                                      project = "Nakamura", 
+                                      min.cells = 3, 
+                                      min.features = 200)
 ```
 
 ***
@@ -143,9 +135,9 @@ Seurat te permite visualizar con simpleza métricas QC y filtrar células en bas
 
 
 ```{r}
-# Nota: en Seurat V2 se llama "nGene"; en Seurat V3 se llama "nFeature_RNA"
-# Nota2: en Seurat V2 se llama "nUMI"; en Seurat V3 se llama "nCount_RNA"
-VlnPlot(object = cm, 
+# Seurat 2 usa los nombres "nGene" y "nUMI";
+# Seurat 3 usa los nombres "nFeature_RNA" y "nCount_RNA", respectivamente
+VlnPlot(object = nakamura_seurat, 
         features = c("nFeature_RNA", "nCount_RNA"),
         ncol = 2)
 ```
@@ -153,15 +145,16 @@ VlnPlot(object = cm,
 De los gráficos de violín se observa que la mayoría de células expresan entre 11000 y 14000 genes, y la mayoría de células presentan una expresión génica de entre 1 y 3 millones de moléculas de ARNm.
 
 
-Los UMIs (Unique Molecular Identifiers) son los identificadores de los primers empleados en las tecnologías de scRNA-seq basadas en gotículas. Se usan para identificar lecturas originadas de una misma molécula de ARNm, de manera que evitamos contar dos veces la misma molécula de ARNm (ver imagen inferior, sacada de Bach et al., [2017](https://www.nature.com/articles/s41467-017-02001-5)).
+Los UMIs (_Unique Molecular Identifiers_) son los identificadores de los primers empleados en las tecnologías de scRNA-seq basadas en gotículas. Se usan para identificar lecturas originadas de una misma molécula de ARNm, de manera que evitamos contar dos veces la misma molécula de ARNm (ver imagen inferior, sacada de [Bach _et al._, 2017](https://www.nature.com/articles/s41467-017-02001-5)).
 
 ![](../Tutorial Seurat 2700 PBMCs/imagenes/aislamiento-celulas.png)
 
 <br>
 
 ```{r}
-# Nota: En Seurat V2 usa "GenePlot", en Seurat V3 usa "FeatureScatter"
-FeatureScatter(object = cm,
+# En Seurat 2, la función se llama "GenePlot()";
+# mientras que en Seurat 3 se renombró a "FeatureScatter()"
+FeatureScatter(object = nakamura_seurat,
                feature1 = "nFeature_RNA",
                feature2 = "nCount_RNA")
 ```
@@ -172,13 +165,14 @@ En el gráfico anterior se observa que hay una relación (aunque no muy buena, d
 <br>
 
 
-Podemos excluir del análisis aquellas células que presenten un valor anormalmente elevado de transcritos con el comando `subset`:
+Podemos excluir del análisis aquellas células que presenten un valor anormalmente elevado de transcritos con el comando `subset()`:
 
 ```{r}
-# Nota: Seurat V2 usa "FilterCells", Seurat V3 usa "subset" 
-cm <- subset(x = cm, subset = nCount_RNA < 1e+07)
+# En Seurat 2 la función se llama "FilterCells()";
+# mientras que en Seurat 3 se renombró a "subset()"
+nakamura_seurat <- subset(x = nakamura_seurat, subset = nCount_RNA < 1e+07)
 
-max(cm@meta.data$nCount_RNA)
+max(nakamura_seurat@meta.data$nCount_RNA)
 ```
 
 ***
@@ -192,28 +186,32 @@ Tras eliminar células indeseadas del dataset, el siguiente paso es normalizar l
 Nótese que siempre podemos utilizar el método `sctransform` en lugar de `LogNormalize` para obtener una mejor resolución de los datos biológicos en cuestión (véase el [tutorial](https://satijalab.org/seurat/articles/sctransform_vignette.html) pertinente del laboratorio Satija) 
 
 ```{r}
-cm <- NormalizeData(cm, normalization.method = "LogNormalize", scale.factor = 10000)
+nakamura_seurat <- NormalizeData(nakamura_seurat, 
+                                 normalization.method = "LogNormalize", 
+                                 scale.factor = 10000)
 ```
 ***
 
 <br>
 
-# Genes altamente variables
+# Genes altamente variables (=diferencialmente expresados)
 
-Seurat calcula los genes altamente variables y centra los posteriores análisis en ellos. Seurat V2 usa el método `mvp` (mean.var.plot) del comando `FindVariableGenes`, el cual calcula la expresión media y la dispersión (desviación estándar) de cada gen, luego coloca los genes en grupos (bins) y finalmente calcula el z-score para la dispersión dentro de cada grupo. Esto permite controlar la fuerte relación entre la varianza y la expresión media de cada gen. No obstante, el método por defecto en Seurat V3 es `vst`.
+Seurat calcula los genes altamente variables y centra los posteriores análisis en ellos. Seurat 2 usaba el método `mvp` (mean.var.plot) del comando `FindVariableGenes()`, el cual calculaba la expresión media y la dispersión (desviación estándar) de cada gen, luego colocaba los genes en grupos (_bins_) y finalmente calculaba el _z-score_ para la dispersión dentro de cada grupo. Esto permitía controlar la fuerte relación entre la varianza y la expresión media de cada gen. No obstante, el método por defecto en Seurat 3 es `vst`.
 
 
 ```{r, message = F}
-# Nota: Seurat V2 usa "FindVariableGenes", Seurat V3 usa "FindVariableFeatures"
-cm <- FindVariableFeatures(cm, selection.method = "mvp")
+# En Seurat 2 la función se llama "FindVariableGenes()";
+# mientras que en Seurat 3 se renombró a "FindVariableFeatures()"
+nakamura_seurat <- FindVariableFeatures(nakamura_seurat, 
+                                        selection.method = "mvp")
 
-VariableFeaturePlot(cm)
+VariableFeaturePlot(nakamura_seurat)
 
 # Identificamos los 10 genes más variables
-top10 <- head(VariableFeatures(cm), 10)
+top10 <- head(VariableFeatures(nakamura_seurat), n = 10L)
 
 # Graficamos dichos genes
-grafico_genes_variable <- VariableFeaturePlot(cm)
+grafico_genes_variable <- VariableFeaturePlot(nakamura_seurat)
 LabelPoints(grafico_genes_variable, points = top10, repel = TRUE)
 ```
 
@@ -223,10 +221,10 @@ LabelPoints(grafico_genes_variable, points = top10, repel = TRUE)
 
 # Escalado de datos
 
-Después de la normalización de los datos, los escalamos. Este es un paso estándar y previo a la aplicación de técnicas de reducción de dimensionalidad (también llamadas en su conjunto como "extracción de características" en el ámbito de Machine Learning). En este paso podemos controlar algunos _confounders_ mediante el parámetro `vars.to.regress` (no se hace en la práctica 1).
+Después de la normalización de los datos, procede escalarlos. Este es un paso estándar y previo a la aplicación de técnicas de reducción de dimensionalidad (también llamadas en su conjunto como "extracción de características" en el ámbito de _Machine Learning_). En este paso podemos controlar algunas variables confusoras o _confounders_ mediante el parámetro `vars.to.regress` (no se hace en esta práctica 1).
 
 ```{r, message = F}
-cm <- ScaleData(cm)
+nakamura_seurat <- ScaleData(nakamura_seurat)
 ```
 
 ***
@@ -235,18 +233,18 @@ cm <- ScaleData(cm)
 
 # Reducción lineal de la dimensionalidad (PCA)
 
-A continuación realizamos el PCA en los datos escalados. Por defecto el comando `RunPCA` actúa sobre los genes variables detectados previamente (almacenados en `cm[["RNA"]]@meta.features`), aunque podemos configurar los genes sobre los que realizar el PCA mediante el parámetro `features` (los genes seleccionados necesitan estar escalados y tener varianza distinta de 0). 
+A continuación realizamos el PCA en los datos escalados. Por defecto el comando `RunPCA()` actúa sobre los genes variables detectados previamente (almacenados en `nakamura_seurat[["RNA"]]@meta.features`), aunque podemos configurar los genes sobre los que realizar el PCA mediante el parámetro `features` (los genes seleccionados necesitan estar escalados y tener varianza distinta de 0). 
 
 La razón por la que las técnicas de reducción de la dimensionalidad en Seurat usan como input sólo los genes variables es que con algunos tipos de datos (como las matrices de conteos de UMIs), y sobre todo si se controlan variables técnicas, dichas técnicas devuelven resultados similares tanto si se ejecutan sólo sobre los genes variables como si se ejecutan en muchos más genes o incluso en el transcriptoma completo (lo cual es más lento de computar).
 
 ```{r}
-# Nota: Seurat V2 usa parámetros "pcs.print", "genes.print" y "pcs.compute",
-# mientras que Seurat v3 usa "ndims.print", "nfeatures.print" y "npcs",
-# respectivamente.
-cm <- RunPCA(object = cm,
-             ndims.print = 1:5,
-             nfeatures.print = 5,
-             npcs = 20)
+# Seurat 2 usa los parámetros "pcs.print", "genes.print" y "pcs.compute";
+# mientras que en Seurat 3 se renombraron a "ndims.print", "nfeatures.print" y
+# "npcs", respectivamente.
+nakamura_seurat <- RunPCA(object = nakamura_seurat,
+                          ndims.print = 1:5,
+                          nfeatures.print = 5,
+                          npcs = 20)
 ```
 <br>
 
@@ -254,36 +252,36 @@ Seurat ofrece varias maneras de visualizar las células y los genes que definen 
 
 ```{r}
 # Células
-head(cm@reductions$pca@cell.embeddings[,1:10])
+head(nakamura_seurat@reductions$pca@cell.embeddings[,1:10])
 
 # Genes
-head(cm@reductions$pca@feature.loadings[,1:10])
+head(nakamura_seurat@reductions$pca@feature.loadings[,1:10])
 ```
 
 ```{r}
-# Nota: Seurat V2 usa "VizPCA"
-VizDimLoadings(cm, dims = 1:2, nfeatures = 30, reduction = "pca")
+# Seurat 2 usa la función "VizPCA()";
+# mientras que en Seurat 3 se renombró a "VizDimLoadings()"
+VizDimLoadings(nakamura_seurat, dims = 1:2, nfeatures = 30, reduction = "pca")
 ```
 
 
 ```{r}
-# Nota: También puedes usar "PCAPlot"
-#
-# PCAPlot(cm)
-DimPlot(cm, reduction = "pca", dims = c(1,2))
+# Nota: También puedes usar "PCAPlot()" tal que así:
+# PCAPlot(nakamura_seurat)
+DimPlot(nakamura_seurat, reduction = "pca", dims = c(1,2))
 ```
 
 
-Concretamente, los comandos `PCHeatmap` y `DimHeatmap` (realizan exactamente la misma función) permiten explorar fácilmente las fuentes de varianza en un dataset, y pueden ser útiles a la hora de decidir la verdadera dimensionalidad del dataset, o sea, decidir qué componentes principales conservar para los próximos análisis. Tanto las células como los genes están ordenados en función de sus _loadings_ del PCA. El parámetro `cells` permite visualizar un número reducido de células (útil para graficar datasets grandes), e incluye las células con los loadings de ambos extremos ( _i.e._ incluye en el heatmap tanto las células que más infraexpresan un gen concreto como aquellas que más lo sobreexpresan). Colores violáceos indican infraexpresión, mientras que colores amarillos indican sobreexpresión.
+Concretamente, los comandos `PCHeatmap()` y `DimHeatmap()` (realizan exactamente la misma función) permiten explorar fácilmente las fuentes de varianza en un dataset, y pueden ser útiles a la hora de decidir la verdadera dimensionalidad del dataset, o sea, decidir qué componentes principales conservar para los próximos análisis. Tanto las células como los genes están ordenados en función de sus _loadings_ del PCA. El parámetro `cells` permite visualizar un número reducido de células (útil para graficar datasets grandes), e incluye las células con los loadings de ambos extremos (_i.e._ incluye en el heatmap tanto las células que más infraexpresan un gen concreto como aquellas que más lo sobreexpresan). Colores violáceos indican infraexpresión, mientras que colores amarillos indican sobreexpresión.
 
 ```{r}
-# PCHeatmap(object = cm,
+# PCHeatmap(object = nakamura_seurat,
 #           dims = 1:6,
 #           cells = 500,
 #           balanced = T,
 #           fast = F)
 
-DimHeatmap(object = cm, 
+DimHeatmap(object = nakamura_seurat, 
            dims = 1:6, 
            cells = 500,
            balanced = T,
@@ -301,29 +299,30 @@ Nótese que el parámetro `fast` (`TRUE` por defecto) permite graficar rápidame
 
 Para superar el ruido técnico presente en cualquier dataset de scRNA-seq, Seurat agrupa las células en función de sus _loadings_ del PCA, siendo cada componente principal un "metagén" que combina información sobre un set de genes correlacionados. Por tanto, determinar el nº correcto de componentes principales que conservar para futuros análisis es un paso muy importante, y se puede averiguar con varios métodos, entre ellos, el método del Jackstraw.
 
-El comando `JackStraw` permuta aleatoriamente un subconjunto del dataset original (1% de células por defecto) y ejecuta de nuevo el PCA y repite este proceso para generar una distribución nula de puntuaciones de genes. Las componentes principales significativas serán aquellas que estén enriquecidas con genes que presenten un p-valor pequeño.
+El comando `JackStraw()` permuta aleatoriamente un subconjunto del dataset original (1% de células por defecto) y ejecuta de nuevo el PCA y repite este proceso para generar una distribución nula de puntuaciones de genes. Las componentes principales significativas serán aquellas que estén enriquecidas con genes que presenten un p-valor pequeño.
 
 
 ```{r}
-# Nota: El Jackstraw puede ser lento en datasets medianos y grandes. En su lugar
-# se puede usar el método del codo
-cm <- JackStraw(cm, num.replicate = 100, dims = 9)
-cm <- ScoreJackStraw(cm, dims = 1:9, do.plot = F)
+# Nota: El Jackstraw puede ser lento en datasets medianos y grandes. En esos
+# casos se puede optar por usar el método del codo, mostrado a continuación
+nakamura_seurat <- JackStraw(nakamura_seurat, num.replicate = 100, dims = 9)
+nakamura_seurat <- ScoreJackStraw(nakamura_seurat, dims = 1:9, do.plot = F)
 ```
 
 
 Las funciones `ScoreJackStraw` (parámetro `do.plot`) y `JackStrawPlot` permiten visualizar qué componentes principales son estadísticamente significativas. Serán significativas aquellas componentes que se sitúen por encima de la línea discontinua (distribución uniforme). En el gráfico a continuación se observa que podríamos conservar las primeras 9 componentes principales.
 
 ```{r}
-JackStrawPlot(cm, dims = 1:9)
+JackStrawPlot(nakamura_seurat, dims = 1:9)
 ```
 
 
 El método del codo, ya explicado en bioestadística y en otros informes, se puede realizar con el siguiente comando:
 
 ```{r}
-# Nota: Seurat V2 usa "PCElbowPlot"
-ElbowPlot(cm)
+# Seurat 2 usa la función "PCElbowPlot()",
+# mientras que en Seurat 3 se renombró a "ElbowPlot()"
+ElbowPlot(nakamura_seurat)
 ```
 
 ***
@@ -335,35 +334,40 @@ ElbowPlot(cm)
 El método de clustering que incorpora Seurat se basa en grafos y ya viene explicado en otro [informe](https://github.com/gloknar/R-Utilities/tree/master/Tutorial%20Seurat%202700%20PBMCs).
 
 
-La función `FindClusters` contiene un parámetro de resolución que establece la granularidad del clustering. A mayor valor de resolución/granularidad, más clusters se generan. Tanto 10x Genomics como Pedro recomiendan establecer una resolución de entre 0,4 ~ 1,2 para datasets de 3000 células. Para datasets mayores, la resolución debe aumentar proporcionalmente. Los clusters con sus respectivas células se guardan en `cm@active.ident`, `cm$RNA_snn_res.0.6` y `cm$seurat_clusters` (`cm@ident` en Seurat V2), y se puede acceder a ellos con el comando `Idents(cm)`.
+La función `FindClusters()` contiene un parámetro de resolución que establece la granularidad del clustering. A mayor valor de resolución/granularidad, más clusters se generan. Tanto 10x Genomics como el Dr. Pedro Madrigal recomiendan establecer una resolución de entre 0,4 ~ 1,2 para datasets de 3000 células. Para datasets mayores, la resolución debe aumentar proporcionalmente. Los clusters con sus respectivas células se guardan en `nakamura_seurat@active.ident`, `nakamura_seurat$RNA_snn_res.0.6` y `nakamura_seurat$seurat_clusters` (`nakamura_seurat@ident` en Seurat V2), y se puede acceder a ellos con el comando `Idents(nakamura_seurat)`.
 
 Nótese que una vez realizado el clustering, las visualizaciones en PCA, tSNE y UMAP pasarán a incluir información sobre a qué clúster pertenece cada célula representada en las mismas.
 
 
 ```{r}
-# Nota: Seurat V2 prescinde del comando "FindNeighbors" y en su lugar agrupa
-# todos sus parámetros en la función "FindCluster"
-cm <- FindNeighbors(object = cm, reduction = "pca", dims = 1:9, k.param = 11)
-cm <- FindClusters(object = cm, resolution = 0.6)
+# Seurat 2 prescinde del comando "FindNeighbors()" y en su lugar agrupa todos
+# sus parámetros en la función "FindCluster()"
+nakamura_seurat <- FindNeighbors(object = nakamura_seurat, 
+                                 reduction = "pca", 
+                                 dims = 1:9, 
+                                 k.param = 11)
+
+nakamura_seurat <- FindClusters(object = nakamura_seurat, 
+                                resolution = 0.6)
 
 # 20 primeras células y sus clusters
-head(Idents(cm), n = 20L)
+head(Idents(nakamura_seurat), n = 20L)
 
 # Nº de células por clúster
 #
-# table(cm$seurat_clusters)
-# table(cm$RNA_snn_res.0.6)
-table(cm@active.ident)
+# table(nakamura_seurat$seurat_clusters)
+# table(nakamura_seurat$RNA_snn_res.0.6)
+table(nakamura_seurat@active.ident)
 ```
 
-Una utilidad muy práctica de Seurat es la posibilidad de obtener los parámetros con los que configuramos los comandos previamente ejecutados sobre el objeto seurat `cm`. Con el comando `Command(cm)` podemos ver una lista de dichas funciones, y con la estructura `cm$comando_usado` podemos obtener los parámetros con los que ejecutamos previamente esa función:
+Una utilidad muy práctica de Seurat es la posibilidad de obtener los parámetros con los que configuramos los comandos previamente ejecutados sobre el objeto seurat `nakamura_seurat`. Con el comando `Command(nakamura_seurat)` podemos ver una lista de dichas funciones, y con la estructura `nakamura_seurat$comando_usado` podemos obtener los parámetros con los que ejecutamos previamente esa función:
 
 ```{r}
 # Comandos ejecutados
-Command(cm)
+Command(nakamura_seurat)
 
-# Parámetros del comando "FindClusters"
-cm$FindClusters
+# Parámetros del comando "FindClusters()"
+nakamura_seurat$FindClusters
 ```
 
 
@@ -371,23 +375,23 @@ Seurat permite usar también gráficos tSNE y UMAP para visualizar el clustering
 
 
 ```{r}
-cm <- RunTSNE(cm, reduction = "pca", dims = 1:9, tsne.method = "Rtsne", verbose = F)
+nakamura_seurat <- RunTSNE(nakamura_seurat, reduction = "pca", dims = 1:9, tsne.method = "Rtsne", verbose = F)
 
-# Nota: También puedes usar "TSNEPlot"
-#
-# TSNEPlot(cm)
-DimPlot(cm, reduction = "tsne", dims = c(1,2))
+# Nota: También puedes usar "TSNEPlot()", tal que así:
+# TSNEPlot(nakamura_seurat)
+DimPlot(nakamura_seurat, reduction = "tsne", dims = c(1,2))
 ```
 
 Ídem para UMAP:
 
 ```{r}
-cm <- RunUMAP(cm, reduction = "pca", dims = 1:9, umap.method = "uwot", metric = "cosine", min.dist = 0.3)
+nakamura_seurat <- RunUMAP(nakamura_seurat, reduction = "pca", 
+                           dims = 1:9, umap.method = "uwot", 
+                           metric = "cosine", min.dist = 0.3)
 
-# Nota: También puedes usar "UMAPPlot"
-#
-# UMAPPlot(cm)
-DimPlot(cm, reduction = "umap", dims = c(1,2), label = T)
+# Nota: También puedes usar "UMAPPlot()", tal que así:
+# UMAPPlot(nakamura_seurat)
+DimPlot(nakamura_seurat, reduction = "umap", dims = c(1,2), label = T)
 ```
 
 ***
@@ -401,14 +405,17 @@ Seurat te permite encontrar marcadores que definen clusters mediante expresión 
 
 
 ```{r}
-cluster2.markers <- FindMarkers(cm, ident.1 = 2, min.pct = 0.25)
+cluster2.markers <- FindMarkers(nakamura_seurat, 
+                                ident.1 = 2, 
+                                min.pct = 0.25)
 head(cluster2.markers, n = 5)
 ```
 
 Para ver los genes diferencialmente expresados entre el clúster 2 y el 4 ( o sea, comparar los patrones de expresión génica del clúster 2 vs los patrones del clúster 4):
 
 ```{r}
-cluster2_4.markers <- FindMarkers(cm, ident.1 = 2, ident.2 = 4, min.pct = 0.25)
+cluster2_4.markers <- FindMarkers(nakamura_seurat, ident.1 = 2, 
+                                  ident.2 = 4, min.pct = 0.25)
 head(cluster2_4.markers, n = 5)
 ```
 
@@ -416,7 +423,8 @@ head(cluster2_4.markers, n = 5)
 Para ver los genes diferencialmente expresados del clúster 1 y 5 vs el resto del dataset:
 
 ```{r}
-cluster1_5.markers <- FindMarkers(cm, ident.1 = c(1,5), min.pct = 0.25)
+cluster1_5.markers <- FindMarkers(nakamura_seurat, ident.1 = c(1,5), 
+                                  min.pct = 0.25)
 head(cluster1_5.markers, n = 5)
 ```
 
@@ -425,26 +433,29 @@ head(cluster1_5.markers, n = 5)
 Podemos visualizar los biomarcadores de los clusters con:
 
 ```{r}
-VlnPlot(cm, features = "BMP6") + theme(axis.text.x = element_text(angle = 0, hjust = .5))
+VlnPlot(nakamura_seurat, features = "BMP6") + 
+  theme(axis.text.x = element_text(angle = 0, hjust = .5))
 
-FeaturePlot(cm, features = "IL6R", reduction = "umap", pt.size = 2)
+FeaturePlot(nakamura_seurat, features = "IL6R", reduction = "umap", 
+            pt.size = 2)
 ```
 
-El comando `FindAllMarkers` automatiza este proceso y encuentra los biomarcadores de todos los clusters (seleccionamos solo los genes sobreexpresados de cada cluster con el parámetro `only.pos = T`):
+El comando `FindAllMarkers()` automatiza este proceso y encuentra los biomarcadores de todos los clusters (seleccionamos solo los genes sobreexpresados de cada cluster con el parámetro `only.pos = T`):
 
 ```{r}
 # Nota: En Seurat V2 el parámetro "logfc.threshold" se llama "thresh.use"
-markers <- FindAllMarkers(cm, min.pct = 0.25, logfc.threshold = 0.25, only.pos = T)
+markers <- FindAllMarkers(nakamura_seurat, min.pct = 0.25, 
+                          logfc.threshold = 0.25, only.pos = T)
 head(markers)
 ```
 
 
-El comando `DoHeatmap` genera un heatmap de expresión génica para las células y genes seleccionados. En este caso graficamos los top 5 biomarcadores de cada clúster:
+El comando `DoHeatmap()` genera un heatmap de expresión génica para las células y genes seleccionados. En este caso graficamos los top 5 biomarcadores de cada clúster:
 
 
 ```{r}
 top5 <- markers %>% group_by(cluster) %>% slice_max(order_by = avg_logFC, n = 5)
-DoHeatmap(cm, features = top5$gene)
+DoHeatmap(nakamura_seurat, features = top5$gene)
 ```
 
 
@@ -458,22 +469,22 @@ archivo_etiquetas_celulas <- t(read.table("./Cosas accesorias Informe 1/colnames
 NewIdent <- as.factor(archivo_etiquetas_celulas[2:length(archivo_etiquetas_celulas)])
 
 
-names(NewIdent) <- names(cm@active.ident)
-cm@active.ident <- NewIdent
-cm <- AddMetaData(cm, metadata = NewIdent, col.name = "Cell.Identity")
+names(NewIdent) <- names(nakamura_seurat@active.ident)
+nakamura_seurat@active.ident <- NewIdent
+nakamura_seurat <- AddMetaData(nakamura_seurat, metadata = NewIdent, col.name = "Cell.Identity")
 
-head(cm@meta.data)
+head(nakamura_seurat@meta.data)
 ```
 
 
 
 ```{r}
 # UMAP con etiquetas
-DimPlot(cm , group.by='Cell.Identity', reduction = "umap", pt.size=2, label = T) + 
+DimPlot(nakamura_seurat , group.by='Cell.Identity', reduction = "umap", pt.size=2, label = T) + 
   ggtitle("UMAP") + theme(plot.title = element_text(hjust = 0.5))
 
 # t-SNE con etiquetas
-DimPlot(cm , group.by='Cell.Identity', reduction = "tsne", pt.size=2, label = T) + 
+DimPlot(nakamura_seurat , group.by='Cell.Identity', reduction = "tsne", pt.size=2, label = T) + 
   ggtitle("t-SNE") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
@@ -487,7 +498,7 @@ DimPlot(cm , group.by='Cell.Identity', reduction = "tsne", pt.size=2, label = T)
 
 Para la inferencia del ciclo celular, asiganmos a cada célula una puntuación basada en sus niveles de expresión de genes marcadores de las fases S y G2/M. Los niveles de expresión de los biomarcadores de una fase celular deberían estar inversamente correlacionados con los de la otra fase (están en extremos opuestos del ciclo celular), y las células que no expresen ninguno de estos biomarcadores se encontrarán probablemente en la fase G1 (no se están duplicando).
 
-En Seurat, asiganmos esta puntuación a las células con la función `CellCycleScoring`, la cual almacena las puntuación de las fases S y G2/M en `cm@meta.data`, junto con la fase celular predicha de cada célula. Si estableces el parámetro `set.ident = TRUE`, la identidad de las células pasará a ser su fase celular y la identidad previa se guardará en la columna `old.ident`.
+En Seurat, asiganmos esta puntuación a las células con la función `CellCycleScoring()`, la cual almacena las puntuación de las fases S y G2/M en `nakamura_seurat@meta.data`, junto con la fase celular predicha de cada célula. Si estableces el parámetro `set.ident = TRUE`, la identidad de las células pasará a ser su fase celular y la identidad previa se guardará en la columna `old.ident`.
 
 Los biomarcadores de estos puntos de control en _Macaca fascicularis_ se encuentran en el archivo de texto `regev_lab_cell_cycle_genes.txt`. Los primeros 43 genes corresponden a los biomarcadores de la fase S, y los 54 genes restantes corresponden a los de las fases G2/M.
 
@@ -500,9 +511,9 @@ s.genes <- cellcycle.genes[1:43]
 g2.m.genes <- cellcycle.genes[44:97]
 
 # Predecimos la fase celular de nuestras células
-cm <- CellCycleScoring(cm, s.features = s.genes, g2m.features = g2.m.genes, set.ident = F)
+nakamura_seurat <- CellCycleScoring(nakamura_seurat, s.features = s.genes, g2m.features = g2.m.genes, set.ident = F)
 
-DimPlot(cm, reduction = "umap", group.by = "Phase", pt.size = 2) + 
+DimPlot(nakamura_seurat, reduction = "umap", group.by = "Phase", pt.size = 2) + 
   ggtitle("UMAP") + theme(plot.title = element_text(hjust= 0.5))
 ```
 
@@ -512,14 +523,14 @@ Mediante un ridgeplot podemos comprobar visualmente la expresión diferencial de
 ```{r}
 # PCNA y MCM6 son marcadores de la fase S;
 # TOP2A y MKI67 son marcadores de la fase G2/M
-RidgePlot(cm, features = c("PCNA", "MCM6", "TOP2A", "MKI67"), group.by = "Phase", ncol = 2)
+RidgePlot(nakamura_seurat, features = c("PCNA", "MCM6", "TOP2A", "MKI67"), group.by = "Phase", ncol = 2)
 ```
 
 
 Por último procedemos a guardar el trabajo realizado hasta ahora, pues lo necesitaremos en la práctica 4
 
 ```{r}
-saveRDS(object = cm, file = "./Cosas accesorias Informe 1/nakamura_P4.rds")
+saveRDS(object = nakamura_seurat, file = "./Cosas accesorias Informe 1/nakamura_P4.rds")
 ```
 
 
