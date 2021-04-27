@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = F,
                       warning = F,
                       tidy = F)
+set.seed(1)
 ##################################################
 #######        Encoded in UTF-8        ###########
 ##################################################
@@ -56,11 +57,9 @@ plan()
 Primero cargamos las matrices de conteos de los datasets de interés:
 
 ```{r}
-set.seed(1)
+human.data <- read.table("./Cosas accesorias Informe 3/pancreas_human.expressionMatrix.txt", sep = "\t")
 
-human.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_human.expressionMatrix.txt", sep = "\t")
-
-mouse.data <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/pancreas_mouse.expressionMatrix.txt", sep = "\t")
+mouse.data <- read.table("./Cosas accesorias Informe 3/pancreas_mouse.expressionMatrix.txt", sep = "\t")
 ```
 
 
@@ -228,7 +227,7 @@ En vista de los resultados obtenidos, parece ser que las células de los cluster
 ```{r}
 # Puede haber ligeras discrepancias entre las proyecciones t-SNE y UMAP del
 # paper y las nuestros, de ahí que surjan NAs
-pancreas.metadata <- read.table("./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/Supplementary_Table_PancreasCellData.tsv", sep = "\t", skip = 2, header = T, row.names = 1)
+pancreas.metadata <- read.table("./Cosas accesorias Informe 3/Supplementary_Table_PancreasCellData.tsv", sep = "\t", skip = 2, header = T, row.names = 1)
 pancreas.integrated <- AddMetaData(pancreas.integrated, metadata = pancreas.metadata)
 
 

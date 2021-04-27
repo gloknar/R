@@ -1,2 +1,0 @@
-nakamura_P4.rds filter=lfs diff=lfs merge=lfs -text
-pancreas_human.expressionMatrix.txt filter=lfs diff=lfs merge=lfs -text

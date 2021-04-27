@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = F,
                       warning = F,
                       tidy = F)
+set.seed(1)
 ##################################################
 #######        Encoded in UTF-8        ###########
 ##################################################
@@ -43,9 +44,6 @@ library("ggplot2")
 library("ggthemes")
 library("ggbeeswarm")
 library("corrplot")
-# library("M3Drop")
-# library("monocle)
-set.seed(1)
 ```
 
 
@@ -103,7 +101,7 @@ Al igual que el dataset de Nakamura _et al._ usado en la práctica 1, el dataset
 
 ```{r}
 # Leemos los datos
-deng_SCE <- readRDS(file = "./Archivos accesorios/Codigo y datos de las Practicas 1-4/data/deng-reads.rds")
+deng_SCE <- readRDS(file = "./Cosas accesorias Informe 2/deng-reads.rds")
 
 # Reordenamos los niveles, ya que zigoto < 2 células < 4 células, etc...
 deng_SCE$cell_type2 <- factor(deng_SCE$cell_type2, 
