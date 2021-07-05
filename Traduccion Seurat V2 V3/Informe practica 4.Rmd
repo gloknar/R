@@ -427,7 +427,7 @@ head(c3@principal_graph_aux$UMAP$pseudotime)
 
 Monocle 3 también permite la visualización de las trayectorias en gráficos 3D interactivos. Para ello, durante la reducción de la dimensionalidad tenemos que pedirle a la función `reduce_dimension()` que guarde como máximo 3 dimensiones mediante el parámetro `max_components`:
 
-```{r, warning = F}
+```{r, eval = F}
 # Protocolo resumido de Monocle 3 para generar gráficos en 3D
 cds_3d <- reduce_dimension(c3, max_components = 3, 
                            reduction_method = "UMAP", preprocess_method = "PCA")
@@ -442,6 +442,9 @@ cds_3d_plot_obj
 # También podemos usar el comando plot_cells_3d():
 plot_cells_3d(cds_3d, color_cells_by = "Cell.Identity", 
               color_palette = cell_type_color)
+
+# NOTA: Ejecuta este chunk en local, pues es muy pesado como para generarlo en
+# un informe
 ```
 
 
