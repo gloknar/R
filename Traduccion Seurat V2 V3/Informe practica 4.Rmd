@@ -448,6 +448,11 @@ plot_cells_3d(cds_3d, color_cells_by = "Cell.Identity",
 ```
 
 
+```{r, fig.align = "center", fig.height = 2, fig.width = 2, echo = F}
+knitr::include_graphics(path = "./Cosas accesorias Informe 4/3dplot.png")
+```
+
+
 <br>
 
 
