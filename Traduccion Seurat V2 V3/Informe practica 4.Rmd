@@ -448,8 +448,8 @@ plot_cells_3d(cds_3d, color_cells_by = "Cell.Identity",
 ```
 
 
-```{r, fig.align = "center", fig.height = 2, fig.width = 2, echo = F}
-knitr::include_graphics(path = "./Cosas accesorias Informe 4/3dplot.png")
+```{r, fig.align = "center", echo = F}
+knitr::include_graphics(path = "./Cosas accesorias Informe 4/3dplot.png", dpi = 1)
 ```
 
 
@@ -478,8 +478,9 @@ En esta práctica nos centraremos en el análisis de autocorrelación espacial, 
 
 
 ```{r, results = "hide"}
-# Expresión génica diferencial a lo largo de la trayectoria (test I de Moran)
-moran_test_principal_graph <- graph_test(c3,  neighbor_graph = "principal_graph", cores = 1, verbose = F)
+# Expresión génica diferencial a lo largo de la trayectoria (test I de Moran).
+# Este comando es paralelizable en UNIX, pero no en Windows
+moran_test_principal_graph <- graph_test(c3,  neighbor_graph = "principal_graph", cores = 2, verbose = F)
 
 # Visualizamos el dataframe
 head(moran_test_principal_graph)
@@ -488,7 +489,7 @@ head(moran_test_principal_graph)
 
 El comando `graph_test` nos devuelve un dataframe cuyas filas son los genes del dataset y las columnas son:
 
-* El p-valor y el q-valor (p-valor ajustado para evitar falsos positivos durante tests múltiples) del gen
+* El p-valor y el q-valor (equivalente a un p-valor _a posteriori_ bayesiano ajustado mediante el metodo pFDR para evitar falsos positivos durante tests múltiples) del gen
 
 * El estadístico de la I de Moran (cualquier valor) y la I de Moran (valores entre [-1,1]). Recordemos que valores del test I de Moran cercanos a 1 significa que la expresión del gen en cuestión se focaliza en una región concreta de la trayectoria (_i.e._ es específico de un clúster o estado celular).
 
