@@ -306,7 +306,10 @@ boxplot(eSet_normalizado, main = "Después",
 
 # Análisis DEG
 
+De acuerdo a [McDermaid _et al._(2019)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6954399/), podría usar para DGE análisis edgeR, Cutdiff/Cutdiff2, limma, DESeq2.. etc
+
 <br>
+
 
 ## Separación de las muestras: PCA y t-SNE
 
@@ -424,6 +427,11 @@ oligo::MAplot(eSet_normalizado, refSamples = c(1,3,5,7), which = c(2,4,6,8), mai
 
 Procedemos a detectar los genes diferencialmente expresados mediante las utilidades del paquete `limma`, ya que `oligo` carece de las funciones necesarias para ello. `limma` usa como _input_ el objeto que devuelve el comando `rma()`.
 
+NOTA: usé t-test no pareado, pero si las células troncales provienen del mismo individuo (no son sets independientes), entonces tendré que usar un t-test para datos pareados.
+
+Tras hablar con gambini, reuslta que son datos pareados. debo corregir eso-.
+
+
 
 `limma` contiene funciones para hacer t-tests o ANOVAs para identificar DEGs en microarrays. Estas funciones pueden ser usadas en datos provenientes de cualquier tipo de microarray y funcionan incluso para microarrays con diseños complejos o múltiples muestras. La idea principal es ajustar un modelo lineal a los datos de expresión de cada gen. Los datos de expresión pueden ser log-ratios o log-intensidades. Los métodos empleados obtienen información sobre todos los genes para hacer que los análisis sean estables incluso en experimentos con un bajo tamaño muestral.
 
@@ -524,7 +532,7 @@ data.fit.eb$t[11600:11610,]
 
 
 
-el output de la función `eBayes()` contiene huecos para los p-valores y los estadísticos F (el estadístico F es un estadístico empleado en los ANOVAs). El t-test es un caso especial de ANOVA para comparaciones sencillas. En el caso del t-test, en el que realizas una comparación, el estadístico F es igual al estadístico t al cuadrado. En el ANOVA (_i.e._ comparaciones múltiples), eso no se cumple:
+El output de la función `eBayes()` contiene huecos para los p-valores y los estadísticos F (el estadístico F es un estadístico empleado en los ANOVAs). El t-test es un caso especial de ANOVA para comparaciones sencillas. En el caso del t-test, en el que realizas una comparación, el estadístico F es igual al estadístico t al cuadrado. En el ANOVA (_i.e._ comparaciones múltiples), eso no se cumple:
 
 ```{r}
 data.fit.eb$t[1:10,]^2
@@ -532,10 +540,7 @@ data.fit.eb$F[1:10]
 ```
 
 
-
-
-The best way to decide on the number of DE genes you are going to select is via a Volcano plot. Volcano plots arrange genes along biological and statistical significance. The X-axis gives the log fold change between the two groups (log: so that up and down regulation appear symmetric), and the Y-axis represents the p-value of a t-test comparing samples (on a negative log scale so smaller p-values appear higher up). The first axis indicates biological impact of the change; the second indicates the statistical evidence of the change.
-To decide on the number of DE genes that you’re going to proceed with, you can make Volcano plots highlighting different numbers of genes. As you increase the number of genes highlighted on the plot, you can see at what point you begin to select genes with rather low fold changes. Make a conservative decision about the number of genes you want to use for follow up.
+Tras realizar el t-test moderado, se grafican los resultados en un Volcano plot. El volcano plot muestra en el eje X el log2FC entre dos grupos (_i.e._ impacto biológico del cambio), y el eje Y mide el p-valor del cambio (_i.e._ la evidencia estadística de los resultados).
 
 ```{r}
 # Genes en los cuadrantes superiores derecho e izquierdo son candidatos de genes
@@ -543,6 +548,73 @@ To decide on the number of DE genes that you’re going to proceed with, you can
 volcanoplot(data.fit.eb, highlight = 0); abline(h = 1.301, v = c(-1,1))
 ```
 
+
+
+
+### 2 grupos de datos pareados
+
+```{r}
+# Creamos el diseño del t-test pareado (este es el bueno)
+
+
+# As an example we will compare 2 groups of 4 patients before and after treatment (no genistein and after genistein):
+
+# Treatment is the grouping variable dividing the data set into two groups:
+# control and genistein-treated. To tell limma that your data is paired you just
+# create a second grouping variable called patient:
+pData(eSet_normalizado)
+pData(eSet_normalizado)[,3] = c("muestra1", "muestra1", "muestra2", "muestra2", "muestra3", "muestra3", "muestra4", "muestra4")
+colnames(eSet_normalizado@phenoData@data)[3] = "pareados"
+
+# Of course, now you need to factorize both grouping variables: 
+
+groupsP = pData(eSet_normalizado)$pareados 
+groupsT = pData(eSet_normalizado)$condicion
+fp = factor(groupsP,levels=c("muestra1","muestra2","muestra3","muestra4"))
+ft = factor(groupsT,levels=c("Control","Genisteina"))
+
+# Then you need to create a design matrix, a matrix of values of the grouping
+# variable. ANOVA needs such a matrix to know which samples belong to which
+# group. Since limma performs an ANOVA, it needs such a design matrix. You can
+# create it using the model.matrix() method.
+
+# The argument of the model.matrix method is a model formula. The tilde (~) in
+# the argument specifies the right hand side of the model equation. The plus (+)
+# is used to combine factors.
+
+# Creamos el diseño del t-test pareado
+paired.design = model.matrix(~ fp + ft)
+colnames(paired.design)=c("Intercept","muestra2vsmuestra1","muestra3versusmuestra1","muestra4versusmuestra1", "GenisteinavsControl")
+
+
+# Generamos modelo lineal
+data.fit = lmFit(t(intensidades_normalizadas), paired.design)
+data.fit$coefficients[1:20,]
+
+
+
+# Lmfit() will fit a linear model to the data. It will create a data frame called data.fit. The interesting data is in the coefficients table which contains 4 columns:
+# 
+#     the first column contains the intercept of the linear fit, in most cases it has no implicit meaning.
+#     the second column compares patient 1 and patient 2: it is the difference between the average expression of patient 2 over the two treatments and the average expression level of patient 1 over the two treatments.
+#     the third column compares patient 1 and patient 3 in the same way.
+#     the fourth column compares before and after treatment: it calculates the average difference in expression level between after and before treatment. This is the measure that is used in the paired t-test and compared to 0. So these are the values we are interested in. The more this measure differs from 0 the more likely it is that the treatment has an effect.
+# 
+# Performing a moderated paired t-test is now done using eBayes(). 
+
+data.fit.eb = eBayes(data.fit)
+data.fit.eb$p.value[1:20,]
+
+
+# Log2FC de genes:
+data.fit.eb$coefficients[11600:11610,]
+
+# p-valores de los t-tests moderados por eBayes
+data.fit.eb$p.value[11600:11610,]
+
+
+# volcanoplot(data.fit.eb, highlight = 0) ; abline(h = 1.301, v = c(-1,1))
+```
 
 
 
