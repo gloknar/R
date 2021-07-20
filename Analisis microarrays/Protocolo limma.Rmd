@@ -311,7 +311,7 @@ De acuerdo a [McDermaid _et al._(2019)](https://www.ncbi.nlm.nih.gov/pmc/article
 <br>
 
 
-## Separación de las muestras: PCA y t-SNE
+## Separación de las muestras: PCA, t-SNE y UMAP
 
 Con los datos ya normalizados, podemos graficar los microarrays estudiados en un espacio de dimensionalidad reducida. La separación de los microarrays en dicho espacio nos dará una idea general de si existen genes diferencialmente expresados entre las condiciones estudiadas.
 
@@ -332,6 +332,9 @@ pca_microarrays <- PCA(intensidades_normalizadas_df, graph = F,
 
 # Graficamos las 2 primeras componentes principales
 plot.PCA(pca_microarrays, choix = "ind", habillage = 138746)
+
+# library(FactoInvestigate)
+# FactoInvestigate::Investigate(pca_microarrays)
 ```
 
 ```{r, eval = F}
