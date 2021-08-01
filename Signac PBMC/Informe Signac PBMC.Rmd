@@ -1,0 +1,216 @@
+---
+title: "Análisis de datos scATAC-seq en Signac: 2700 PBMC"
+author: "Adam Casas"
+date: 'Compilado: `r format(Sys.Date(), "%d de %B del %Y")`'
+output: 
+  html_document:
+    df_print: paged
+    highlight: kate
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+---
+
+```{r configuracion_inicial, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F,
+                      warning = F,
+                      tidy = F)
+set.seed(1)
+##################################################
+#######        Encoded in UTF-8        ###########
+##################################################
+```
+
+***
+
+# Instalación
+
+Instalamos `Signac` en R versión 4:
+
+```{r, eval = F}
+BiocManager::install("Rsamtools")
+install.packages("Signac")
+```
+
+
+https://satijalab.org/signac/articles/pbmc_vignette.html
+
+# Introducción
+
+`Signac` (Stuart _et al._, 2020) es una extensión del famoso paquete `Seurat` para explorar, analizar e interpretar datasets de scATAC-seq. ATAC-seq (y su variante de célula única) es, por decirlo de alguna manera, la sucesora espiritural de técnicas de secuenciacón como ChIP-seq y RRBS-Seq. Si en dichas técnicas se estudia el estado epigenético de las células/tejidos de interés, cierto es que se debe tener un conocimiento previo de cómo actúan los mecanismos epigenéticos del organismo en cuestión para poder sacarles el mayor rendimiento. __ATAC-seq__, por otro lado, evade dicha imposición al estudiar directamente la __accesibilidad de la cromatina__ a la transposasa hiperactiva Tn5 de manera "agnóstica" (sin necesidad de conocer _a priori_ los mecanismos epigenéticos subyacentes).
+
+
+En este informe vamos a presentar `Signac` mediante el análisis del ya conocido dataset 2700 PBMC de [10x Genomics](https://www.10xgenomics.com/). Para ello debemos descargar primero los siguientes archivos: 
+
+
+```{r, eval = F}
+# El archivo con los datos crudos del ATAC-seq
+download.file("https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5", destfile = "./archivos_accesorios/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5")
+
+# Sus metadatos
+download.file("https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_singlecell.csv", destfile = "./archivos_accesorios/atac_v1_pbmc_10k_singlecell.csv")
+
+# El archivo de los fragmentos
+download.file("https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz", destfile = "./archivos_accesorios/atac_v1_pbmc_10k_fragments.tsv.gz")
+
+# El archivo con el índice de los fragmentos
+download.file("https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz.tbi", destfile = "./archivos_accesorios/atac_v1_pbmc_10k_fragments.tsv.gz.tbi")
+```
+
+
+
+Ahora cargamos las librerías que vamos a usar:
+
+```{r}
+library("Signac")
+library("Seurat")
+library("GenomeInfoDb")
+# install.packages(pkgs = "http://bioconductor.org/packages/3.12/bioc/src/contrib/rtracklayer_1.50.0.tar.gz", repos = NULL, type = "source")
+library("EnsDb.Hsapiens.v75")
+# Gráficos
+library("ggplot2")
+library("patchwork")
+```
+
+
+
+***
+
+<br>
+
+# Preprocesado
+
+When pre-processing chromatin data, Signac uses information from two related input files, both of which can be created using CellRanger:
+
+* __Peak/Cell matrix.__ This is analogous to the gene expression count matrix used to analyze single-cell RNA-seq. However, instead of genes, each row of the matrix represents a region of the genome (a peak), that is predicted to represent a region of open chromatin. Each value in the matrix represents the number of Tn5 integration sites for each single barcode (i.e. a cell) that map within each peak. You can find more detail on the 10X Website.
+
+* __Fragment file.__ This represents a full list of all unique fragments across all single cells. It is a substantially larger file, is slower to work with, and is stored on-disk (instead of in memory). However, the advantage of retaining this file is that it contains all fragments associated with each single cell, as opposed to only fragments that map to peaks. More information about the fragment file can be found on the 10x Genomics website or on the sinto website.
+
+
+
+
+
+
+
+<br>
+
+<br>
+
+## Computing QC Metrics
+
+
+[PH]
+
+
+
+
+
+
+<br>
+
+<br>
+
+## Normalization and linear dimensional reduction
+
+
+[PH]
+
+
+
+***
+
+<br>
+
+# Non-linear dimension reduction and clustering
+
+
+[PH]
+
+
+
+
+***
+
+<br>
+
+# Create a gene activity matrix
+
+
+[PH]
+
+
+
+
+***
+
+<br>
+
+# Integrating with scRNA-seq data
+
+
+[PH]
+
+
+
+
+***
+
+<br>
+
+# Find differentially accessible peaks between clusters
+
+
+
+[PH]
+
+
+
+
+
+***
+
+<br>
+
+# Plotting genomic regions
+
+
+[PH]
+
+
+
+
+
+***
+
+<br>
+
+# Bibliografía
+
+* Stuart _et al._ Multimodal single-cell chromatin analysis with Signac. bioRxiv (2020).
+
+* [PH]
+
+* [PH]
+
+* [PH]
+
+
+
+
+***
+
+<br>
+
+# sessionInfo()
+
+<details>
+
+<summary> __Click para mostrar__ </summary>
+
+```{r, echo = F}
+sessionInfo()
+```
+
+</details>
