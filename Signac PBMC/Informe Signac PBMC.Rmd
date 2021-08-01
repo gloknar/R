@@ -42,8 +42,7 @@ https://satijalab.org/signac/articles/pbmc_vignette.html
 `Signac` (Stuart _et al._, 2020) es una extensión del famoso paquete `Seurat` para explorar, analizar e interpretar datasets de scATAC-seq. ATAC-seq (y su variante de célula única) es, por decirlo de alguna manera, la sucesora espiritural de técnicas de secuenciacón como ChIP-seq y RRBS-Seq. Si en dichas técnicas se estudia el estado epigenético de las células/tejidos de interés, cierto es que se debe tener un conocimiento previo de cómo actúan los mecanismos epigenéticos del organismo en cuestión para poder sacarles el mayor rendimiento. __ATAC-seq__, por otro lado, evade dicha imposición al estudiar directamente la __accesibilidad de la cromatina__ a la transposasa hiperactiva Tn5 de manera "agnóstica" (sin necesidad de conocer _a priori_ los mecanismos epigenéticos subyacentes).
 
 
-En este informe vamos a presentar `Signac` mediante el análisis del ya conocido dataset 2700 PBMC de [10x Genomics](https://www.10xgenomics.com/). Para ello debemos descargar primero los siguientes archivos: 
-
+En este informe vamos a presentar `Signac` mediante el análisis del ya conocido dataset 2700 PBMC de [10x Genomics](https://www.10xgenomics.com/). Para ello debemos descargar primero los siguientes archivos (deberás descargarlos e instalarlos, pues pesan demasiado como para subirlos a GitHub): 
 
 ```{r, eval = F}
 # El archivo con los datos crudos del ATAC-seq
