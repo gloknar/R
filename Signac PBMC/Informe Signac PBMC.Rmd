@@ -21,13 +21,14 @@ set.seed(1)
 ##################################################
 #######        Encoded in UTF-8        ###########
 ##################################################
+
 ```
 
 ***
 
 # Instalación
 
-Instalamos `Signac` en R versión 4:
+Instalamos `Signac` en R versión 4.1:
 
 ```{r, eval = F}
 BiocManager::install("Rsamtools")
@@ -62,7 +63,7 @@ download.file("https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_1
 
 Ahora cargamos las librerías que vamos a usar:
 
-```{r}
+```{r, message=F, warning=F}
 library("Signac")
 library("Seurat")
 library("GenomeInfoDb")
@@ -81,11 +82,46 @@ library("patchwork")
 
 # Preprocesado
 
-When pre-processing chromatin data, Signac uses information from two related input files, both of which can be created using CellRanger:
+`Signac` requiere dos archivos adicionales generados por el software _CellRanger_ para poder preprocesar datos de ATAC-Seq:
 
-* __Peak/Cell matrix.__ This is analogous to the gene expression count matrix used to analyze single-cell RNA-seq. However, instead of genes, each row of the matrix represents a region of the genome (a peak), that is predicted to represent a region of open chromatin. Each value in the matrix represents the number of Tn5 integration sites for each single barcode (i.e. a cell) that map within each peak. You can find more detail on the 10X Website.
+* __Peak/Cell matrix.__ La matriz de picos o células es similar a la matriz de expresión génica de dimensiones _genes_ x _células_ usada en scRNA-Seq. En ATAC-Seq la matriz es de _regiones cromosómicas_ x _células_. Cada valor de la matriz es el nº de sitios de integración de Tn5 en cada célula que mapean en dichas regiones o _peaks_.
 
-* __Fragment file.__ This represents a full list of all unique fragments across all single cells. It is a substantially larger file, is slower to work with, and is stored on-disk (instead of in memory). However, the advantage of retaining this file is that it contains all fragments associated with each single cell, as opposed to only fragments that map to peaks. More information about the fragment file can be found on the 10x Genomics website or on the sinto website.
+
+* __Fragment file.__ Representa la lista completa de fragmentos únicos detectados en todas las células y es por tanto un archivo MUY pesado. Al ser tan pesado, se guarda en el disco duro en lugar de la RAM y a consecuencia manipularlo es un proceso lento. Su ventaja es que contiene todos los sitios de integración de Tn5 en cada célula.
+
+
+
+Ya que `Signac` es una extensión de `Seurat`, vamos a trabajar con un objeto `Seurat` generado a partir de la __matriz de picos/célula__, sus __metadatos__ creados en `cellranger-atac` y el __archivo de fragmentos__.
+
+
+```{r}
+matriz_picos_ATAC <- Read10X_h5("E:/Git/R/Signac PBMC/archivos_accesorios/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5")
+
+metadatos <- read.csv(
+  file = "E:/Git/R/Signac PBMC/archivos_accesorios/atac_v1_pbmc_10k_singlecell.csv",
+  header = TRUE,
+  row.names = 1
+)
+
+
+
+ensayo_ATAC_Seq <- CreateChromatinAssay(
+  counts = matriz_picos_ATAC,
+  sep = c(":", "-"),
+  genome = 'hg19',
+  fragments = "E:/Git/R/Signac PBMC/archivos_accesorios/atac_v1_pbmc_10k_fragments.tsv.gz",
+  min.cells = 10,
+  min.features = 200
+)
+
+
+pbmc_Seurat <- CreateSeuratObject(
+  counts = ensayo_ATAC_Seq,
+  assay = "peaks",
+  meta.data = metadatos
+)
+```
+
 
 
 
