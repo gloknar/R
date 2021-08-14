@@ -15,14 +15,22 @@ output:
 ```{r configuracion_inicial, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,
                       message = F,
-                      warning = F,
-                      tidy = F)
+                      warning = F)
 set.seed(1)
 ##################################################
 #######        Encoded in UTF-8        ###########
 ##################################################
-
 ```
+
+```{r Paralelizado protocolo, echo = F}
+# Establecemos el límite de tamaño que puede usar `future` en 2 GBs dado que de
+# lo contrario superamos el límite por defecto de 500 MBs al trabajar con objetos
+# tan grandes
+library("future")
+plan(strategy = "multisession", workers = 4)
+options(future.globals.maxSize = 2 * 1024^3)
+```
+
 
 ***
 
@@ -75,6 +83,16 @@ library("patchwork")
 ```
 
 
+Paralelizamos el protocolo (usar con cuidado):
+
+```{r}
+# Establecemos el límite de tamaño que puede usar `future` en 2 GBs dado que de
+# lo contrario superamos el límite por defecto de 500 MBs al trabajar con objetos
+# tan grandes
+plan(strategy = "multisession", workers = 4)
+options(future.globals.maxSize = 2 * 1024^3)
+```
+
 
 ***
 
@@ -97,7 +115,7 @@ Ya que `Signac` es una extensión de `Seurat`, vamos a trabajar con un objeto `S
 ```{r}
 # Cargamos y visualizamos las 6 primeras filas de la matriz de ATAC_Seq en el objeto `matriz_picos_ATAC`:
 matriz_picos_ATAC <- Read10X_h5("E:/Git/R/Signac PBMC/archivos_accesorios/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5")
-head(matriz_picos_ATAC)
+matriz_picos_ATAC[c(1:5), c(1:5)]
 
 # En la matriz de picos/células, las filas son regiones cromosómicas y las
 # columnas son células. Mide el grado de apertaura de la cromatina en las
@@ -111,9 +129,8 @@ metadatos <- read.csv(
   header = TRUE,
   row.names = 1)
 
-head(metadatos)
-class(metadatos)
 dim(metadatos)
+head(metadatos)
 summary(metadatos)
 
 hist(x = metadatos$peak_region_fragments, main = "Distribución de los peak region fragments", col = "turquoise")
@@ -128,50 +145,49 @@ ensayo_ATAC_Seq <- CreateChromatinAssay(
   fragments = "E:/Git/R/Signac PBMC/archivos_accesorios/atac_v1_pbmc_10k_fragments.tsv.gz",
   min.cells = 10,
   min.features = 200)
-class(ensayo_ATAC_Seq)
-
-# Exploración del ensayo/experimento de ATAC-Seq
-head(ensayo_ATAC_Seq)
-class(ensayo_ATAC_Seq)
-dim(ensayo_ATAC_Seq)
 
 # Creamos el objeto Seurat a partir del susodicho ensayo
 pbmc_Seurat <- CreateSeuratObject(
   counts = ensayo_ATAC_Seq,
   assay = "peaks",
   meta.data = metadatos)
+
 pbmc_Seurat
 pbmc_Seurat[['peaks']]
 ```
 
 
-The ATAC-seq data is stored using a custom assay, the `ChromatinAssay.` This enables some specialized functions for analysing genomic single-cell assays such as scATAC-seq. By printing the assay we can see some of the additional information that can be contained in the ChromatinAssay, including motif information, gene annotations, and genome information. 
+Los datos de la secuenciación ATAC se guardan en un objeto de tipo `ChromatinAssay`, el cual se caracteriza por presentar bolsillos para almacenar información adicional sobre motifs, anotaciones de los genes e información del genoma.  
 
-For example, we can call la función `granges()` on a Seurat object with a ChromatinAssay set as the active assay (or on a ChromatinAssay) to see the genomic ranges associated with each feature in the object. See the object interaction vignette for more information about the ChromatinAssay class.
+Podemos usar la función `granges()` en un objeto de tipo `seurat` que tenga como experimento activo uno de tipo `ChromatinAssay` para observar las regiones cromosómicas asociada a cada feature (gen?) del objeto. Para más información sobre la clase `ChromatinAssay`, consulte la [viñeta de interacción con objetos](https://satijalab.org/signac/articles/data_structures.html).
 
 
 ```{r}
+# Exploración del ensayo/experimento de ATAC-Seq
+ensayo_ATAC_Seq
+class(ensayo_ATAC_Seq)
+dim(ensayo_ATAC_Seq)
 granges(pbmc_Seurat)
 ```
 
-We can also add gene annotations to the pbmc object for the human genome. This will allow downstream functions to pull the gene annotation information directly from the object.
 
-```{r}
-# extract gene annotations from EnsDb
-# BiocManager::install("biovizBase")
-annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75) # Este paso tarda mucho, creo que tira de internet
 
-# change to UCSC style since the data was mapped to hg19
-# seqlevelsStyle(annotations) <- "UCSC" # No funciona esta linea
-supportedSeqlevelsStyle(annotations)
+También podemos añadir al objeto `pbmc_Seurat` las anotaciones del genoma humano para que ciertos comandos puedan hacer uso de dicha información. 
 
-seqlevels(annotations)
+```{r, warning = F}
+# Obtenemos las anotaciones del genoma humano hg19 desde Ensembl
+annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75, verbose = F) # Este paso es lento
 
+# Cambiamos el estilo a "UCSC" dado que los datos fueron mapeados al genoma humano "hg19" 
+# GenomeInfoDb::seqlevelsStyle(x = annotations) <-  "UCSC"
 genome(annotations) <- "hg19"
 
-# add the gene information to the object
+# Añadimos las anotaciones al objeto de tipo `seurat`
 Annotation(pbmc_Seurat) <- annotations
+
+# seqinfo(pbmc_Seurat)
 ```
+
 
 
 
@@ -179,8 +195,6 @@ Annotation(pbmc_Seurat) <- annotations
 ***
 
 <br>
-
-
 
 # Métricas de calidad (QC)
 
@@ -201,7 +215,15 @@ Note that the last three metrics can be obtained from the output of CellRanger (
 
 
 ```{r}
+# compute nucleosome signal score per cell
+pbmc_Seurat <- NucleosomeSignal(object = pbmc_Seurat)
 
+# compute TSS enrichment score per cell
+#pbmc_Seurat <- TSSEnrichment(object = pbmc_Seurat, fast = FALSE)
+
+# add blacklist ratio and fraction of reads in peaks
+pbmc_Seurat$pct_reads_in_peaks <- pbmc_Seurat$peak_region_fragments / pbmc_Seurat$passed_filters * 100
+pbmc_Seurat$blacklist_ratio <- pbmc_Seurat$blacklist_region_fragments / pbmc_Seurat$peak_region_fragments
 ```
 
 
