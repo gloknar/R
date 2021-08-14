@@ -204,18 +204,15 @@ Annotation(pbmc_Seurat) <- annotations
 
 Ahora podemos comenzar con el control de calidad. Los creadores de `Signac` recomiendan prestar atención a las siguientes métricas: 
 
-As with scRNA-seq, the expected range of values for these parameters will vary depending on your biological system, cell viability, and other factors.
-
  * __Nucleosome banding pattern__: El histograma de los tamaños de los fragmentos de ADN (de secuencias paired-end, ojo) debe exhibir un marcado patrón de bandeo de nucleosomas correspondiente a la longitud del ADN enrollado alrededor de un único nucleosoma. Esta métrica se calcula mediante la siguiente ecuación:
  
 $$nucleosome\ signal = \frac{fragmentos\_mononucleosomales}{fragmentos\_sin\_nucleosomas}$$
-
 
  * __Transcriptional start site (TSS) enrichment score__. El [proyecto ENCODE](https://www.encodeproject.org/data-standards/terms/) define el _TSS enrichment score_ como el ratio de fragmentos centrados en el TSS vs fragmentos flanqueantes al TSS. Los experimentos de ATAC-Seq mal hechos suelen tener un _TSS enrichment score_ bajo. Esta métrica se calcula para cada célula con el comando `TSSEnrichment()` y se almacena en los metadatos en la columna `TSS.enrichment`.
 
  * __Total number of fragments in peaks__: Las células con muy pocas lecturas se han secuenciado con poca profundidad y por tanto podemos eliminarlas del análisis. Células con muchas lecturas podrían ser _doublets_ (dos células secuenciadas como una), agregados de núcleos u otro tipo de artefactos.
 
- * __Fraction of fragments in peaks__: Represents the fraction of all fragments that fall within ATAC-seq peaks. Cells with low values (i.e. <15-20%) often represent low-quality cells or technical artifacts that should be removed. Note that this value can be sensitive to the set of peaks used.
+ * __Fraction of fragments in peaks__: Representa el porcentaje de fragmentos (_i.e._ regiones cromosómicas) que caen en los picos de ATAC-seq. Las células con valores escasos (_i.e._ <15~20%) suelen ser células mal secuenciadas o artefactos técnicos (ruido) y por tanto se deberían eliminar. Tenga en cuenta que el umbral de rechazo de células depende del set de picos usado.
 
  * __Ratio reads in genomic blacklist regions__. The ENCODE project has provided a list of blacklist regions, representing reads which are often associated with artefactual signal. Cells with a high proportion of reads mapping to these areas (compared to reads mapping to peaks) often represent technical artifacts and should be removed. ENCODE blacklist regions for human (hg19 and GRCh38), mouse (mm10), Drosophila (dm3), and C. elegans (ce10) are included in the Signac package.
 

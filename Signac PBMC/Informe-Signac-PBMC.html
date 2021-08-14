@@ -340,7 +340,8 @@ div.tocify {
 <p>Instalamos <code>Signac</code> en R versión 4.1:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;Rsamtools&quot;</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;Signac&quot;</span>)</span></code></pre></div>
-<p><a href="https://satijalab.org/signac/articles/pbmc_vignette.html" class="uri">https://satijalab.org/signac/articles/pbmc_vignette.html</a></p>
+<hr />
+<p><br></p>
 </div>
 <div id="introducción" class="section level1" number="2">
 <h1 number="2"><span class="header-section-number">2</span> Introducción</h1>
@@ -546,7 +547,7 @@ div.tocify {
 <ul>
 <li><p><strong>Transcriptional start site (TSS) enrichment score</strong>. El <a href="https://www.encodeproject.org/data-standards/terms/">proyecto ENCODE</a> define el <em>TSS enrichment score</em> como el ratio de fragmentos centrados en el TSS vs fragmentos flanqueantes al TSS. Los experimentos de ATAC-Seq mal hechos suelen tener un <em>TSS enrichment score</em> bajo. Esta métrica se calcula para cada célula con el comando <code>TSSEnrichment()</code> y se almacena en los metadatos en la columna <code>TSS.enrichment</code>.</p></li>
 <li><p><strong>Total number of fragments in peaks</strong>: Las células con muy pocas lecturas se han secuenciado con poca profundidad y por tanto podemos eliminarlas del análisis. Células con muchas lecturas podrían ser <em>doublets</em> (dos células secuenciadas como una), agregados de núcleos u otro tipo de artefactos.</p></li>
-<li><p><strong>Fraction of fragments in peaks</strong>: Represents the fraction of all fragments that fall within ATAC-seq peaks. Cells with low values (i.e. &lt;15-20%) often represent low-quality cells or technical artifacts that should be removed. Note that this value can be sensitive to the set of peaks used.</p></li>
+<li><p><strong>Fraction of fragments in peaks</strong>: Representa el porcentaje de fragmentos (<em>i.e.</em> regiones cromosómicas) que caen en los picos de ATAC-seq. Las células con valores escasos (<em>i.e.</em> &lt;15~20%) suelen ser células mal secuenciadas o artefactos técnicos (ruido) y por tanto se deberían eliminar. Tenga en cuenta que el umbral de rechazo de células depende del set de picos usado.</p></li>
 <li><p><strong>Ratio reads in genomic blacklist regions</strong>. The ENCODE project has provided a list of blacklist regions, representing reads which are often associated with artefactual signal. Cells with a high proportion of reads mapping to these areas (compared to reads mapping to peaks) often represent technical artifacts and should be removed. ENCODE blacklist regions for human (hg19 and GRCh38), mouse (mm10), Drosophila (dm3), and C. elegans (ce10) are included in the Signac package.</p></li>
 </ul>
 <p>Téngase en cuenta que las métricas <code>Total number of fragments in peaks</code>, <code>Fraction of fragments in peaks</code> y <code>Ratio reads in genomic blacklist regions</code> pueden obtenerse del output de <code>CellRanger</code> de 10X Genomics. También es posible analizar datasets no-10XGenomics gracias a las utilidades que incorpora <code>Signac</code>.</p>
