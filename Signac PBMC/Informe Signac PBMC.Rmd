@@ -44,7 +44,10 @@ install.packages("Signac")
 ```
 
 
-https://satijalab.org/signac/articles/pbmc_vignette.html
+
+***
+
+<br>
 
 # Introducción
 
@@ -203,25 +206,28 @@ Ahora podemos comenzar con el control de calidad. Los creadores de `Signac` reco
 
 As with scRNA-seq, the expected range of values for these parameters will vary depending on your biological system, cell viability, and other factors.
 
- * Nucleosome banding pattern: The histogram of DNA fragment sizes (determined from the paired-end sequencing reads) should exhibit a strong nucleosome banding pattern corresponding to the length of DNA wrapped around a single nucleosome. We calculate this per single cell, and quantify the approximate ratio of mononucleosomal to nucleosome-free fragments (stored as nucleosome_signal)
+ * __Nucleosome banding pattern__: El histograma de los tamaños de los fragmentos de ADN (de secuencias paired-end, ojo) debe exhibir un marcado patrón de bandeo de nucleosomas correspondiente a la longitud del ADN enrollado alrededor de un único nucleosoma. Esta métrica se calcula mediante la siguiente ecuación:
+ 
+$$nucleosome\ signal = \frac{fragmentos\_mononucleosomales}{fragmentos\_sin\_nucleosomas}$$
 
- * Transcriptional start site (TSS) enrichment score. The ENCODE project has defined an ATAC-seq targeting score based on the ratio of fragments centered at the TSS to fragments in TSS-flanking regions (see https://www.encodeproject.org/data-standards/terms/). Poor ATAC-seq experiments typically will have a low TSS enrichment score. We can compute this metric for each cell with the TSSEnrichment() function, and the results are stored in metadata under the column name TSS.enrichment.
 
- * Total number of fragments in peaks: A measure of cellular sequencing depth / complexity. Cells with very few reads may need to be excluded due to low sequencing depth. Cells with extremely high levels may represent doublets, nuclei clumps, or other artefacts.
+ * __Transcriptional start site (TSS) enrichment score__. El [proyecto ENCODE](https://www.encodeproject.org/data-standards/terms/) define el _TSS enrichment score_ como el ratio de fragmentos centrados en el TSS vs fragmentos flanqueantes al TSS. Los experimentos de ATAC-Seq mal hechos suelen tener un _TSS enrichment score_ bajo. Esta métrica se calcula para cada célula con el comando `TSSEnrichment()` y se almacena en los metadatos en la columna `TSS.enrichment`.
 
- * Fraction of fragments in peaks: Represents the fraction of all fragments that fall within ATAC-seq peaks. Cells with low values (i.e. <15-20%) often represent low-quality cells or technical artifacts that should be removed. Note that this value can be sensitive to the set of peaks used.
+ * __Total number of fragments in peaks__: Las células con muy pocas lecturas se han secuenciado con poca profundidad y por tanto podemos eliminarlas del análisis. Células con muchas lecturas podrían ser _doublets_ (dos células secuenciadas como una), agregados de núcleos u otro tipo de artefactos.
 
- * Ratio reads in genomic blacklist regions The ENCODE project has provided a list of blacklist regions, representing reads which are often associated with artefactual signal. Cells with a high proportion of reads mapping to these areas (compared to reads mapping to peaks) often represent technical artifacts and should be removed. ENCODE blacklist regions for human (hg19 and GRCh38), mouse (mm10), Drosophila (dm3), and C. elegans (ce10) are included in the Signac package.
+ * __Fraction of fragments in peaks__: Represents the fraction of all fragments that fall within ATAC-seq peaks. Cells with low values (i.e. <15-20%) often represent low-quality cells or technical artifacts that should be removed. Note that this value can be sensitive to the set of peaks used.
 
-Note that the last three metrics can be obtained from the output of CellRanger (which is stored in the object metadata), but can also be calculated for non-10x datasets using Signac (more information at the end of this document).
+ * __Ratio reads in genomic blacklist regions__. The ENCODE project has provided a list of blacklist regions, representing reads which are often associated with artefactual signal. Cells with a high proportion of reads mapping to these areas (compared to reads mapping to peaks) often represent technical artifacts and should be removed. ENCODE blacklist regions for human (hg19 and GRCh38), mouse (mm10), Drosophila (dm3), and C. elegans (ce10) are included in the Signac package.
+
+Téngase en cuenta que las métricas `Total number of fragments in peaks`, `Fraction of fragments in peaks` y `Ratio reads in genomic blacklist regions` pueden obtenerse del output de `CellRanger` de 10X Genomics. También es posible analizar datasets no-10XGenomics gracias a las utilidades que incorpora `Signac`.
 
 
 ```{r}
 # compute nucleosome signal score per cell
 pbmc_Seurat <- NucleosomeSignal(object = pbmc_Seurat)
 
-# compute TSS enrichment score per cell
-#pbmc_Seurat <- TSSEnrichment(object = pbmc_Seurat, fast = FALSE)
+# Calculamos el TSS enrichment compute TSS enrichment score per cell
+# pbmc_Seurat <- TSSEnrichment(object = pbmc_Seurat, fast = FALSE)
 
 # add blacklist ratio and fraction of reads in peaks
 pbmc_Seurat$pct_reads_in_peaks <- pbmc_Seurat$peak_region_fragments / pbmc_Seurat$passed_filters * 100
