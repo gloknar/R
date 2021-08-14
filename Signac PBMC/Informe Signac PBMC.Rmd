@@ -86,15 +86,6 @@ library("patchwork")
 ```
 
 
-Paralelizamos el protocolo (usar con cuidado):
-
-```{r}
-# Establecemos el límite de tamaño que puede usar `future` en 2 GBs dado que de
-# lo contrario superamos el límite por defecto de 500 MBs al trabajar con objetos
-# tan grandes
-plan(strategy = "multisession", workers = 4)
-options(future.globals.maxSize = 2 * 1024^3)
-```
 
 
 ***
@@ -121,8 +112,8 @@ matriz_picos_ATAC <- Read10X_h5("E:/Git/R/Signac PBMC/archivos_accesorios/atac_v
 matriz_picos_ATAC[c(1:5), c(1:5)]
 
 # En la matriz de picos/células, las filas son regiones cromosómicas y las
-# columnas son células. Mide el grado de apertaura de la cromatina en las
-# regiones cromosómica (nº de transposasas detectadas en dicha región para la
+# columnas son células. Mide el grado de apertura de la cromatina en las
+# regiones cromosómicas (nº de transposasas detectadas en dicha región para la
 # célula de la columna)
 
 
@@ -132,13 +123,12 @@ metadatos <- read.csv(
   header = TRUE,
   row.names = 1)
 
+metadatos[c(1:5), c(1:5)]
 dim(metadatos)
-head(metadatos)
 summary(metadatos)
 
 hist(x = metadatos$peak_region_fragments, main = "Distribución de los peak region fragments", col = "turquoise")
 boxplot(x= metadatos$peak_region_fragments)
-min(metadatos$peak_region_fragments)
 
 # Creamos el objeto de clase `ChromatinAssay` del ensayo/experimento de ATAC-Seq
 ensayo_ATAC_Seq <- CreateChromatinAssay(
@@ -225,17 +215,19 @@ Téngase en cuenta que las métricas `Total number of fragments in peaks`, `Frac
 pbmc_Seurat <- NucleosomeSignal(object = pbmc_Seurat)
 
 # Calculamos el TSS enrichment compute TSS enrichment score per cell
-# pbmc_Seurat <- TSSEnrichment(object = pbmc_Seurat, fast = FALSE)
+pbmc_Seurat <- TSSEnrichment(object = pbmc_Seurat, fast = FALSE)
 
 # add blacklist ratio and fraction of reads in peaks
 pbmc_Seurat$pct_reads_in_peaks <- pbmc_Seurat$peak_region_fragments / pbmc_Seurat$passed_filters * 100
+
+sort(pbmc_Seurat$pct_reads_in_peaks)
 pbmc_Seurat$blacklist_ratio <- pbmc_Seurat$blacklist_region_fragments / pbmc_Seurat$peak_region_fragments
 ```
 
 We can inspect the TSS enrichment scores by grouping the cells based on the score and plotting the accessibility signal over all TSS sites. Setting the fast=TRUE option in TSSEnrichment() will only compute the TSS enrichment score without storing the entire cell by position matrix of Tn5 insertion frequency for each cell, and can save memory. However, setting fast=TRUE will not allow downstream plotting of the TSS enrichment signal for different groups of cells using the TSSPlot() function, shown here:
 
 ```{r}
-pbmc$high.tss <- ifelse(pbmc$TSS.enrichment > 2, 'High', 'Low')
+pbmc_Seurat$high.tss <- ifelse(pbmc_Seurat$TSS.enrichment > 2, 'High', 'Low')
 TSSPlot(pbmc, group.by = 'high.tss') + NoLegend()
 ```
 
