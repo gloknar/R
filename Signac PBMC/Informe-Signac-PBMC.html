@@ -487,10 +487,8 @@ div.tocify {
 ## Annotation present: FALSE 
 ## Motifs present: FALSE 
 ## Fragment files: 1</code></pre>
-<p>Los datos de la secuenciación ATAC se guardan en un objeto de tipo <code>ChromatinAssay</code>, el cual se caracteriza por presentar bolsillos para almacenar información adicional sobre motifs, anotaciones de los genes e información del genoma. A demás de los bolsillos que ya tienen los objetos de tipo <code>Assay</code>, los objetos de tipo <code>ChromatinAssay</code> tienen una serie de bolsillos adicionales, a saber:</p>
-<ul>
-<li>Por ejemplo, podemos usar la función <code>granges()</code> a un objeto de tipo <code>seurat</code> que tenga un experimento activo de tipo <code>ChromatinAssay</code> para observar los rangos genómicos asociados a cada feature (gen?) del objeto. Para más información sobre la clase <code>ChromatinAssay</code>, consulte la <a href="https://satijalab.org/signac/articles/data_structures.html">viñeta de interacción con objetos</a>.</li>
-</ul>
+<p>Los datos de la secuenciación ATAC se guardan en un objeto de tipo <code>ChromatinAssay</code>, el cual se caracteriza por presentar bolsillos para almacenar información adicional sobre motifs, anotaciones de los genes e información del genoma.</p>
+<p>Podemos usar la función <code>granges()</code> en un objeto de tipo <code>seurat</code> que tenga como experimento activo uno de tipo <code>ChromatinAssay</code> para observar las regiones cromosómicas asociada a cada feature (gen?) del objeto. Para más información sobre la clase <code>ChromatinAssay</code>, consulte la <a href="https://satijalab.org/signac/articles/data_structures.html">viñeta de interacción con objetos</a>.</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Exploración del ensayo/experimento de ATAC-Seq</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>ensayo_ATAC_Seq</span></code></pre></div>
 <pre><code>## ChromatinAssay data with 87561 features for 8728 cells
@@ -539,7 +537,8 @@ div.tocify {
 </div>
 <div id="métricas-de-calidad-qc" class="section level1" number="4">
 <h1 number="4"><span class="header-section-number">4</span> Métricas de calidad (QC)</h1>
-<p>We can now compute some QC metrics for the scATAC-seq experiment. We currently suggest the following metrics below to assess data quality. As with scRNA-seq, the expected range of values for these parameters will vary depending on your biological system, cell viability, and other factors.</p>
+<p>Ahora podemos comenzar con el control de calidad. Los creadores de <code>Signac</code> recomiendan prestar atención a las siguientes métricas:</p>
+<p>As with scRNA-seq, the expected range of values for these parameters will vary depending on your biological system, cell viability, and other factors.</p>
 <ul>
 <li><p>Nucleosome banding pattern: The histogram of DNA fragment sizes (determined from the paired-end sequencing reads) should exhibit a strong nucleosome banding pattern corresponding to the length of DNA wrapped around a single nucleosome. We calculate this per single cell, and quantify the approximate ratio of mononucleosomal to nucleosome-free fragments (stored as nucleosome_signal)</p></li>
 <li><p>Transcriptional start site (TSS) enrichment score. The ENCODE project has defined an ATAC-seq targeting score based on the ratio of fragments centered at the TSS to fragments in TSS-flanking regions (see <a href="https://www.encodeproject.org/data-standards/terms/" class="uri">https://www.encodeproject.org/data-standards/terms/</a>). Poor ATAC-seq experiments typically will have a low TSS enrichment score. We can compute this metric for each cell with the TSSEnrichment() function, and the results are stored in metadata under the column name TSS.enrichment.</p></li>

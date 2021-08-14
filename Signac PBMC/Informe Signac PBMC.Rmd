@@ -199,7 +199,9 @@ Annotation(pbmc_Seurat) <- annotations
 # Métricas de calidad (QC)
 
 
-We can now compute some QC metrics for the scATAC-seq experiment. We currently suggest the following metrics below to assess data quality. As with scRNA-seq, the expected range of values for these parameters will vary depending on your biological system, cell viability, and other factors.
+Ahora podemos comenzar con el control de calidad. Los creadores de `Signac` recomiendan prestar atención a las siguientes métricas: 
+
+As with scRNA-seq, the expected range of values for these parameters will vary depending on your biological system, cell viability, and other factors.
 
  * Nucleosome banding pattern: The histogram of DNA fragment sizes (determined from the paired-end sequencing reads) should exhibit a strong nucleosome banding pattern corresponding to the length of DNA wrapped around a single nucleosome. We calculate this per single cell, and quantify the approximate ratio of mononucleosomal to nucleosome-free fragments (stored as nucleosome_signal)
 
