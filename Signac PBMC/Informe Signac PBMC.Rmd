@@ -95,48 +95,115 @@ Ya que `Signac` es una extensión de `Seurat`, vamos a trabajar con un objeto `S
 
 
 ```{r}
+# Cargamos y visualizamos las 6 primeras filas de la matriz de ATAC_Seq en el objeto `matriz_picos_ATAC`:
 matriz_picos_ATAC <- Read10X_h5("E:/Git/R/Signac PBMC/archivos_accesorios/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5")
+head(matriz_picos_ATAC)
+
+# En la matriz de picos/células, las filas son regiones cromosómicas y las
+# columnas son células. Mide el grado de apertaura de la cromatina en las
+# regiones cromosómica (nº de transposasas detectadas en dicha región para la
+# célula de la columna)
+
+
 
 metadatos <- read.csv(
   file = "E:/Git/R/Signac PBMC/archivos_accesorios/atac_v1_pbmc_10k_singlecell.csv",
   header = TRUE,
-  row.names = 1
-)
+  row.names = 1)
 
+head(metadatos)
+class(metadatos)
+dim(metadatos)
+summary(metadatos)
 
+hist(x = metadatos$peak_region_fragments, main = "Distribución de los peak region fragments", col = "turquoise")
+boxplot(x= metadatos$peak_region_fragments)
+min(metadatos$peak_region_fragments)
 
+# Creamos el objeto de clase `ChromatinAssay` del ensayo/experimento de ATAC-Seq
 ensayo_ATAC_Seq <- CreateChromatinAssay(
   counts = matriz_picos_ATAC,
   sep = c(":", "-"),
   genome = 'hg19',
   fragments = "E:/Git/R/Signac PBMC/archivos_accesorios/atac_v1_pbmc_10k_fragments.tsv.gz",
   min.cells = 10,
-  min.features = 200
-)
+  min.features = 200)
+class(ensayo_ATAC_Seq)
 
+# Exploración del ensayo/experimento de ATAC-Seq
+head(ensayo_ATAC_Seq)
+class(ensayo_ATAC_Seq)
+dim(ensayo_ATAC_Seq)
 
+# Creamos el objeto Seurat a partir del susodicho ensayo
 pbmc_Seurat <- CreateSeuratObject(
   counts = ensayo_ATAC_Seq,
   assay = "peaks",
-  meta.data = metadatos
-)
+  meta.data = metadatos)
+pbmc_Seurat
+pbmc_Seurat[['peaks']]
+```
+
+
+The ATAC-seq data is stored using a custom assay, the `ChromatinAssay.` This enables some specialized functions for analysing genomic single-cell assays such as scATAC-seq. By printing the assay we can see some of the additional information that can be contained in the ChromatinAssay, including motif information, gene annotations, and genome information. 
+
+For example, we can call la función `granges()` on a Seurat object with a ChromatinAssay set as the active assay (or on a ChromatinAssay) to see the genomic ranges associated with each feature in the object. See the object interaction vignette for more information about the ChromatinAssay class.
+
+
+```{r}
+granges(pbmc_Seurat)
+```
+
+We can also add gene annotations to the pbmc object for the human genome. This will allow downstream functions to pull the gene annotation information directly from the object.
+
+```{r}
+# extract gene annotations from EnsDb
+# BiocManager::install("biovizBase")
+annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75) # Este paso tarda mucho, creo que tira de internet
+
+# change to UCSC style since the data was mapped to hg19
+# seqlevelsStyle(annotations) <- "UCSC" # No funciona esta linea
+supportedSeqlevelsStyle(annotations)
+
+seqlevels(annotations)
+
+genome(annotations) <- "hg19"
+
+# add the gene information to the object
+Annotation(pbmc_Seurat) <- annotations
 ```
 
 
 
 
-
-
-
+***
 
 <br>
 
-<br>
-
-## Computing QC Metrics
 
 
-[PH]
+# Métricas de calidad (QC)
+
+
+We can now compute some QC metrics for the scATAC-seq experiment. We currently suggest the following metrics below to assess data quality. As with scRNA-seq, the expected range of values for these parameters will vary depending on your biological system, cell viability, and other factors.
+
+ * Nucleosome banding pattern: The histogram of DNA fragment sizes (determined from the paired-end sequencing reads) should exhibit a strong nucleosome banding pattern corresponding to the length of DNA wrapped around a single nucleosome. We calculate this per single cell, and quantify the approximate ratio of mononucleosomal to nucleosome-free fragments (stored as nucleosome_signal)
+
+ * Transcriptional start site (TSS) enrichment score. The ENCODE project has defined an ATAC-seq targeting score based on the ratio of fragments centered at the TSS to fragments in TSS-flanking regions (see https://www.encodeproject.org/data-standards/terms/). Poor ATAC-seq experiments typically will have a low TSS enrichment score. We can compute this metric for each cell with the TSSEnrichment() function, and the results are stored in metadata under the column name TSS.enrichment.
+
+ * Total number of fragments in peaks: A measure of cellular sequencing depth / complexity. Cells with very few reads may need to be excluded due to low sequencing depth. Cells with extremely high levels may represent doublets, nuclei clumps, or other artefacts.
+
+ * Fraction of fragments in peaks: Represents the fraction of all fragments that fall within ATAC-seq peaks. Cells with low values (i.e. <15-20%) often represent low-quality cells or technical artifacts that should be removed. Note that this value can be sensitive to the set of peaks used.
+
+ * Ratio reads in genomic blacklist regions The ENCODE project has provided a list of blacklist regions, representing reads which are often associated with artefactual signal. Cells with a high proportion of reads mapping to these areas (compared to reads mapping to peaks) often represent technical artifacts and should be removed. ENCODE blacklist regions for human (hg19 and GRCh38), mouse (mm10), Drosophila (dm3), and C. elegans (ce10) are included in the Signac package.
+
+Note that the last three metrics can be obtained from the output of CellRanger (which is stored in the object metadata), but can also be calculated for non-10x datasets using Signac (more information at the end of this document).
+
+
+```{r}
+
+```
+
 
 
 
