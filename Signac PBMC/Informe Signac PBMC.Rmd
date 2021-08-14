@@ -139,10 +139,6 @@ ensayo_ATAC_Seq <- CreateChromatinAssay(
   min.cells = 10,
   min.features = 200)
 
-ensayo_ATAC_Seq[c(1:5), c(1:5)]
-dim(ensayo_ATAC_Seq) # Las columnas son las células secuenciadas.. 8728 células
-
-
 # Creamos el objeto Seurat a partir del susodicho ensayo
 pbmc_Seurat <- CreateSeuratObject(
   counts = ensayo_ATAC_Seq,
@@ -161,6 +157,9 @@ Podemos usar la función `granges()` en un objeto de tipo `seurat` que tenga com
 
 ```{r}
 # Exploración del ensayo/experimento de ATAC-Seq
+ensayo_ATAC_Seq[c(1:5), c(1:5)]
+dim(ensayo_ATAC_Seq) # Las columnas son las células secuenciadas.. 8728 células
+
 class(ensayo_ATAC_Seq)
 granges(pbmc_Seurat)
 ```
@@ -171,20 +170,19 @@ También podemos añadir al objeto `pbmc_Seurat` las anotaciones del genoma huma
 
 ```{r, warning = F}
 # Obtenemos las anotaciones del genoma humano hg19 desde Ensembl
-annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75, verbose = T) # Este paso es lento
+annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75) # Este paso es lento
 
 # Cambiamos el estilo a "UCSC" dado que los datos fueron mapeados al genoma humano "hg19" 
-# GenomeInfoDb::seqlevelsStyle(x = annotations) <-  "UCSC"
-seqlevelsStyle(annotations)
-seqlevelsStyle(annotations) <- "UCSC"
+# seqlevelsStyle(annotations) <- 'UCSC'
 genome(annotations) <- "hg19"
 
 # Añadimos las anotaciones al objeto de tipo `seurat`
-Annotation(pbmc_Seurat) <- annotations
+Annotation(pbmc_Seurat@assays$peaks) <- annotations
 ```
 
 ```{r, echo = F, eval = F}
 seqinfo(pbmc_Seurat)
+annotations@elementMetadata
 ```
 
 
@@ -215,15 +213,23 @@ Téngase en cuenta que las métricas `Total number of fragments in peaks`, `Frac
 
 
 ```{r}
-# compute nucleosome signal score per cell
-pbmc_Seurat <- NucleosomeSignal(object = pbmc_Seurat)
-
 # Calculamos el TSS enrichment compute TSS enrichment score per cell
 pbmc_Seurat <- TSSEnrichment(object = pbmc_Seurat, fast = FALSE)
 
 # add blacklist ratio and fraction of reads in peaks
 pbmc_Seurat$pct_reads_in_peaks <- pbmc_Seurat$peak_region_fragments / pbmc_Seurat$passed_filters * 100
 pbmc_Seurat$blacklist_ratio <- pbmc_Seurat$blacklist_region_fragments / pbmc_Seurat$peak_region_fragments
+
+
+
+
+# Augment QC metrics that were computed by cellranger-atac
+crc$pct_reads_in_peaks <- crc$peak_region_fragments / crc$passed_filters * 100
+crc$pct_reads_in_DNase <- crc$DNase_sensitive_region_fragments / crc$passed_filters * 100
+crc$blacklist_ratio <- crc$blacklist_region_fragments / crc$peak_region_fragments
+
+# compute TSS enrichment score and nucleosome banding pattern
+crc <- TSSEnrichment(crc)
 ```
 
 We can inspect the TSS enrichment scores by grouping the cells based on the score and plotting the accessibility signal over all TSS sites. Setting the fast=TRUE option in TSSEnrichment() will only compute the TSS enrichment score without storing the entire cell by position matrix of Tn5 insertion frequency for each cell, and can save memory. However, setting fast=TRUE will not allow downstream plotting of the TSS enrichment signal for different groups of cells using the TSSPlot() function, shown here:
