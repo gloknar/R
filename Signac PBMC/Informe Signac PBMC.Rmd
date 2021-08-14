@@ -187,10 +187,11 @@ genome(annotations) <- "hg19"
 
 # Añadimos las anotaciones al objeto de tipo `seurat`
 Annotation(pbmc_Seurat) <- annotations
-
-# seqinfo(pbmc_Seurat)
 ```
 
+```{r, echo = F, eval = F}
+seqinfo(pbmc_Seurat)
+```
 
 
 
@@ -214,9 +215,9 @@ $$nucleosome\ signal = \frac{fragmentos\_mononucleosomales}{fragmentos\_sin\_nuc
 
  * __Fraction of fragments in peaks__: Representa el porcentaje de fragmentos (_i.e._ regiones cromosómicas) que caen en los picos de ATAC-seq. Las células con valores escasos (_i.e._ <15~20%) suelen ser células mal secuenciadas o artefactos técnicos (ruido) y por tanto se deberían eliminar. Tenga en cuenta que el umbral de rechazo de células depende del set de picos usado.
 
- * __Ratio reads in genomic blacklist regions__. El preciamente mencionado proyecto ENCODE ha publicado una lista negra de regiones cromosómicas que contiene un listado de las lecturas normalmente asociadas a ruido técnico. Cells with a high proportion of reads mapping to these areas (compared to reads mapping to peaks) often represent technical artifacts and should be removed. ENCODE blacklist regions for human (hg19 and GRCh38), mouse (mm10), Drosophila (dm3), and C. elegans (ce10) are included in the Signac package.
+ * __Ratio reads in genomic blacklist regions__. El proyecto ENCODE también ha publicado una [lista negra](https://github.com/Boyle-Lab/Blacklist) de regiones cromosómicas que consiste en un listado de las lecturas normalmente asociadas a ruido técnico. Las células con un un alto porcentaje de fragmentos que mapeen a dichos loci suelen ser ruido y deben eliminarse. Las listas negras de ENCODE actualmente disponibles en `Signac` son para genoma humano(hg19 y GRCh38), ratón (mm10), Drosophila (dm3), y _C. elegans_ (ce10).
 
-Téngase en cuenta que las métricas `Total number of fragments in peaks`, `Fraction of fragments in peaks` y `Ratio reads in genomic blacklist regions` pueden obtenerse del output de `CellRanger` de 10X Genomics. También es posible analizar datasets no-10XGenomics gracias a las utilidades que incorpora `Signac`.
+Téngase en cuenta que las métricas `Total number of fragments in peaks`, `Fraction of fragments in peaks` y `Ratio reads in genomic blacklist regions` pueden obtenerse del output de `CellRanger` de 10X Genomics. También es posible analizar datasets no provenientes de 10X Genomics gracias a las utilidades que incorpora `Signac`.
 
 
 ```{r}
@@ -231,13 +232,19 @@ pbmc_Seurat$pct_reads_in_peaks <- pbmc_Seurat$peak_region_fragments / pbmc_Seura
 pbmc_Seurat$blacklist_ratio <- pbmc_Seurat$blacklist_region_fragments / pbmc_Seurat$peak_region_fragments
 ```
 
+We can inspect the TSS enrichment scores by grouping the cells based on the score and plotting the accessibility signal over all TSS sites. Setting the fast=TRUE option in TSSEnrichment() will only compute the TSS enrichment score without storing the entire cell by position matrix of Tn5 insertion frequency for each cell, and can save memory. However, setting fast=TRUE will not allow downstream plotting of the TSS enrichment signal for different groups of cells using the TSSPlot() function, shown here:
+
+```{r}
+pbmc$high.tss <- ifelse(pbmc$TSS.enrichment > 2, 'High', 'Low')
+TSSPlot(pbmc, group.by = 'high.tss') + NoLegend()
+```
 
 
 
 
 
 
-<br>
+***
 
 <br>
 
