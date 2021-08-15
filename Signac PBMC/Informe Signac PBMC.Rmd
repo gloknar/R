@@ -170,20 +170,23 @@ También podemos añadir al objeto `pbmc_Signac` las anotaciones del genoma huma
 
 ```{r, warning = F}
 # Obtenemos las anotaciones del genoma humano hg19 desde Ensembl
-annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75) # Este paso es lento
+annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75, verbose = F) # Este paso es lento
 
 # Cambiamos el estilo a "UCSC" dado que los datos fueron mapeados al genoma humano "hg19" 
 # seqlevelsStyle(annotations) <- 'UCSC'
 genome(annotations) <- "hg19"
 
 # Añadimos las anotaciones al objeto de tipo `seurat`
-Annotation(pbmc_Signac@assays$peaks) <- annotations                             # OJOOOOOO
+Annotation(pbmc_Signac) <- annotations
+Annotation(pbmc_Signac)
 ```
 
 ```{r, echo = F, eval = F}
 seqinfo(pbmc_Signac)
+pbmc_Signac@meta.data
 annotations@elementMetadata
 ```
+
 
 
 
@@ -219,6 +222,7 @@ pbmc_Signac <- NucleosomeSignal(pbmc_Signac)
 
 # Calculamos el TSS enrichment score por célula
 # pbmc_Signac <- TSSEnrichment(pbmc_Signac)                                                          # PURGE ME: No funciona
+# https://www.encodeproject.org/atac-seq/#standards Para interpretar los valores de TSS
 
 # Calculamos el ratio de lecturas en picos y el ratio de lecturas que caen en
 # regiones ruidosas
@@ -300,7 +304,7 @@ DepthCor(pbmc_Signac)
 # Non-linear dimension reduction and clustering
 
 
-```{r, eval = F}
+```{r}
 pbmc_Signac <- RunUMAP(pbmc_Signac, reduction = "lsi", dims = 2:30)
 pbmc_Signac <- FindNeighbors(pbmc_Signac, reduction = "lsi", dims = 2:30)
 pbmc_Signac <- FindClusters(pbmc_Signac, verbose = FALSE, algorithm = 3) # Desactiva el paralelizado de `future` para evitar errores aleatorios
@@ -308,6 +312,18 @@ DimPlot(pbmc_Signac, label = TRUE) + NoLegend()
 ```
 
 
+
+
+```{r}
+cov_plot <- CoveragePlot(
+  object = pbmc_Signac,
+  region = "chr2-87011729-87035519",
+  annotation = FALSE,
+  peaks = FALSE
+)
+
+cov_plot
+```
 
 
 ***
