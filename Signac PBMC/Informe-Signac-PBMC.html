@@ -522,7 +522,7 @@ div.tocify {
 ##   seqinfo: 24 sequences from an unspecified genome; no seqlengths</code></pre>
 <p>También podemos añadir al objeto <code>pbmc_Signac</code> las anotaciones del genoma humano para que ciertos comandos puedan hacer uso de dicha información.</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Obtenemos las anotaciones del genoma humano hg19 desde Ensembl</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>annotations <span class="ot">&lt;-</span> <span class="fu">GetGRangesFromEnsDb</span>(<span class="at">ensdb =</span> EnsDb.Hsapiens.v75) <span class="co"># Este paso es lento</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>annotations <span class="ot">&lt;-</span> <span class="fu">GetGRangesFromEnsDb</span>(<span class="at">ensdb =</span> EnsDb.Hsapiens.v75, <span class="at">verbose =</span> F) <span class="co"># Este paso es lento</span></span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Cambiamos el estilo a &quot;UCSC&quot; dado que los datos fueron mapeados al genoma humano &quot;hg19&quot; </span></span>
 <span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="co"># seqlevelsStyle(annotations) &lt;- &#39;UCSC&#39;</span></span>
