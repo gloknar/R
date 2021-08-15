@@ -99,7 +99,7 @@ library("patchwork")
 * __Peak/Cell matrix.__ La matriz de picos o células es similar a la matriz de expresión génica de dimensiones _genes_ x _células_ usada en scRNA-Seq. En ATAC-Seq la matriz es de _regiones cromosómicas_ x _células_. Cada valor de la matriz es el nº de sitios de integración de Tn5 en cada célula que mapean en dichas regiones o _peaks_.
 
 
-* __Fragment file.__ Representa la lista completa de fragmentos únicos detectados en todas las células y es por tanto un archivo MUY pesado. Al ser tan pesado, se guarda en el disco duro en lugar de la RAM y a consecuencia manipularlo es un proceso lento. Su ventaja es que contiene todos los sitios de integración de Tn5 en cada célula.
+* __Fragment file.__ Representa la lista completa de fragmentos únicos (= lecturas) detectados en todas las células y es por tanto un archivo MUY pesado. Al ser tan pesado, se guarda en el disco duro en lugar de la RAM y a consecuencia manipularlo es un proceso lento. Su ventaja es que contiene todos los sitios de integración de Tn5 en cada célula.
 
 
 
@@ -117,7 +117,7 @@ matriz_picos_ATAC[c(1:5), c(1:5)]
 # célula de la columna)
 
 
-
+# METADATOS
 metadatos <- read.csv(
   file = "E:/Git/R/Signac PBMC/archivos_accesorios/atac_v1_pbmc_10k_singlecell.csv",
   header = TRUE,
@@ -130,43 +130,43 @@ summary(metadatos)
 hist(x = metadatos$peak_region_fragments, main = "Distribución de los peak region fragments", col = "turquoise")
 boxplot(x= metadatos$peak_region_fragments)
 
-# Creamos el objeto de clase `ChromatinAssay` del ensayo/experimento de ATAC-Seq
+# OBJETO TIPO `ChromatinAssay`
 ensayo_ATAC_Seq <- CreateChromatinAssay(
   counts = matriz_picos_ATAC,
   sep = c(":", "-"),
-  genome = 'hg19',
+  genome = "hg19",
   fragments = "E:/Git/R/Signac PBMC/archivos_accesorios/atac_v1_pbmc_10k_fragments.tsv.gz",
   min.cells = 10,
   min.features = 200)
 
-# Creamos el objeto Seurat a partir del susodicho ensayo
-pbmc_Seurat <- CreateSeuratObject(
+# OBJETO TIPO `seurat`
+pbmc_Signac <- CreateSeuratObject(
   counts = ensayo_ATAC_Seq,
   assay = "peaks",
   meta.data = metadatos)
 
-pbmc_Seurat
-pbmc_Seurat[['peaks']]
+pbmc_Signac
+pbmc_Signac[["peaks"]]
 ```
 
 
-Los datos de la secuenciación ATAC se guardan en un objeto de tipo `ChromatinAssay`, el cual se caracteriza por presentar bolsillos para almacenar información adicional sobre motifs, anotaciones de los genes e información del genoma.  
+Los datos de la secuenciación ATAC se guardan en un objeto de tipo `ChromatinAssay`, el cual se caracteriza por presentar bolsillos para almacenar información adicional sobre motifs, anotaciones de los genes e información del genoma. A partir de dicho objeto creamos el principal objeto `seurat` donde realizaremos los análisis.  
 
 Podemos usar la función `granges()` en un objeto de tipo `seurat` que tenga como experimento activo uno de tipo `ChromatinAssay` para observar las regiones cromosómicas asociada a cada feature (gen?) del objeto. Para más información sobre la clase `ChromatinAssay`, consulte la [viñeta de interacción con objetos](https://satijalab.org/signac/articles/data_structures.html).
 
 
 ```{r}
 # Exploración del ensayo/experimento de ATAC-Seq
-ensayo_ATAC_Seq[c(1:5), c(1:5)]
+ensayo_ATAC_Seq[1:5, 1:5]
 dim(ensayo_ATAC_Seq) # Las columnas son las células secuenciadas.. 8728 células
 
 class(ensayo_ATAC_Seq)
-granges(pbmc_Seurat)
+granges(pbmc_Signac)
 ```
 
 
 
-También podemos añadir al objeto `pbmc_Seurat` las anotaciones del genoma humano para que ciertos comandos puedan hacer uso de dicha información. 
+También podemos añadir al objeto `pbmc_Signac` las anotaciones del genoma humano para que ciertos comandos puedan hacer uso de dicha información. 
 
 ```{r, warning = F}
 # Obtenemos las anotaciones del genoma humano hg19 desde Ensembl
@@ -177,11 +177,11 @@ annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75) # Este paso es le
 genome(annotations) <- "hg19"
 
 # Añadimos las anotaciones al objeto de tipo `seurat`
-Annotation(pbmc_Seurat@assays$peaks) <- annotations
+Annotation(pbmc_Signac@assays$peaks) <- annotations                             # OJOOOOOO
 ```
 
 ```{r, echo = F, eval = F}
-seqinfo(pbmc_Seurat)
+seqinfo(pbmc_Signac)
 annotations@elementMetadata
 ```
 
@@ -203,39 +203,75 @@ $$nucleosome\ signal = \frac{fragmentos\_mononucleosomales}{fragmentos\_sin\_nuc
 
  * __Transcriptional start site (TSS) enrichment score__. El [proyecto ENCODE](https://www.encodeproject.org/data-standards/terms/) define el _TSS enrichment score_ como el ratio de fragmentos centrados en el TSS vs fragmentos flanqueantes al TSS. Los experimentos de ATAC-Seq mal hechos suelen tener un _TSS enrichment score_ bajo. Esta métrica se calcula para cada célula con el comando `TSSEnrichment()` y se almacena en los metadatos en la columna `TSS.enrichment`.
 
- * __Total number of fragments (= reads) in peaks__: Las células con muy pocas lecturas se han secuenciado con poca profundidad y por tanto podemos eliminarlas del análisis. Células con muchas lecturas podrían ser _doublets_ (dos células secuenciadas como una), agregados de núcleos u otro tipo de artefactos.
+ * __Número total de fragmentos (= lecturas) en picos__: Las células con muy pocas lecturas se han secuenciado con poca profundidad, mientras que las células con muchas lecturas podrían ser _doublets_ (dos células secuenciadas como una), agregados de núcleos u otro tipo de artefactos. Por consiguiente se deben eliminar todas las células con valores extremos de lecturas en picos.
 
- * __Fraction of fragments in peaks__: Representa el porcentaje de fragmentos (_i.e._ regiones cromosómicas) que caen en los picos de ATAC-seq. Las células con valores escasos (_i.e._ <15~20%) suelen ser células mal secuenciadas o artefactos técnicos (ruido) y por tanto se deberían eliminar. Tenga en cuenta que el umbral de rechazo de células depende del set de picos usado.
+ * __Ratio de lecturas en picos__: Representa el porcentaje de fragmentos (_i.e._ regiones cromosómicas) que caen en picos. Las células con un ratio bajo (<15~20%) suelen ser células mal secuenciadas o artefactos técnicos (ruido) y por tanto se deberían eliminar. Tenga en cuenta que el umbral de rechazo de células depende del set de picos usado.
 
- * __Ratio reads in genomic blacklist regions__. El proyecto ENCODE también ha publicado una [lista negra](https://github.com/Boyle-Lab/Blacklist) de regiones cromosómicas que consiste en un listado de las lecturas normalmente asociadas a ruido técnico. Las células con un un alto porcentaje de fragmentos que mapeen a dichos loci suelen ser ruido y deben eliminarse. Las listas negras de ENCODE actualmente disponibles en `Signac` son para genoma humano(hg19 y GRCh38), ratón (mm10), Drosophila (dm3), y _C. elegans_ (ce10).
+ * __Ratio de lecturas en regiones genómicas ruidosas (_blacklists_)__. El proyecto ENCODE también ha publicado para el genoma humano (hg19 y GRCh38) y otros una [lista negra](https://github.com/Boyle-Lab/Blacklist) de regiones cromosómicas que consiste en un listado de las lecturas normalmente asociadas a ruido técnico. Las células con un porcentaje elevado lecturas que mapeen a dichos loci suelen ser ruido y deben eliminarse. Las listas negras de ENCODE actualmente disponibles en `Signac` son para genoma humano(hg19 y GRCh38), ratón (mm10), Drosophila (dm3), y _C. elegans_ (ce10).
 
 Téngase en cuenta que las métricas `Total number of fragments in peaks`, `Fraction of fragments in peaks` y `Ratio reads in genomic blacklist regions` pueden obtenerse del output de `CellRanger` de 10X Genomics. También es posible analizar datasets no provenientes de 10X Genomics gracias a las utilidades que incorpora `Signac`.
 
 
 ```{r}
-# DefaultAssay(pbmc_Seurat) # el Assay es el correcto: "peaks"
+# DefaultAssay(pbmc_Signac) # el Assay es el correcto: "peaks"
 # Calculamos el nucleosome signal score por célula
-pbmc_Seurat <- NucleosomeSignal(pbmc_Seurat)
+pbmc_Signac <- NucleosomeSignal(pbmc_Signac)
 
 # Calculamos el TSS enrichment score por célula
-pbmc_Seurat <- TSSEnrichment(pbmc_Seurat)
+# pbmc_Signac <- TSSEnrichment(pbmc_Signac)                                                          # PURGE ME: No funciona
 
-# add blacklist ratio and fraction of reads in peaks
-pbmc_Seurat$pct_reads_in_peaks <- pbmc_Seurat$peak_region_fragments / pbmc_Seurat$passed_filters * 100
-pbmc_Seurat$blacklist_ratio <- pbmc_Seurat$blacklist_region_fragments / pbmc_Seurat$peak_region_fragments
+# Calculamos el ratio de lecturas en picos y el ratio de lecturas que caen en
+# regiones ruidosas
+pbmc_Signac$pct_reads_in_peaks <- pbmc_Signac$peak_region_fragments / pbmc_Signac$passed_filters * 100
+pbmc_Signac$blacklist_ratio <- pbmc_Signac$blacklist_region_fragments / pbmc_Signac$peak_region_fragments
 ```
 
+
+Podemos graficar el enriquecimiento de TSS e 
 
 We can inspect the TSS enrichment scores by grouping the cells based on the score and plotting the accessibility signal over all TSS sites. Setting the fast=TRUE option in TSSEnrichment() will only compute the TSS enrichment score without storing the entire cell by position matrix of Tn5 insertion frequency for each cell, and can save memory. However, setting fast=TRUE will not allow downstream plotting of the TSS enrichment signal for different groups of cells using the TSSPlot() function, shown here:
 
-```{r}
-pbmc_Seurat$high.tss <- ifelse(pbmc_Seurat$TSS.enrichment > 2, 'High', 'Low')
-TSSPlot(pbmc, group.by = 'high.tss') + NoLegend()
+```{r, eval = F}
+pbmc_Signac$high.tss <- ifelse(pbmc_Signac$TSS.enrichment > 2, 'High', 'Low')
+TSSPlot(pbmc_Signac, group.by = "high.tss") + NoLegend()
+```
+
+
+
+```{r, eval = F}
+pbmc_Signac$nucleosome_group <- ifelse(pbmc_Signac$nucleosome_signal > 4, "NS > 4", "NS < 4")
+FragmentHistogram(pbmc_Signac, group.by = "nucleosome_group")
 ```
 
 
 
 
+```{r}
+VlnPlot(
+  object = pbmc_Signac,
+  features = c("pct_reads_in_peaks", "peak_region_fragments",
+               "TSS.enrichment", "blacklist_ratio", "nucleosome_signal"),
+  pt.size = 0.1,
+  ncol = 5
+)
+```
+
+
+
+
+```{r, eval = F}
+pbmc_Signac <- subset(
+  x = pbmc_Signac,
+  subset = peak_region_fragments > 3000 &
+    peak_region_fragments < 20000 &
+    pct_reads_in_peaks > 15 &
+    blacklist_ratio < 0.05 &
+    nucleosome_signal < 4 &
+    TSS.enrichment > 2
+)
+
+pbmc_Signac
+```
 
 
 ***
@@ -245,8 +281,16 @@ TSSPlot(pbmc, group.by = 'high.tss') + NoLegend()
 ## Normalization and linear dimensional reduction
 
 
-[PH]
+```{r}
+pbmc_Signac <- RunTFIDF(pbmc_Signac)
+pbmc_Signac <- FindTopFeatures(pbmc_Signac, min.cutoff = 'q0')
+pbmc_Signac <- RunSVD(pbmc_Signac)
+```
 
+
+```{r}
+DepthCor(pbmc_Signac)
+```
 
 
 ***
@@ -256,7 +300,12 @@ TSSPlot(pbmc, group.by = 'high.tss') + NoLegend()
 # Non-linear dimension reduction and clustering
 
 
-[PH]
+```{r, eval = F}
+pbmc_Signac <- RunUMAP(pbmc_Signac, reduction = "lsi", dims = 2:30)
+pbmc_Signac <- FindNeighbors(pbmc_Signac, reduction = "lsi", dims = 2:30)
+pbmc_Signac <- FindClusters(pbmc_Signac, verbose = FALSE, algorithm = 3) # Desactiva el paralelizado de `future` para evitar errores aleatorios
+DimPlot(pbmc_Signac, label = TRUE) + NoLegend()
+```
 
 
 
@@ -268,7 +317,8 @@ TSSPlot(pbmc, group.by = 'high.tss') + NoLegend()
 # Create a gene activity matrix
 
 
-[PH]
+
+
 
 
 
@@ -299,6 +349,9 @@ TSSPlot(pbmc, group.by = 'high.tss') + NoLegend()
 
 
 
+
+
+
 ***
 
 <br>
@@ -306,7 +359,7 @@ TSSPlot(pbmc, group.by = 'high.tss') + NoLegend()
 # Plotting genomic regions
 
 
-[PH]
+placeholder
 
 
 
