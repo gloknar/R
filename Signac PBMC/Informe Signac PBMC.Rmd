@@ -203,7 +203,7 @@ $$nucleosome\ signal = \frac{fragmentos\_mononucleosomales}{fragmentos\_sin\_nuc
 
  * __Transcriptional start site (TSS) enrichment score__. El [proyecto ENCODE](https://www.encodeproject.org/data-standards/terms/) define el _TSS enrichment score_ como el ratio de fragmentos centrados en el TSS vs fragmentos flanqueantes al TSS. Los experimentos de ATAC-Seq mal hechos suelen tener un _TSS enrichment score_ bajo. Esta métrica se calcula para cada célula con el comando `TSSEnrichment()` y se almacena en los metadatos en la columna `TSS.enrichment`.
 
- * __Total number of fragments in peaks__: Las células con muy pocas lecturas se han secuenciado con poca profundidad y por tanto podemos eliminarlas del análisis. Células con muchas lecturas podrían ser _doublets_ (dos células secuenciadas como una), agregados de núcleos u otro tipo de artefactos.
+ * __Total number of fragments (= reads) in peaks__: Las células con muy pocas lecturas se han secuenciado con poca profundidad y por tanto podemos eliminarlas del análisis. Células con muchas lecturas podrían ser _doublets_ (dos células secuenciadas como una), agregados de núcleos u otro tipo de artefactos.
 
  * __Fraction of fragments in peaks__: Representa el porcentaje de fragmentos (_i.e._ regiones cromosómicas) que caen en los picos de ATAC-seq. Las células con valores escasos (_i.e._ <15~20%) suelen ser células mal secuenciadas o artefactos técnicos (ruido) y por tanto se deberían eliminar. Tenga en cuenta que el umbral de rechazo de células depende del set de picos usado.
 
@@ -213,24 +213,18 @@ Téngase en cuenta que las métricas `Total number of fragments in peaks`, `Frac
 
 
 ```{r}
-# Calculamos el TSS enrichment compute TSS enrichment score per cell
-pbmc_Seurat <- TSSEnrichment(object = pbmc_Seurat, fast = FALSE)
+# DefaultAssay(pbmc_Seurat) # el Assay es el correcto: "peaks"
+# Calculamos el nucleosome signal score por célula
+pbmc_Seurat <- NucleosomeSignal(pbmc_Seurat)
+
+# Calculamos el TSS enrichment score por célula
+pbmc_Seurat <- TSSEnrichment(pbmc_Seurat)
 
 # add blacklist ratio and fraction of reads in peaks
 pbmc_Seurat$pct_reads_in_peaks <- pbmc_Seurat$peak_region_fragments / pbmc_Seurat$passed_filters * 100
 pbmc_Seurat$blacklist_ratio <- pbmc_Seurat$blacklist_region_fragments / pbmc_Seurat$peak_region_fragments
-
-
-
-
-# Augment QC metrics that were computed by cellranger-atac
-crc$pct_reads_in_peaks <- crc$peak_region_fragments / crc$passed_filters * 100
-crc$pct_reads_in_DNase <- crc$DNase_sensitive_region_fragments / crc$passed_filters * 100
-crc$blacklist_ratio <- crc$blacklist_region_fragments / crc$peak_region_fragments
-
-# compute TSS enrichment score and nucleosome banding pattern
-crc <- TSSEnrichment(crc)
 ```
+
 
 We can inspect the TSS enrichment scores by grouping the cells based on the score and plotting the accessibility signal over all TSS sites. Setting the fast=TRUE option in TSSEnrichment() will only compute the TSS enrichment score without storing the entire cell by position matrix of Tn5 insertion frequency for each cell, and can save memory. However, setting fast=TRUE will not allow downstream plotting of the TSS enrichment signal for different groups of cells using the TSSPlot() function, shown here:
 
