@@ -1,0 +1,15 @@
+base
+knitcitations
+knitr
+limma
+edgeR
+BiocGenerics
+S4Vectors
+IRanges
+GenomeInfoDb
+GenomicRanges
+matrixStats
+MatrixGenerics
+Biobase
+SummarizedExperiment
+DESeq2
