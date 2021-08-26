@@ -1,5 +1,5 @@
 ---
-title: "Análisis de datos scATAC-seq en Signac: 2700 PBMC"
+title: "Análisis de datos scATAC-seq en Signac: cerebro murino"
 author: "Adam Casas"
 date: 'Compilado: `r format(Sys.Date(), "%d de %B del %Y")`'
 output: 
@@ -51,36 +51,45 @@ install.packages("Signac")
 
 # Introducción
 
-`Signac` (Stuart _et al._, 2020) es una extensión del famoso paquete `Seurat` para explorar, analizar e interpretar datasets de scATAC-seq. ATAC-seq (y su variante de célula única) es, por decirlo de alguna manera, la sucesora espiritural de técnicas de secuenciacón como ChIP-seq y RRBS-Seq. Si en dichas técnicas se estudia el estado epigenético de las células/tejidos de interés, cierto es que se debe tener un conocimiento previo de cómo actúan los mecanismos epigenéticos del organismo en cuestión para poder sacarles el mayor rendimiento. __ATAC-seq__, por otro lado, evade dicha imposición al estudiar directamente la __accesibilidad de la cromatina__ a la transposasa hiperactiva Tn5 de manera "agnóstica" (sin necesidad de conocer _a priori_ los mecanismos epigenéticos subyacentes).
+`Signac` (Stuart _et al._, 2020) es una extensión del famoso paquete `Seurat` para explorar, analizar e interpretar datasets de scATAC-seq. ATAC-seq (y su variante de célula única) es, por decirlo de alguna manera, la sucesora espiritural de técnicas de secuenciación como ChIP-seq y RRBS-Seq (un tipo de secuenciación por bisulfito). Si en dichas técnicas se estudia el estado epigenético de las células/tejidos de interés, cierto es que se debe tener un conocimiento previo de cómo actúan los mecanismos epigenéticos del organismo en cuestión para poder sacarles el mayor rendimiento. __ATAC-seq__, por otro lado, evade dicha imposición al estudiar directamente la __accesibilidad de la cromatina__ a la transposasa hiperactiva Tn5 de manera "agnóstica" (sin necesidad de conocer _a priori_ los mecanismos epigenéticos subyacentes).
 
 
-En este informe vamos a presentar `Signac` mediante el análisis del ya conocido dataset 2700 PBMC de [10x Genomics](https://www.10xgenomics.com/). Para ello debemos descargar primero los siguientes archivos (deberás descargarlos e instalarlos, pues pesan demasiado como para subirlos a GitHub): 
+En este informe vamos a presentar `Signac` mediante el análisis de un dataset compuesto por 5000 células provenientes de cerebro de ratón adultos. Para ello debemos descargar primero los siguientes archivos, disponibles en la página web de [10X Genomics](https://support.10xgenomics.com/single-cell-atac/software/pipelines/latest/output/matrices): 
 
 ```{r, eval = F}
 # El archivo con los datos crudos del ATAC-seq
-download.file("https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5", destfile = "./archivos_accesorios/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5")
+download.file(
+  "http://cf.10xgenomics.com/samples/cell-atac/1.1.0/atac_v1_adult_brain_fresh_5k/atac_v1_adult_brain_fresh_5k_filtered_peak_bc_matrix.h5", 
+  destfile = "./archivos_accesorios/atac_v1_adult_brain_fresh_5k_filtered_peak_bc_matrix.h5")
 
 # Sus metadatos
-download.file("https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_singlecell.csv", destfile = "./archivos_accesorios/atac_v1_pbmc_10k_singlecell.csv")
+download.file(
+  "http://cf.10xgenomics.com/samples/cell-atac/1.1.0/atac_v1_adult_brain_fresh_5k/atac_v1_adult_brain_fresh_5k_singlecell.csv", 
+  destfile = "./archivos_accesorios/atac_v1_adult_brain_fresh_5k_singlecell.csv")
 
 # El archivo de los fragmentos
-download.file("https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz", destfile = "./archivos_accesorios/atac_v1_pbmc_10k_fragments.tsv.gz")
+download.file(
+  "http://cf.10xgenomics.com/samples/cell-atac/1.1.0/atac_v1_adult_brain_fresh_5k/atac_v1_adult_brain_fresh_5k_fragments.tsv.gz", 
+  destfile = "./archivos_accesorios/atac_v1_adult_brain_fresh_5k_fragments.tsv.gz")
 
 # El archivo con el índice de los fragmentos
-download.file("https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz.tbi", destfile = "./archivos_accesorios/atac_v1_pbmc_10k_fragments.tsv.gz.tbi")
+download.file(
+  "http://cf.10xgenomics.com/samples/cell-atac/1.1.0/atac_v1_adult_brain_fresh_5k/atac_v1_adult_brain_fresh_5k_fragments.tsv.gz.tbi", 
+  destfile = "./archivos_accesorios/atac_v1_adult_brain_fresh_5k_fragments.tsv.gz.tbi")
 ```
 
 
+<br>
 
 Ahora cargamos las librerías que vamos a usar:
 
 ```{r, message=F, warning=F}
-library(Signac)
-library(Seurat)
-library(GenomeInfoDb)
-library(EnsDb.Mmusculus.v79)
-library(ggplot2)
-library(patchwork)
+library("Signac")
+library("Seurat")
+library("GenomeInfoDb")
+library("EnsDb.Mmusculus.v79")
+library("ggplot2")
+library("patchwork")
 set.seed(1234)
 ```
 
@@ -93,13 +102,11 @@ set.seed(1234)
 
 # Preprocesado
 
-`Signac` requiere dos archivos adicionales generados por el software _CellRanger_ para poder preprocesar datos de ATAC-Seq:
+`Signac` requiere dos archivos generados por el software _CellRanger_ para poder preprocesar datos de ATAC-Seq:
 
-* __Peak/Cell matrix.__ La matriz de picos o células es similar a la matriz de expresión génica de dimensiones _genes_ x _células_ usada en scRNA-Seq. En ATAC-Seq la matriz es de _regiones cromosómicas_ x _células_. Cada valor de la matriz es el nº de sitios de integración de Tn5 en cada célula que mapean en dichas regiones o _peaks_.
+* __Peak/Cell matrix o matriz de picos/célula__. La matriz de picos/célula es similar a la matriz de expresión génica de dimensiones _genes_ x _células_ usada en scRNA-Seq. En ATAC-Seq la matriz es de _regiones cromosómicas_ x _células_. Cada valor de la matriz es el nº de sitios de integración de Tn5 en cada célula que mapean en dichas regiones o _peaks_. A mayor nº de sitios de integración mapeados en un locus, más abierta está la cromatina en dicha región.
 
-
-* __Fragment file.__ Representa la lista completa de fragmentos únicos (= lecturas) detectados en todas las células y es por tanto un archivo MUY pesado. Al ser tan pesado, se guarda en el disco duro en lugar de la RAM y a consecuencia manipularlo es un proceso lento. Su ventaja es que contiene todos los sitios de integración de Tn5 en cada célula.
-
+* __Fragment file o archivo de fragmentos__. Representa la lista completa de fragmentos únicos (= lecturas) detectados en todas las células y es por tanto un archivo MUY pesado. Al ser tan pesado, se guarda en el disco duro en lugar de la RAM y a consecuencia manipularlo es un proceso lento. Su ventaja es que contiene todos los sitios de integración de Tn5 en cada célula.
 
 
 Ya que `Signac` es una extensión de `Seurat`, vamos a trabajar con un objeto `Seurat` generado a partir de la __matriz de picos/célula__, sus __metadatos__ creados en `cellranger-atac` y el __archivo de fragmentos__.
@@ -107,7 +114,9 @@ Ya que `Signac` es una extensión de `Seurat`, vamos a trabajar con un objeto `S
 
 ```{r}
 # Cargamos y visualizamos las 6 primeras filas de la matriz de ATAC_Seq en el objeto `matriz_picos_ATAC`:
-matriz_picos_ATAC <- Read10X_h5("E:/Git/R/Signac MB/archivos_accesorios/atac_v1_adult_brain_fresh_5k_filtered_peak_bc_matrix.h5")
+matriz_picos_ATAC <- Read10X_h5(
+  "E:/Git/R/Signac MB/archivos_accesorios/atac_v1_adult_brain_fresh_5k_filtered_peak_bc_matrix.h5")
+
 matriz_picos_ATAC[c(1:5), c(1:5)]
 
 # En la matriz de picos/células, las filas son regiones cromosómicas y las
@@ -126,7 +135,8 @@ metadatos[c(1:5), c(1:5)]
 dim(metadatos)
 summary(metadatos)
 
-hist(x = metadatos$peak_region_fragments, main = "Distribución de los peak region fragments", col = "turquoise")
+hist(x = metadatos$peak_region_fragments, 
+     main = "Distribución de los peak region fragments", col = "turquoise")
 boxplot(x= metadatos$peak_region_fragments)
 
 # OBJETO TIPO `ChromatinAssay`
@@ -143,7 +153,7 @@ ensayo_ATAC_Seq <- CreateChromatinAssay(
 
 
 # OBJETO TIPO `seurat`
-pbmc_Signac <- CreateSeuratObject(
+MB_Signac <- CreateSeuratObject(
   counts = ensayo_ATAC_Seq,
   assay = "peaks",
   project = "ATAC",
@@ -151,8 +161,8 @@ pbmc_Signac <- CreateSeuratObject(
 
 
 
-pbmc_Signac
-pbmc_Signac[["peaks"]]
+MB_Signac
+MB_Signac[["peaks"]]
 ```
 
 
@@ -167,12 +177,12 @@ ensayo_ATAC_Seq[1:5, 1:5]
 dim(ensayo_ATAC_Seq) # Las columnas son las células secuenciadas.. 8728 células
 
 class(ensayo_ATAC_Seq)
-granges(pbmc_Signac)
+granges(MB_Signac)
 ```
 
 
 
-También podemos añadir al objeto `pbmc_Signac` las anotaciones del genoma humano para que ciertos comandos puedan hacer uso de dicha información. 
+También podemos añadir al objeto `MB_Signac` las anotaciones del genoma murino para que ciertos comandos puedan hacer uso de dicha información. 
 
 ```{r, warning = F}
 # extract gene annotations from EnsDb
@@ -183,13 +193,13 @@ seqlevelsStyle(annotations) <- "UCSC"
 genome(annotations) <- "mm10"
 
 # add the gene information to the object
-Annotation(pbmc_Signac) <- annotations
-Annotation(pbmc_Signac)
+Annotation(MB_Signac) <- annotations
+Annotation(MB_Signac)
 ```
 
 ```{r, echo = F, eval = F}
-seqinfo(pbmc_Signac)
-pbmc_Signac@meta.data
+seqinfo(MB_Signac)
+MB_Signac@meta.data
 annotations@elementMetadata
 ```
 
@@ -204,7 +214,7 @@ annotations@elementMetadata
 # Métricas de calidad (QC)
 
 
-Ahora podemos comenzar con el control de calidad. Los creadores de `Signac` recomiendan prestar atención a las siguientes métricas: 
+Ahora podemos comenzar con el control de calidad. Los desarrolladores de `Signac` recomiendan prestar atención a las siguientes métricas: 
 
  * __Nucleosome banding pattern__: El histograma de los tamaños de los fragmentos de ADN (de secuencias paired-end, ojo) debe exhibir un marcado patrón de bandeo de nucleosomas correspondiente a la longitud del ADN enrollado alrededor de un único nucleosoma. Esta métrica se calcula mediante la siguiente ecuación:
  
@@ -222,44 +232,44 @@ Téngase en cuenta que las métricas `Total number of fragments in peaks`, `Frac
 
 
 ```{r}
-pbmc_Signac <- NucleosomeSignal(object = pbmc_Signac)
+MB_Signac <- NucleosomeSignal(object = MB_Signac)
 ```
 
 
 
 ```{r}
-pbmc_Signac$nucleosome_group <- ifelse(pbmc_Signac$nucleosome_signal > 4, 'NS > 4', 'NS < 4')
-FragmentHistogram(object = pbmc_Signac, group.by = 'nucleosome_group', region = 'chr1-1-10000000')
+MB_Signac$nucleosome_group <- ifelse(MB_Signac$nucleosome_signal > 4, 'NS > 4', 'NS < 4')
+FragmentHistogram(object = MB_Signac, group.by = 'nucleosome_group', region = 'chr1-1-10000000')
 ```
 
 
 
 ```{r}
-pbmc_Signac <- TSSEnrichment(pbmc_Signac, fast = F) # Si usas el argumento fast = T, no puede ejecutar el TSSPlot, imagino que dihco argumento omite la matriz necesaria para dicho comando 
+MB_Signac <- TSSEnrichment(MB_Signac, fast = F) # Si usas el argumento fast = T, no puede ejecutar el TSSPlot, imagino que dihco argumento omite la matriz necesaria para dicho comando 
 ```
 
 
 ```{r}
-pbmc_Signac$high.tss <- ifelse(pbmc_Signac$TSS.enrichment > 2, 'High', 'Low')
-TSSPlot(pbmc_Signac, group.by = 'high.tss') + NoLegend()
+MB_Signac$high.tss <- ifelse(MB_Signac$TSS.enrichment > 2, 'High', 'Low')
+TSSPlot(MB_Signac, group.by = 'high.tss') + NoLegend()
 ```
 
 
 
 
 ```{r}
-# DefaultAssay(pbmc_Signac) # el Assay es el correcto: "peaks"
+# DefaultAssay(MB_Signac) # el Assay es el correcto: "peaks"
 # Calculamos el nucleosome signal score por célula
-pbmc_Signac <- NucleosomeSignal(pbmc_Signac)
+MB_Signac <- NucleosomeSignal(MB_Signac)
 
 # Calculamos el TSS enrichment score por célula
-# pbmc_Signac <- TSSEnrichment(pbmc_Signac)                                                          # PURGE ME: No funciona
+# MB_Signac <- TSSEnrichment(MB_Signac)                                                          # PURGE ME: No funciona
 # https://www.encodeproject.org/atac-seq/#standards Para interpretar los valores de TSS
 
 # Calculamos el ratio de lecturas en picos y el ratio de lecturas que caen en
 # regiones ruidosas
-pbmc_Signac$pct_reads_in_peaks <- pbmc_Signac$peak_region_fragments / pbmc_Signac$passed_filters * 100
-pbmc_Signac$blacklist_ratio <- pbmc_Signac$blacklist_region_fragments / pbmc_Signac$peak_region_fragments
+MB_Signac$pct_reads_in_peaks <- MB_Signac$peak_region_fragments / MB_Signac$passed_filters * 100
+MB_Signac$blacklist_ratio <- MB_Signac$blacklist_region_fragments / MB_Signac$peak_region_fragments
 ```
 
 
@@ -268,15 +278,15 @@ Podemos graficar el enriquecimiento de TSS e
 We can inspect the TSS enrichment scores by grouping the cells based on the score and plotting the accessibility signal over all TSS sites. Setting the fast=TRUE option in TSSEnrichment() will only compute the TSS enrichment score without storing the entire cell by position matrix of Tn5 insertion frequency for each cell, and can save memory. However, setting fast=TRUE will not allow downstream plotting of the TSS enrichment signal for different groups of cells using the TSSPlot() function, shown here:
 
 ```{r, eval = F}
-pbmc_Signac$high.tss <- ifelse(pbmc_Signac$TSS.enrichment > 2, 'High', 'Low')
-TSSPlot(pbmc_Signac, group.by = "high.tss") + NoLegend()
+MB_Signac$high.tss <- ifelse(MB_Signac$TSS.enrichment > 2, 'High', 'Low')
+TSSPlot(MB_Signac, group.by = "high.tss") + NoLegend()
 ```
 
 
 
 ```{r, eval = F}
-pbmc_Signac$nucleosome_group <- ifelse(pbmc_Signac$nucleosome_signal > 4, "NS > 4", "NS < 4")
-FragmentHistogram(pbmc_Signac, group.by = "nucleosome_group")
+MB_Signac$nucleosome_group <- ifelse(MB_Signac$nucleosome_signal > 4, "NS > 4", "NS < 4")
+FragmentHistogram(MB_Signac, group.by = "nucleosome_group")
 ```
 
 
@@ -284,7 +294,7 @@ FragmentHistogram(pbmc_Signac, group.by = "nucleosome_group")
 
 ```{r}
 VlnPlot(
-  object = pbmc_Signac,
+  object = MB_Signac,
   features = c("pct_reads_in_peaks", "peak_region_fragments",
                "TSS.enrichment", "blacklist_ratio", "nucleosome_signal"),
   pt.size = 0.1,
@@ -296,8 +306,8 @@ VlnPlot(
 
 
 ```{r, eval = F}
-pbmc_Signac <- subset(
-  x = pbmc_Signac,
+MB_Signac <- subset(
+  x = MB_Signac,
   subset = peak_region_fragments > 3000 &
     peak_region_fragments < 20000 &
     pct_reads_in_peaks > 15 &
@@ -306,7 +316,7 @@ pbmc_Signac <- subset(
     TSS.enrichment > 2
 )
 
-pbmc_Signac
+MB_Signac
 ```
 
 
@@ -318,14 +328,14 @@ pbmc_Signac
 
 
 ```{r}
-pbmc_Signac <- RunTFIDF(pbmc_Signac)
-pbmc_Signac <- FindTopFeatures(pbmc_Signac, min.cutoff = 'q0')
-pbmc_Signac <- RunSVD(pbmc_Signac)
+MB_Signac <- RunTFIDF(MB_Signac)
+MB_Signac <- FindTopFeatures(MB_Signac, min.cutoff = 'q0')
+MB_Signac <- RunSVD(MB_Signac)
 ```
 
 
 ```{r}
-DepthCor(pbmc_Signac)
+DepthCor(MB_Signac)
 ```
 
 
@@ -337,10 +347,10 @@ DepthCor(pbmc_Signac)
 
 
 ```{r}
-pbmc_Signac <- RunUMAP(pbmc_Signac, reduction = "lsi", dims = 2:30)
-pbmc_Signac <- FindNeighbors(pbmc_Signac, reduction = "lsi", dims = 2:30)
-pbmc_Signac <- FindClusters(pbmc_Signac, verbose = FALSE, algorithm = 3) # Desactiva el paralelizado de `future` para evitar errores aleatorios
-DimPlot(pbmc_Signac, label = TRUE) + NoLegend()
+MB_Signac <- RunUMAP(MB_Signac, reduction = "lsi", dims = 2:30)
+MB_Signac <- FindNeighbors(MB_Signac, reduction = "lsi", dims = 2:30)
+MB_Signac <- FindClusters(MB_Signac, verbose = FALSE, algorithm = 3) # Desactiva el paralelizado de `future` para evitar errores aleatorios
+DimPlot(MB_Signac, label = TRUE) + NoLegend()
 ```
 
 
@@ -348,7 +358,7 @@ DimPlot(pbmc_Signac, label = TRUE) + NoLegend()
 
 ```{r}
 cov_plot <- CoveragePlot(
-  object = pbmc_Signac,
+  object = MB_Signac,
   region = "chr2-87011729-87035519",
   annotation = FALSE,
   peaks = FALSE
