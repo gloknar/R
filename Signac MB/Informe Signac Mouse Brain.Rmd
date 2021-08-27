@@ -305,13 +305,13 @@ VlnPlot(
 
 
 
-```{r, eval = F}
+```{r}
 MB_Signac <- subset(
   x = MB_Signac,
   subset = peak_region_fragments > 3000 &
-    peak_region_fragments < 20000 &
-    pct_reads_in_peaks > 15 &
-    blacklist_ratio < 0.05 &
+    peak_region_fragments < 100000 &
+    pct_reads_in_peaks > 40 &
+    blacklist_ratio < 0.025 &
     nucleosome_signal < 4 &
     TSS.enrichment > 2
 )
@@ -349,7 +349,8 @@ DepthCor(MB_Signac)
 ```{r}
 MB_Signac <- RunUMAP(MB_Signac, reduction = "lsi", dims = 2:30)
 MB_Signac <- FindNeighbors(MB_Signac, reduction = "lsi", dims = 2:30)
-MB_Signac <- FindClusters(MB_Signac, verbose = FALSE, algorithm = 3) # Desactiva el paralelizado de `future` para evitar errores aleatorios
+MB_Signac <- FindClusters(MB_Signac, algorithm = 3, resolution = 1.2, 
+                          verbose = FALSE) # Desactiva el paralelizado de `future` para evitar errores aleatorios
 DimPlot(MB_Signac, label = TRUE) + NoLegend()
 ```
 
@@ -376,9 +377,32 @@ cov_plot
 
 
 
+```{r}
+# compute gene activities
+gene.activities <- GeneActivity(MB_Signac)
+
+# add the gene activity matrix to the Seurat object as a new assay
+MB_Signac[['RNA']] <- CreateAssayObject(counts = gene.activities)
+MB_Signac <- NormalizeData(
+  object = MB_Signac,
+  assay = 'RNA',
+  normalization.method = 'LogNormalize',
+  scale.factor = median(MB_Signac$nCount_RNA)
+)
+```
 
 
 
+```{r}
+DefaultAssay(MB_Signac) <- 'RNA'
+FeaturePlot(
+  object = MB_Signac,
+  features = c('Sst','Pvalb',"Gad2","Neurod6","Rorb","Syt6"),
+  pt.size = 0.1,
+  max.cutoff = 'q95',
+  ncol = 3
+)
+```
 
 
 ***
@@ -390,7 +414,58 @@ cov_plot
 
 [PH]
 
+```{r}
+# Load the pre-processed scRNA-seq data
+allen_rna <- readRDS("./archivos_accesorios/allen_brain.rds")
+allen_rna <- FindVariableFeatures(
+  object = allen_rna,
+  nfeatures = 5000
+)
 
+transfer.anchors <- FindTransferAnchors(
+  reference = allen_rna,
+  query = MB_Signac,
+  reduction = 'cca',
+  dims = 1:40
+)
+
+predicted.labels <- TransferData(
+  anchorset = transfer.anchors,
+  refdata = allen_rna$subclass,
+  weight.reduction = MB_Signac[['lsi']],
+  dims = 2:30
+)
+
+MB_Signac <- AddMetaData(object = MB_Signac, metadata = predicted.labels)
+```
+
+
+
+```{r}
+plot1 <- DimPlot(allen_rna, group.by = 'subclass', label = TRUE, repel = TRUE) + NoLegend() + ggtitle('scRNA-seq')
+plot2 <- DimPlot(MB_Signac, group.by = 'predicted.id', label = TRUE, repel = TRUE) + NoLegend() + ggtitle('scATAC-seq')
+plot1 + plot2
+```
+
+
+
+<details>
+
+
+<summary> __Why did we change default parameters?__</summary>
+
+
+</details>
+
+
+```{r}
+# replace each label with its most likely prediction
+for(i in levels(MB_Signac)) {
+  cells_to_reid <- WhichCells(MB_Signac, idents = i)
+  newid <- names(sort(table(MB_Signac$predicted.id[cells_to_reid]),decreasing=TRUE))[1]
+  Idents(MB_Signac, cells = cells_to_reid) <- newid
+}
+```
 
 
 ***
@@ -404,10 +479,59 @@ cov_plot
 [PH]
 
 
+```{r}
+#switch back to working with peaks instead of gene activities
+DefaultAssay(MB_Signac) <- 'peaks'
+
+da_peaks <- FindMarkers(
+  object = MB_Signac,
+  ident.1 = c("L2/3 IT"), 
+  ident.2 = c("L4", "L5 IT", "L6 IT"),
+  min.pct = 0.05,
+  test.use = 'LR',
+  latent.vars = 'peak_region_fragments'
+)
+
+head(da_peaks)
+```
 
 
 
 
+```{r}
+plot1 <- VlnPlot(
+  object = MB_Signac,
+  features = rownames(da_peaks)[1],
+  pt.size = 0.1,
+  idents = c("L4","L5 IT","L2/3 IT")
+)
+plot2 <- FeaturePlot(
+  object = MB_Signac,
+  features = rownames(da_peaks)[1],
+  pt.size = 0.1,
+  max.cutoff = 'q95'
+)
+plot1 | plot2
+```
+
+
+
+
+
+```{r}
+open_l23 <- rownames(da_peaks[da_peaks$avg_log2FC > 0.25, ])
+open_l456 <- rownames(da_peaks[da_peaks$avg_log2FC < -0.25, ])
+closest_l23 <- ClosestFeature(MB_Signac, open_l23)
+closest_l456 <- ClosestFeature(MB_Signac, open_l456)
+head(closest_l23)
+```
+
+
+
+
+```{r}
+head(closest_l456)
+```
 
 
 ***
@@ -421,6 +545,18 @@ placeholder
 
 
 
+```{r}
+# set plotting order
+levels(MB_Signac) <- c("L2/3 IT","L4","L5 IT","L5 PT","L6 CT", "L6 IT","NP","Sst","Pvalb","Vip","Lamp5","Meis2","Oligo","Astro","Endo","VLMC","Macrophage")
+
+CoveragePlot(
+  object = MB_Signac,
+  region = c("Neurod6", "Gad2"),
+  extend.upstream = 1000,
+  extend.downstream = 1000,
+  ncol = 1
+)
+```
 
 
 ***
