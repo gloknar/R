@@ -51,10 +51,10 @@ install.packages("Signac")
 
 # Introducción
 
-`Signac` (Stuart _et al._, 2020) es una extensión del famoso paquete `Seurat` para explorar, analizar e interpretar datasets de scATAC-seq. ATAC-seq (y su variante de célula única) es, por decirlo de alguna manera, la sucesora espiritural de técnicas de secuenciación como ChIP-seq y RRBS-Seq (un tipo de secuenciación por bisulfito). Si en dichas técnicas se estudia el estado epigenético de las células/tejidos de interés, cierto es que se debe tener un conocimiento previo de cómo actúan los mecanismos epigenéticos del organismo en cuestión para poder sacarles el mayor rendimiento. __ATAC-seq__, por otro lado, evade dicha imposición al estudiar directamente la __accesibilidad de la cromatina__ a la transposasa hiperactiva Tn5 de manera "agnóstica" (sin necesidad de conocer _a priori_ los mecanismos epigenéticos subyacentes).
+`Signac` (Stuart _et al._, 2020) es una extensión del famoso paquete `Seurat` para explorar, analizar e interpretar datasets de scATAC-seq. ATAC-seq (y su variante de célula única) es, por decirlo de alguna manera, la sucesora espiritural de técnicas de secuenciación como ChIP-seq y RRBS-Seq (un tipo de secuenciación por bisulfito). Si en dichas técnicas se estudia el estado epigenético de las células/tejidos de interés, cierto es que se debe tener un conocimiento previo de cómo funcionan los mecanismos epigenéticos del organismo en cuestión para poder sacarles el mayor rendimiento. __ATAC-seq__, por otro lado, evade dicha imposición al estudiar directamente la __accesibilidad de la cromatina__ a la transposasa hiperactiva Tn5 de manera "agnóstica" (sin necesidad de conocer _a priori_ los mecanismos epigenéticos subyacentes).
 
 
-En este informe vamos a presentar `Signac` mediante el análisis de un dataset compuesto por 5000 células provenientes de cerebro de ratón adultos. Para ello debemos descargar primero los siguientes archivos, disponibles en la página web de [10X Genomics](https://support.10xgenomics.com/single-cell-atac/software/pipelines/latest/output/matrices): 
+En este informe vamos a presentar `Signac` mediante el análisis de un dataset compuesto por 5000 células provenientes de un cerebro de ratón adulto. Para ello debemos descargar primero los siguientes archivos, disponibles en la página web de [10X Genomics](https://support.10xgenomics.com/single-cell-atac/software/pipelines/latest/output/matrices): 
 
 ```{r, eval = F}
 # El archivo con los datos crudos del ATAC-seq
@@ -84,10 +84,13 @@ download.file(
 Ahora cargamos las librerías que vamos a usar:
 
 ```{r, message=F, warning=F}
+# Análisis
 library("Signac")
 library("Seurat")
+# Genomas
 library("GenomeInfoDb")
 library("EnsDb.Mmusculus.v79")
+# Gráficos
 library("ggplot2")
 library("patchwork")
 set.seed(1234)
@@ -109,23 +112,18 @@ set.seed(1234)
 * __Fragment file o archivo de fragmentos__. Representa la lista completa de fragmentos únicos (= lecturas) detectados en todas las células y es por tanto un archivo MUY pesado. Al ser tan pesado, se guarda en el disco duro en lugar de la RAM y a consecuencia manipularlo es un proceso lento. Su ventaja es que contiene todos los sitios de integración de Tn5 en cada célula.
 
 
-Ya que `Signac` es una extensión de `Seurat`, vamos a trabajar con un objeto `Seurat` generado a partir de la __matriz de picos/célula__, sus __metadatos__ creados en `cellranger-atac` y el __archivo de fragmentos__.
-
+Ya que `Signac` es una extensión de `Seurat`, vamos a trabajar con un objeto `seurat` generado a partir de la __matriz de picos/célula__, sus __metadatos__ creados en `cellranger-atac` y el __archivo de fragmentos__:
 
 ```{r}
-# Cargamos y visualizamos las 6 primeras filas de la matriz de ATAC_Seq en el objeto `matriz_picos_ATAC`:
+# Cargamos y visualizamos las 6 primeras filas de la matriz de ATAC_Seq en el
+# objeto `matriz_picos_ATAC`:
 matriz_picos_ATAC <- Read10X_h5(
   "E:/Git/R/Signac MB/archivos_accesorios/atac_v1_adult_brain_fresh_5k_filtered_peak_bc_matrix.h5")
 
 matriz_picos_ATAC[c(1:5), c(1:5)]
 
-# En la matriz de picos/células, las filas son regiones cromosómicas y las
-# columnas son células. Mide el grado de apertura de la cromatina en las
-# regiones cromosómicas (nº de transposasas detectadas en dicha región para la
-# célula de la columna)
 
-
-# METADATOS
+# Cargamos y exploramos el archivo de metadatos
 metadatos <- read.csv(
   file = "E:/Git/R/Signac MB/archivos_accesorios/atac_v1_adult_brain_fresh_5k_singlecell.csv",
   header = TRUE,
@@ -135,11 +133,9 @@ metadatos[c(1:5), c(1:5)]
 dim(metadatos)
 summary(metadatos)
 
-hist(x = metadatos$peak_region_fragments, 
-     main = "Distribución de los peak region fragments", col = "turquoise")
-boxplot(x= metadatos$peak_region_fragments)
 
-# OBJETO TIPO `ChromatinAssay`
+# Creamos un objeto de tipo `ChromatinAssay`, necesario para generar el objeto
+# de tipo `seurat`
 ensayo_ATAC_Seq <- CreateChromatinAssay(
   counts = matriz_picos_ATAC,
   sep = c(":", "-"),
@@ -148,11 +144,7 @@ ensayo_ATAC_Seq <- CreateChromatinAssay(
   min.cells = 1)
 
 
-
-
-
-
-# OBJETO TIPO `seurat`
+# Finalmente creamos el objeto `seurat`
 MB_Signac <- CreateSeuratObject(
   counts = ensayo_ATAC_Seq,
   assay = "peaks",
@@ -160,39 +152,42 @@ MB_Signac <- CreateSeuratObject(
   meta.data = metadatos)
 
 
-
 MB_Signac
 MB_Signac[["peaks"]]
 ```
 
 
+<br>
+
 Los datos de la secuenciación ATAC se guardan en un objeto de tipo `ChromatinAssay`, el cual se caracteriza por presentar bolsillos para almacenar información adicional sobre motifs, anotaciones de los genes e información del genoma. A partir de dicho objeto creamos el principal objeto `seurat` donde realizaremos los análisis.  
 
-Podemos usar la función `granges()` en un objeto de tipo `seurat` que tenga como experimento activo uno de tipo `ChromatinAssay` para observar las regiones cromosómicas asociada a cada feature (gen?) del objeto. Para más información sobre la clase `ChromatinAssay`, consulte la [viñeta de interacción con objetos](https://satijalab.org/signac/articles/data_structures.html).
+Podemos usar la función `granges()` en un objeto de tipo `seurat` que tenga como experimento activo uno de tipo `ChromatinAssay` para observar las regiones cromosómicas (provenientes del archivo de fragmentos) asociadas a cada feature (gen?) del objeto. Para más información sobre la clase `ChromatinAssay`, consulte la [viñeta de interacción con objetos](https://satijalab.org/signac/articles/data_structures.html).
 
 
 ```{r}
 # Exploración del ensayo/experimento de ATAC-Seq
 ensayo_ATAC_Seq[1:5, 1:5]
-dim(ensayo_ATAC_Seq) # Las columnas son las células secuenciadas.. 8728 células
-
-class(ensayo_ATAC_Seq)
+dim(ensayo_ATAC_Seq) # Las columnas son las células secuenciadas y las filas son regiones cromosómicas... 5337 células y 157.203 regiones cromosómicas estudiadas
 granges(MB_Signac)
 ```
 
 
 
+<br>
+
 También podemos añadir al objeto `MB_Signac` las anotaciones del genoma murino para que ciertos comandos puedan hacer uso de dicha información. 
 
-```{r, warning = F}
-# extract gene annotations from EnsDb
+```{r}
+# Descargamos las anotaciones del genoma murino mm10 desde la base de datos
+# Ensembl
 annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Mmusculus.v79)
 
-# change to UCSC style since the data was mapped to hg19
+# Las anotaciones están en formato NCBI. Vamos a cambiarlas al formato UCSC y
+# especificaremos que estamos trabajando con el genoma mm10
 seqlevelsStyle(annotations) <- "UCSC"
 genome(annotations) <- "mm10"
 
-# add the gene information to the object
+# Añadimos las anotaciones al objeto `seurat`
 Annotation(MB_Signac) <- annotations
 Annotation(MB_Signac)
 ```
@@ -231,25 +226,36 @@ $$nucleosome\ signal = \frac{fragmentos\_mononucleosomales}{fragmentos\_sin\_nuc
 Téngase en cuenta que las métricas `Total number of fragments in peaks`, `Fraction of fragments in peaks` y `Ratio reads in genomic blacklist regions` pueden obtenerse del output de `CellRanger` de 10X Genomics. También es posible analizar datasets no provenientes de 10X Genomics gracias a las utilidades que incorpora `Signac`.
 
 
+
+<br>
+
+Calculamos la intensidad de la señal de los nucleosomas con el comando `NucleosomeSignal`:
+
 ```{r}
 MB_Signac <- NucleosomeSignal(object = MB_Signac)
 ```
 
 
+Ahora podemos ver la distribución de la longitud de los fragmentos en células con una _nucleosome signal_ < 4 y > 4. Se aprecia que cada grupo de células tiene una distribución de fragmentos distinta (las células con un _nucleosome signal_ > 4 presentan un primer pico en ~200pb, a diferencia del primer pico en ~50pb que tienen aquellas con un _nucleosome signal_ < 4). 
+
 
 ```{r}
 MB_Signac$nucleosome_group <- ifelse(MB_Signac$nucleosome_signal > 4, 'NS > 4', 'NS < 4')
-FragmentHistogram(object = MB_Signac, group.by = 'nucleosome_group', region = 'chr1-1-10000000')
+FragmentHistogram(object = MB_Signac, group.by = "nucleosome_group", region = "chr1-1-10000000")
 ```
 
 
 
-```{r}
-MB_Signac <- TSSEnrichment(MB_Signac, fast = F) # Si usas el argumento fast = T, no puede ejecutar el TSSPlot, imagino que dihco argumento omite la matriz necesaria para dicho comando 
-```
+<br>
 
+El enriquecimiento de eventos de integración de la Tn5 en los TSS es también una importante métrica de control de calidad. El consorcio ENCODE define la puntuación de enriquecimiento de TSSs como el nº de sitios de integración de la Tn5 alrededor del sitio de comienzo de la transcripción normalizado por el nº de sitios de integración de la TN5 en regiones flanqueantes (hasta 2000pb aguas arriba y aguas abajo). 
+
+En `Signac` calculamos la puntuación de enriquecimiento de los TSS con el comando `TSSEnrichment()`:
 
 ```{r}
+# Si usas el argumento `fast = T`, no puede ejecutar el TSSPlot, imagino que dicho
+# argumento omite la matriz necesaria para dicho comando
+MB_Signac <- TSSEnrichment(MB_Signac, fast = F)  
 MB_Signac$high.tss <- ifelse(MB_Signac$TSS.enrichment > 2, 'High', 'Low')
 TSSPlot(MB_Signac, group.by = 'high.tss') + NoLegend()
 ```
