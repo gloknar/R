@@ -22,13 +22,16 @@ set.seed(1)
 ##################################################
 ```
 
-```{r Paralelizado protocolo, echo = F}
-# Establecemos el límite de tamaño que puede usar `future` en 2 GBs dado que de
-# lo contrario superamos el límite por defecto de 500 MBs al trabajar con objetos
-# tan grandes
+```{r Paralelizado future, echo = F}
 library("future")
-plan(strategy = "multisession", workers = 4)
+# Establecemos las semillas aleatorias de `future` para evitar que dé problemas
+# el comando `FindClusters()`
+options("future.seed" = T) 
+# Establecemos el límite de tamaño que puede usar `future` en 2 GBs dado que de
+# lo contrario superamos el límite por defecto de 500 MBs/hilo al trabajar con
+# objetos tan grandes
 options(future.globals.maxSize = 2 * 1024^3)
+plan(strategy = "multisession", workers = 4)
 ```
 
 
@@ -211,7 +214,7 @@ annotations@elementMetadata
 
 Ahora podemos comenzar con el control de calidad. Los desarrolladores de `Signac` recomiendan prestar atención a las siguientes métricas: 
 
- * __Nucleosome banding pattern__: El histograma de los tamaños de los fragmentos de ADN (de secuencias paired-end, ojo) debe exhibir un marcado patrón de bandeo de nucleosomas correspondiente a la longitud del ADN enrollado alrededor de un único nucleosoma. Esta métrica se calcula mediante la siguiente ecuación:
+ * __Nucleosome banding pattern__: El histograma de los tamaños de los fragmentos de ADN debe exhibir un marcado patrón de bandeo de nucleosomas correspondiente a la longitud del ADN enrollado alrededor de un único nucleosoma. Esta métrica se calcula mediante la siguiente ecuación:
  
 $$nucleosome\ signal = \frac{fragmentos\_mononucleosomales}{fragmentos\_sin\_nucleosomas}$$
 
@@ -229,18 +232,17 @@ Téngase en cuenta que las métricas `Total number of fragments in peaks`, `Frac
 
 <br>
 
-Calculamos la intensidad de la señal de los nucleosomas con el comando `NucleosomeSignal`:
+Calculamos la intensidad de la señal de los nucleosomas con el comando `NucleosomeSignal()`:
 
 ```{r}
 MB_Signac <- NucleosomeSignal(object = MB_Signac)
 ```
 
 
-Ahora podemos ver la distribución de la longitud de los fragmentos en células con una _nucleosome signal_ < 4 y > 4. Se aprecia que cada grupo de células tiene una distribución de fragmentos distinta (las células con un _nucleosome signal_ > 4 presentan un primer pico en ~200pb, a diferencia del primer pico en ~50pb que tienen aquellas con un _nucleosome signal_ < 4). 
-
+Ahora podemos ver la distribución de la longitud de las lecturas en células con una _nucleosome signal_ < 4 (bueno) y > 4 (malo). Se aprecia que cada grupo de células tiene una distribución de fragmentos distinta. En las células bien secuenciadas (con un NS < 4), el primer pico de < 100pb se corresponde a los fragmentos sin nucleosomas (estas son lecturas de eucromatina, las cuales deberían mapear en los TSSs), el segundo pico se corresponde a lecturas provenientes de un nucleosoma o mononucleosoma (segundo pico entre 147pb y 147*2pb, flanquea regiones abiertas) y el tercer pico corresponde a lecturas dinucleosomas. Un buen ensayo de ATAC-Seq debe contener regiones libres dre nucleosomas, así como patrones de bandeos de nucleosomas, tal como se ve en nuestro caso en la gráfica NS < 4:
 
 ```{r}
-MB_Signac$nucleosome_group <- ifelse(MB_Signac$nucleosome_signal > 4, 'NS > 4', 'NS < 4')
+MB_Signac$nucleosome_group <- ifelse(MB_Signac$nucleosome_signal > 4, "NS > 4", "NS < 4")
 FragmentHistogram(object = MB_Signac, group.by = "nucleosome_group", region = "chr1-1-10000000")
 ```
 
@@ -248,68 +250,45 @@ FragmentHistogram(object = MB_Signac, group.by = "nucleosome_group", region = "c
 
 <br>
 
-El enriquecimiento de eventos de integración de la Tn5 en los TSS es también una importante métrica de control de calidad. El consorcio ENCODE define la puntuación de enriquecimiento de TSSs como el nº de sitios de integración de la Tn5 alrededor del sitio de comienzo de la transcripción normalizado por el nº de sitios de integración de la TN5 en regiones flanqueantes (hasta 2000pb aguas arriba y aguas abajo). 
+El enriquecimiento de eventos de integración de la Tn5 en los TSSs es también una importante métrica de control de calidad. El consorcio ENCODE define la puntuación de enriquecimiento de TSSs como el nº de sitios de integración de la Tn5 alrededor del sitio de comienzo de la transcripción normalizado por el nº de sitios de integración de la TN5 en regiones flanqueantes al TSS (hasta 2000pb aguas arriba y aguas abajo, respectivamente). 
 
-En `Signac` calculamos la puntuación de enriquecimiento de los TSS con el comando `TSSEnrichment()`:
+En `Signac` calculamos la puntuación de enriquecimiento de los TSSs con el comando `TSSEnrichment()`. Si usamos el parámetro `fast = T`, calcularemos sólo la puntuación de enriquecimiento de los TSSs y ahorraremos tiempo y memoria, pero no computaremos la matriz necesaria para visualizar dicho enriquecimiento mediante la función `TSSPlot()`. El significado del valor del enriquecimiento de TSSs depende del genoma que estemos analizando. De acuerdo al [proyecto ENCODE](https://www.encodeproject.org/atac-seq/), para el genoma mm10 valores < 10 son malos; valores ente 10 y 15 son aceptables y valores > 15 son ideales. En nuestro caso vemos que el enriquecimiento de nuestras células alrededor del TSS está entre 10 y 15, por lo que el experimento en cuestión es válido.
 
 ```{r}
-# Si usas el argumento `fast = T`, no puede ejecutar el TSSPlot, imagino que dicho
-# argumento omite la matriz necesaria para dicho comando
 MB_Signac <- TSSEnrichment(MB_Signac, fast = F)  
-MB_Signac$high.tss <- ifelse(MB_Signac$TSS.enrichment > 2, 'High', 'Low')
-TSSPlot(MB_Signac, group.by = 'high.tss') + NoLegend()
-```
-
-
-
-
-```{r}
-# DefaultAssay(MB_Signac) # el Assay es el correcto: "peaks"
-# Calculamos el nucleosome signal score por célula
-MB_Signac <- NucleosomeSignal(MB_Signac)
-
-# Calculamos el TSS enrichment score por célula
-# MB_Signac <- TSSEnrichment(MB_Signac)                                                          # PURGE ME: No funciona
-# https://www.encodeproject.org/atac-seq/#standards Para interpretar los valores de TSS
-
-# Calculamos el ratio de lecturas en picos y el ratio de lecturas que caen en
-# regiones ruidosas
-MB_Signac$pct_reads_in_peaks <- MB_Signac$peak_region_fragments / MB_Signac$passed_filters * 100
-MB_Signac$blacklist_ratio <- MB_Signac$blacklist_region_fragments / MB_Signac$peak_region_fragments
-```
-
-
-Podemos graficar el enriquecimiento de TSS e 
-
-We can inspect the TSS enrichment scores by grouping the cells based on the score and plotting the accessibility signal over all TSS sites. Setting the fast=TRUE option in TSSEnrichment() will only compute the TSS enrichment score without storing the entire cell by position matrix of Tn5 insertion frequency for each cell, and can save memory. However, setting fast=TRUE will not allow downstream plotting of the TSS enrichment signal for different groups of cells using the TSSPlot() function, shown here:
-
-```{r, eval = F}
-MB_Signac$high.tss <- ifelse(MB_Signac$TSS.enrichment > 2, 'High', 'Low')
+MB_Signac$high.tss <- ifelse(MB_Signac$TSS.enrichment > 2, "High", "Low")
 TSSPlot(MB_Signac, group.by = "high.tss") + NoLegend()
 ```
 
 
+<br>
 
-```{r, eval = F}
-MB_Signac$nucleosome_group <- ifelse(MB_Signac$nucleosome_signal > 4, "NS > 4", "NS < 4")
-FragmentHistogram(MB_Signac, group.by = "nucleosome_group")
-```
-
-
-
+Habiendo calculado ya el _TSS enrichment score_ y el _nucleosome signal_, procedemos a calcular el ratio de lecturas que mapean en picos y el ratio de lecturas que caen en regiones prohibidas y mostramos todas estas métricas de calidad en gráficos de violín para analizar la calidad de nuestro experimento:
 
 ```{r}
-VlnPlot(
-  object = MB_Signac,
-  features = c("pct_reads_in_peaks", "peak_region_fragments",
-               "TSS.enrichment", "blacklist_ratio", "nucleosome_signal"),
-  pt.size = 0.1,
-  ncol = 5
-)
+MB_Signac$pct_reads_in_peaks <- MB_Signac$peak_region_fragments / MB_Signac$passed_filters * 100
+MB_Signac$blacklist_ratio <- MB_Signac$blacklist_region_fragments / MB_Signac$peak_region_fragments
+
+
+VlnPlot(object = MB_Signac,
+        features = c("pct_reads_in_peaks", "peak_region_fragments",
+                   "TSS.enrichment", "blacklist_ratio", "nucleosome_signal"),
+        pt.size = 0.1,
+        ncol = 5)
 ```
 
 
+Concluimos la sección de QC eliminando las células que no cumplan con los estándares de calidad. Para ello nos quedaremos con aquellas células que cumplan las siguientes condiciones:
 
+* Contener entre 3000 y 100000 lecturas que mapeen en picos
+
+* Un ratio de lecturas en picos > 40%
+
+* Un porcentaje de lecturas en regiones genómicas ruidosas < 0.025%
+
+* Una señal de nucleosoma < 4
+
+* Una puntuación de enriquecimiento de TSSs > 2
 
 ```{r}
 MB_Signac <- subset(
@@ -319,44 +298,61 @@ MB_Signac <- subset(
     pct_reads_in_peaks > 40 &
     blacklist_ratio < 0.025 &
     nucleosome_signal < 4 &
-    TSS.enrichment > 2
-)
+    TSS.enrichment > 2)
 
 MB_Signac
 ```
 
 
+
 ***
 
 <br>
 
-## Normalization and linear dimensional reduction
+## Normalizado y reducción lineal de la dimensionalidad (LSI)
+
+Para el normalizado, `Signac` realiza una técnica de dos pasos denominada TF-IDF o _Term Frequency - Inverse Document Frequency_, la cual por un lado normaliza las células (para corregir las posibles diferencias en la profundidad de secuenciado entre células) y por otro normaliza los picos (para dar más importancia a los picos poco comunes).
+
+Si estuviésemos analizando un experimento de scRNA-Seq con `Seurat`, haríamos una selección de características (=genes) después del normalizado, pero en scATAC-Seq es más difícil realizar dicha selección debido al bajo rango dinámico de estos datos (i.e. bajo ratio señal/ruido). En este caso podemos usar el top x% de picos (=regiones cromosómicas) variables para la reducción de la dimensionalidad, o eliminar los picos que estén presentes en menos de x células (usando para ello el comando `FindTopFeatures()`). Nosotros usaremos el top 25% (`min.cutoff = "q75"`).
+
+Para la reducción de la dimensionalidad, realizamos una técnica matemática denominada SVD o _Singular Value Decomposition_ sobre la matriz devuelta por el TD-IDF (el SVD se realiza también para generar PCAs) y usando sólo los picos seleccionados en el paso previo. Llamamos LSI o _latent semantic indexing_ a la técnica que combina un paso de TF-IDF seguido de un paso de SVD, y fue usado exitósamente por primera vez en el análisis de scATAC-seq por [Cusanovich _et al._, 2015](https://www.science.org/doi/abs/10.1126/science.aax6234).
 
 
 ```{r}
-MB_Signac <- RunTFIDF(MB_Signac)
-MB_Signac <- FindTopFeatures(MB_Signac, min.cutoff = 'q0')
-MB_Signac <- RunSVD(MB_Signac)
+MB_Signac <- RunTFIDF(MB_Signac) # Normalizado
+MB_Signac <- FindTopFeatures(MB_Signac, min.cutoff = 'q75') # Selección de características
+MB_Signac <- RunSVD(MB_Signac) # Reducción de la dimensionalidad
 ```
 
+
+<br>
+
+La primera componente del LSI suele capturar la profundidad del secuenciado (variación técnica) y no varianza biológica. Si ese es el caso, esta componente de debe eliminar de los próximos análisis. Podemos observar la correlación entre cada componente del LSI y la profundidad de secuenciado con la función `DepthCor()`:
 
 ```{r}
 DepthCor(MB_Signac)
 ```
 
+Se aprecia que la primera componente del LSI está inversamente muy correlacionada (R ≈ -1) con el nº total de lecturas en células, por lo que omitiremos esta componente en los próximos análisis.
+
+
 
 ***
 
 <br>
 
-# Non-linear dimension reduction and clustering
+# Reducción no lineal de la dimensionalidad y clustering
 
+Con las células embebidas en el LSI, podemos agruparlas
+Now that the cells are embedded in a low-dimensional space, we can use methods commonly applied for the analysis of scRNA-seq data to perform graph-based clustering and non-linear dimension reduction for visualization. The functions RunUMAP(), FindNeighbors(), and FindClusters() all come from the Seurat package.
+
+Nótese que omitiremos la primera componente del LSI (`dims = 2:30`)
 
 ```{r}
 MB_Signac <- RunUMAP(MB_Signac, reduction = "lsi", dims = 2:30)
 MB_Signac <- FindNeighbors(MB_Signac, reduction = "lsi", dims = 2:30)
 MB_Signac <- FindClusters(MB_Signac, algorithm = 3, resolution = 1.2, 
-                          verbose = FALSE) # Desactiva el paralelizado de `future` para evitar errores aleatorios
+                          verbose = F)
 DimPlot(MB_Signac, label = TRUE) + NoLegend()
 ```
 
