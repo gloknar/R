@@ -327,7 +327,7 @@ MB_Signac <- RunSVD(MB_Signac) # Reducción de la dimensionalidad
 
 <br>
 
-La primera componente del LSI suele capturar la profundidad del secuenciado (variación técnica) y no varianza biológica. Si ese es el caso, esta componente de debe eliminar de los próximos análisis. Podemos observar la correlación entre cada componente del LSI y la profundidad de secuenciado con la función `DepthCor()`:
+La primera componente del LSI suele capturar la profundidad del secuenciado (variación técnica) y no la varianza biológica. Si ese es el caso, esta componente de debe eliminar de los próximos análisis. Podemos observar la correlación entre cada componente del LSI y la profundidad de secuenciado con la función `DepthCor()`:
 
 ```{r}
 DepthCor(MB_Signac)
@@ -343,17 +343,14 @@ Se aprecia que la primera componente del LSI está inversamente muy correlaciona
 
 # Reducción no lineal de la dimensionalidad y clustering
 
-Con las células embebidas en el LSI, podemos agruparlas
-Now that the cells are embedded in a low-dimensional space, we can use methods commonly applied for the analysis of scRNA-seq data to perform graph-based clustering and non-linear dimension reduction for visualization. The functions RunUMAP(), FindNeighbors(), and FindClusters() all come from the Seurat package.
-
-Nótese que omitiremos la primera componente del LSI (`dims = 2:30`)
+Con las células embebidas en el LSI, podemos agruparlas mediante las técnicas ya aprendidas en los protocolos de `Seurat` (clustering basado en grafos) y posteriormente visualizarlas con un t-SNE o un UMAP. Este paso es por tanto exactamente igual que en anteriores _workflows_ para scRNA-Seq ya mostrados, con la salvedad de que omitiremos la primera componente del LSI (`dims = 2:30`).
 
 ```{r}
-MB_Signac <- RunUMAP(MB_Signac, reduction = "lsi", dims = 2:30)
 MB_Signac <- FindNeighbors(MB_Signac, reduction = "lsi", dims = 2:30)
 MB_Signac <- FindClusters(MB_Signac, algorithm = 3, resolution = 1.2, 
                           verbose = F)
-DimPlot(MB_Signac, label = TRUE) + NoLegend()
+MB_Signac <- RunUMAP(MB_Signac, reduction = "lsi", dims = 2:30)
+DimPlot(MB_Signac, reduction = "umap", label = TRUE) + NoLegend()
 ```
 
 
