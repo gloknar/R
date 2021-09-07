@@ -48,7 +48,7 @@ Este paquete ha sido desarrollado y es actualmente mantenido por Andrew Butler, 
 
 Para introducirnos en el workflow de `Seurat` para el clustering de datos, analizaremos el dataset de 2700 células mononucleares de sangre periférica (PBMCs en inglés), publicado por [10x Genomics](https://www.10xgenomics.com/). En este dataset se secuenciaron mediante técnicas de single-cell RNA-seq 2700 células en la plataforma NextSeq 500 de Illumina.
 
-> Nota: Las PBMCs corresponden a linfocitos y monocitos.
+> Nota: Las PBMCs corresponden de linfocitos (fracción principal), y en menor medida monocitos.
 
 En este tutorial se trabajará el control de calidad o QC, filtrado de datos, cálculo de genes con elevada varianza, reducción de dimensionalidad, clustering basado en grafos e identificación de marcadores de clusters.
 
