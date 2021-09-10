@@ -356,52 +356,45 @@ DimPlot(MB_Signac, reduction = "umap", label = TRUE) + NoLegend()
 
 
 
-```{r}
-cov_plot <- CoveragePlot(
-  object = MB_Signac,
-  region = "chr2-87011729-87035519",
-  annotation = FALSE,
-  peaks = FALSE
-)
-
-cov_plot
-```
-
-
 ***
 
 <br>
 
-# Create a gene activity matrix
+# Matriz de actividad génica
 
 
+En el UMAP apreciamos la presencia de hasta 21 clusters, los cuales se corresponden con estirpes celulares presentes en el cerebro de ratones adultos. Por desgracia, anotar estos clusters no es tan fácil en ATAC-seq dado que a diferencia de RNA-seq (que se centra en genes), a día de hoy se sabe poco sobre el rol de las regiones genómicas no codificantes.
+
+No obstante, podemos tratar de cuantificar la actividad de cada gen en el genoma a través de la accesibilidad de la cromatina asociada a dichos ORFs y crear así un nuevo ensayo para nuestro objeto `seurat` derivado del experimento de scATAC-seq. Una manera sencilla de lograrlo es sumar los fragmentos que caigan en la región promotora o en el ORF del gen en cuestión, aunque también es posible integrar en un worflow de `Signac` la herramienta [Cicero](https://cole-trapnell-lab.github.io/cicero-release/), desarrollada por el autor de `Monocle3` (otro paquete integrable en workflows de `Seurat`), Cole Trapnell.
+
+Para generar una matriz de actividad génica extraemos las coordenadas de los genes, las extendemos 2kb aguas arriba (para incluir al promotor) y a continuación contamos para cada célula el nº de lecturas que mapean en dichas regiones usando la función `FeatureMatrix()`. Estos pasos se realizan automáticamente al invocar al comando `GeneActivity()`:
 
 ```{r}
-# compute gene activities
-gene.activities <- GeneActivity(MB_Signac)
+# Generamos la matriz de actividad génica
+matriz_act_gen <- GeneActivity(MB_Signac)
 
-# add the gene activity matrix to the Seurat object as a new assay
-MB_Signac[['RNA']] <- CreateAssayObject(counts = gene.activities)
-MB_Signac <- NormalizeData(
-  object = MB_Signac,
-  assay = 'RNA',
-  normalization.method = 'LogNormalize',
-  scale.factor = median(MB_Signac$nCount_RNA)
-)
+# Añadimos dicha matriz a nuestro objeto `seurat` en forma de un nuevo ensayo y
+# normalizamos los datos
+MB_Signac[["RNA"]] <- CreateAssayObject(counts = matriz_act_gen)
+
+MB_Signac <- NormalizeData(object = MB_Signac, assay = "RNA", 
+                           normalization.method = "LogNormalize", 
+                           scale.factor = median(MB_Signac$nCount_RNA))
 ```
 
 
+<br>
+
+Ahora somos capaces de visualizar la actividad de biomarcadores canónicos para guiar nuestra interpretación de los clusters de scATAC-seq, si bien este nuevo experimento putativo de "scRNA-seq" derivado de scATAC-seq será más ruidoso que uno canónico de scRNA-seq, pero nos servirá. Dicho ruido se debe a que al generar la matriz de actividad génica asumimos una correlación perfecta entre accesibilidad del promotor/ORF y expresión génica, lo cual a veces no es así.
 
 ```{r}
-DefaultAssay(MB_Signac) <- 'RNA'
-FeaturePlot(
-  object = MB_Signac,
-  features = c('Sst','Pvalb',"Gad2","Neurod6","Rorb","Syt6"),
-  pt.size = 0.1,
-  max.cutoff = 'q95',
-  ncol = 3
-)
+DefaultAssay(MB_Signac) <- "RNA"
+
+FeaturePlot(object = MB_Signac,
+            features = c("Sst", "Pvalb", "Gad2", "Neurod6", "Rorb", "Syt6"),
+            pt.size = 0.1, max.cutoff = 'q95', ncol = 3)
 ```
+
 
 
 ***
@@ -556,6 +549,21 @@ CoveragePlot(
   ncol = 1
 )
 ```
+
+
+
+
+```{r, eval = F}
+cov_plot <- CoveragePlot(
+  object = MB_Signac,
+  region = "chr2-87011729-87035519",
+  annotation = FALSE,
+  peaks = FALSE
+)
+
+cov_plot
+```
+
 
 
 ***
