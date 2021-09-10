@@ -69,7 +69,7 @@ A continuación creamos dos objetos `seurat` a partir de dichas matrices de cont
 
 Por tanto el siguiente paso a realizar sería el normalizado, escalado de datos y detección de genes diferencialmente expresados, pero dado que el comando `FindIntegrationAnchors` integra las funciones de escalado y detección de genes altamente variables, no es necesario hacerlo ahora, aunque sería una buena práctica hacerlo (por tanto dejaremos las funciones `ScaleData` y `FindVariableFeatures` comentadas en el siguiente chunk).
 
-Téngase en cuenta que de acuerdo al paper de [Stuart _et al._, 2019](https://doi.org/10.1016/j.cell.2019.05.031 ), las células ancla o _anchors_ son pares de células de distintos datasets que presentan perfiles de expresión génica similares y por tanto son vecinas mutuas o _mutual nearest neighbours_. 
+Téngase en cuenta que de acuerdo al paper de [Stuart _et al._, 2019](https://doi.org/10.1016/j.cell.2019.05.031), las células ancla o _anchors_ son pares de células de distintos datasets que presentan perfiles de expresión génica similares y por tanto son vecinas mutuas o _mutual nearest neighbours_. 
 
 ```{r}
 library(Seurat)
