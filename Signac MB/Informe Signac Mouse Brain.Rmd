@@ -373,8 +373,8 @@ Para generar una matriz de actividad génica extraemos las coordenadas de los ge
 # Generamos la matriz de actividad génica
 matriz_act_gen <- GeneActivity(MB_Signac)
 
-# Añadimos dicha matriz a nuestro objeto `seurat` en forma de un nuevo ensayo y
-# normalizamos los datos
+# Añadimos dicha matriz a nuestro objeto `seurat` en forma de un nuevo ensayo de
+# scRNA-seq y normalizamos los datos
 MB_Signac[["RNA"]] <- CreateAssayObject(counts = matriz_act_gen)
 
 MB_Signac <- NormalizeData(object = MB_Signac, assay = "RNA", 
@@ -403,23 +403,20 @@ FeaturePlot(object = MB_Signac,
 
 # Integrating with scRNA-seq data
 
+Para ayudarnos más aún con la intepretación de los clusters de scATAC-seq, podemos clasificar las células basándonos en un experimento real de scRNA-seq del mismo tejido. Para combinar datos de ATAC-seq y RNA-seq, `Signac` usa los métodos de integración multiómicos y transferencia de etiquetas descritos en este [paper](https://doi.org/10.1016/j.cell.2019.05.031). El objetivo es identificar patrones de correlación compartidos entre la matriz de actividad génica generada en el apartado anterior y un dataset anotado de scRNA-seq para descubrir tipos celulares compatidos entre ambas ómicas. Este procedimiento se realiza mediante un CCA, descrito en otros workflows de `Seurat`, y devuelve una puntuación de clasificación para cada célula de los clusters anotados en el experimento real de scRNA-seq.
 
-[PH]
+Para el experimento real de scRNA-seq, puedes descargar los [datos crudos](http://celltypes.brain-map.org/api/v2/well_known_file_download/694413985) en la página del Allen Institute y preprocesarlos con `Seurat`, o bien [descargar](https://www.dropbox.com/s/kqsy9tvsklbu7c4/allen_brain.rds?dl=0) el objeto `seurat` ya preprocesado. Para preprocesar los datos, se usó este [script](https://github.com/satijalab/Integration2019/blob/master/preprocessing_scripts/allen_brain.R).
 
 ```{r}
-# Load the pre-processed scRNA-seq data
+# Cargamos el ensayo de scRNA-seq (objeto tipo `seurat`) del Instituto Allen
 allen_rna <- readRDS("./archivos_accesorios/allen_brain.rds")
-allen_rna <- FindVariableFeatures(
-  object = allen_rna,
-  nfeatures = 5000
-)
 
-transfer.anchors <- FindTransferAnchors(
-  reference = allen_rna,
-  query = MB_Signac,
-  reduction = 'cca',
-  dims = 1:40
-)
+# Detectamos genes diferencialmente expresados
+allen_rna <- FindVariableFeatures(object = allen_rna, nfeatures = 5000)
+
+# Integramos los datasets de scATAC-seq y scRNA-seq con un CCA
+transfer.anchors <- FindTransferAnchors(reference = allen_rna, query = MB_Signac, 
+                                        reduction = "cca", dims = 1:40)
 
 predicted.labels <- TransferData(
   anchorset = transfer.anchors,
@@ -448,6 +445,9 @@ plot1 + plot2
 
 
 </details>
+
+
+You can see that the RNA-based classifications are entirely consistent with the UMAP visualization, computed only on the ATAC-seq data. We can now easily annotate our scATAC-seq derived clusters (alternately, we could use the RNA classifications themselves). We note three small clusters (13, 20, 21) which represent subdivisions of the scRNA-seq labels. Try transferring the cluster label (which shows finer distinctions) from the allen scRNA-seq dataset, to annotate them!
 
 
 ```{r}
