@@ -403,9 +403,9 @@ FeaturePlot(object = MB_Signac,
 
 # Integrating with scRNA-seq data
 
-Para ayudarnos más aún con la intepretación de los clusters de scATAC-seq, podemos clasificar las células basándonos en un experimento real de scRNA-seq del mismo tejido. Para combinar datos de ATAC-seq y RNA-seq, `Signac` usa los métodos de integración multiómicos y transferencia de etiquetas descritos en este [paper](https://doi.org/10.1016/j.cell.2019.05.031). El objetivo es identificar patrones de correlación compartidos entre la matriz de actividad génica generada en el apartado anterior y un dataset anotado de scRNA-seq para descubrir tipos celulares compatidos entre ambas ómicas. Este procedimiento se realiza mediante un CCA, descrito en otros workflows de `Seurat`, y devuelve una puntuación de clasificación para cada célula de los clusters anotados en el experimento real de scRNA-seq.
+Para ayudarnos más aún con la intepretación de los clusters de scATAC-seq, podemos clasificar las células basándonos en un experimento real de scRNA-seq del mismo tipo de tejido. Para combinar datos de ATAC-seq y RNA-seq, `Signac` (y `Seurat`) usa los métodos de integración multiómicos y transferencia de etiquetas descritos en este [paper](https://doi.org/10.1016/j.cell.2019.05.031). El objetivo es identificar patrones de correlación compartidos entre la matriz de actividad génica generada en el apartado anterior y un dataset anotado de scRNA-seq para descubrir tipos celulares compatidos entre ambas ómicas. Este procedimiento se realiza mediante un CCA, descrito en otros workflows de `Seurat`, y devuelve una puntuación de clasificación para cada célula de los clusters anotados en el experimento real de scRNA-seq.
 
-Para el experimento real de scRNA-seq, puedes descargar los [datos crudos](http://celltypes.brain-map.org/api/v2/well_known_file_download/694413985) en la página del Allen Institute y preprocesarlos con `Seurat`, o bien [descargar](https://www.dropbox.com/s/kqsy9tvsklbu7c4/allen_brain.rds?dl=0) el objeto `seurat` ya preprocesado. Para preprocesar los datos, se usó este [script](https://github.com/satijalab/Integration2019/blob/master/preprocessing_scripts/allen_brain.R).
+Para el experimento real de scRNA-seq, puedes descargar los [datos crudos](http://celltypes.brain-map.org/api/v2/well_known_file_download/694413985) en la página del Allen Institute y preprocesarlos con `Seurat`, o bien [descargar](https://www.dropbox.com/s/kqsy9tvsklbu7c4/allen_brain.rds?dl=0) el objeto `seurat` ya preprocesado. Para preprocesar los datos, se usó este [script](https://github.com/satijalab/Integration2019/blob/master/preprocessing_scripts/allen_brain.R). Para este ensayo se secuenciaron cerebros de varios ratones con distintos genotipos.
 
 ```{r}
 # Cargamos el ensayo de scRNA-seq (objeto tipo `seurat`) del Instituto Allen
@@ -419,11 +419,10 @@ transfer.anchors <- FindTransferAnchors(reference = allen_rna, query = MB_Signac
                                         reduction = "cca", dims = 1:40)
 
 predicted.labels <- TransferData(
-  anchorset = transfer.anchors,
-  refdata = allen_rna$subclass,
-  weight.reduction = MB_Signac[['lsi']],
-  dims = 2:30
-)
+  anchorset = transfer.anchors, 
+  refdata = allen_rna$subclass, 
+  weight.reduction = MB_Signac[["lsi"]], 
+  dims = 2:30)
 
 MB_Signac <- AddMetaData(object = MB_Signac, metadata = predicted.labels)
 ```
@@ -431,18 +430,18 @@ MB_Signac <- AddMetaData(object = MB_Signac, metadata = predicted.labels)
 
 
 ```{r}
-plot1 <- DimPlot(allen_rna, group.by = 'subclass', label = TRUE, repel = TRUE) + NoLegend() + ggtitle('scRNA-seq')
-plot2 <- DimPlot(MB_Signac, group.by = 'predicted.id', label = TRUE, repel = TRUE) + NoLegend() + ggtitle('scATAC-seq')
+plot1 <- DimPlot(allen_rna, group.by = "subclass", label = TRUE, repel = TRUE) + NoLegend() + ggtitle("scRNA-seq (Allen Inst.)")
+plot2 <- DimPlot(MB_Signac, group.by = "predicted.id", label = TRUE, repel = TRUE) + NoLegend() + ggtitle("scATAC-seq")
 plot1 + plot2
 ```
 
 
 
-<details>
+<br>
 
+<details> <summary> __Why did we change default parameters?__</summary>
 
-<summary> __Why did we change default parameters?__</summary>
-
+PH
 
 </details>
 
