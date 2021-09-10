@@ -401,9 +401,9 @@ FeaturePlot(object = MB_Signac,
 
 <br>
 
-# Integrating with scRNA-seq data
+# Integración multiómica/multimodal (scRNA-seq)
 
-Para ayudarnos más aún con la intepretación de los clusters de scATAC-seq, podemos clasificar las células basándonos en un experimento real de scRNA-seq del mismo tipo de tejido. Para combinar datos de ATAC-seq y RNA-seq, `Signac` (y `Seurat`) usa los métodos de integración multiómicos y transferencia de etiquetas descritos en este [paper](https://doi.org/10.1016/j.cell.2019.05.031). El objetivo es identificar patrones de correlación compartidos entre la matriz de actividad génica generada en el apartado anterior y un dataset anotado de scRNA-seq para descubrir tipos celulares compatidos entre ambas ómicas. Este procedimiento se realiza mediante un CCA, descrito en otros workflows de `Seurat`, y devuelve una puntuación de clasificación para cada célula de los clusters anotados en el experimento real de scRNA-seq.
+Para ayudarnos más aún con la intepretación de los clusters de scATAC-seq, podemos clasificar las células basándonos en un experimento real de scRNA-seq del mismo tipo de tejido. Para combinar datos de ATAC-seq y RNA-seq, `Signac` (y `Seurat`) usa los métodos de integración multiómicos y transferencia de etiquetas descritos en este [paper](https://doi.org/10.1016/j.cell.2019.05.031). El objetivo es identificar patrones de correlación compartidos entre la matriz de actividad génica generada en el apartado anterior y un dataset anotado de scRNA-seq para descubrir tipos celulares compatidos entre ambas ómicas. Este procedimiento se realiza mediante un CCA (procedimiento descrito en otros workflows de `Seurat` y en la traducción de Seurat 2 a Seurat 3, [3ª práctica](https://github.com/gloknar/R/blob/master/Traduccion%20Seurat%20V2%20V3/Informe%20practica%203.Rmd)), y devuelve una puntuación de clasificación para cada célula de los clusters anotados en el experimento real de scRNA-seq.
 
 Para el experimento real de scRNA-seq, puedes descargar los [datos crudos](http://celltypes.brain-map.org/api/v2/well_known_file_download/694413985) en la página del Allen Institute y preprocesarlos con `Seurat`, o bien [descargar](https://www.dropbox.com/s/kqsy9tvsklbu7c4/allen_brain.rds?dl=0) el objeto `seurat` ya preprocesado. Para preprocesar los datos, se usó este [script](https://github.com/satijalab/Integration2019/blob/master/preprocessing_scripts/allen_brain.R). Para este ensayo se secuenciaron cerebros de varios ratones con distintos genotipos.
 
@@ -414,16 +414,18 @@ allen_rna <- readRDS("./archivos_accesorios/allen_brain.rds")
 # Detectamos genes diferencialmente expresados
 allen_rna <- FindVariableFeatures(object = allen_rna, nfeatures = 5000)
 
-# Integramos los datasets de scATAC-seq y scRNA-seq con un CCA
+# Detectamos células ancla en nuestros datasets mediante un CCA
 transfer.anchors <- FindTransferAnchors(reference = allen_rna, query = MB_Signac, 
-                                        reduction = "cca", dims = 1:40)
+                                        reduction = "cca", dims = 1:40) # Nota: ya que usamos datasets pesados, no divergentes (mirar UMAP) y de la misma especie, es computacionalmente más eficiente usar `reduction = "rpca"`
 
+# Integramos los datasets de scATAC-seq y scRNA-seq
 predicted.labels <- TransferData(
   anchorset = transfer.anchors, 
   refdata = allen_rna$subclass, 
   weight.reduction = MB_Signac[["lsi"]], 
   dims = 2:30)
 
+# Añadimos la clasificación de los clusters a nuestro objeto `seurat` principal
 MB_Signac <- AddMetaData(object = MB_Signac, metadata = predicted.labels)
 ```
 
