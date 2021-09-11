@@ -335,7 +335,7 @@ DepthCor(MB_Signac)
 
 <br>
 
-Se aprecia que la primera componente del LSI está inversamente muy correlacionada (R ≈ -1) con el nº total de lecturas en células, por lo que omitiremos esta componente en los próximos análisis. Por último, graficamos el LSI, omitiendo la primera componente. El output del mismo recuerda al de un PCA en el sentido de que parece ser una reducción de dimensionalidad lineal:
+Se aprecia que la primera componente del LSI está inversamente muy correlacionada (R ≈ -1) con el nº total de lecturas en células, por lo que omitiremos esta componente en los próximos análisis. Por último, graficamos el LSI, omitiendo la primera componente. El output del mismo recuerda al de un PCA en el sentido de que parece ser una reducción lineal de la dimensionalidad:
 
 ```{r}
 DimPlot(object = MB_Signac, label = TRUE, reduction = "lsi", dims = c(2,3)) + NoLegend()
