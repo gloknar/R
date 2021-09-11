@@ -96,7 +96,6 @@ library("EnsDb.Mmusculus.v79")
 # Gráficos
 library("ggplot2")
 library("patchwork")
-set.seed(1234)
 ```
 
 
@@ -372,7 +371,7 @@ En el UMAP apreciamos la presencia de hasta 21 clusters, los cuales se correspon
 
 No obstante, podemos inferir la actividad de cada gen en el genoma a través de la accesibilidad de la cromatina asociada a dichos ORFs y crear así un nuevo ensayo para nuestro objeto `seurat` derivado del experimento de scATAC-seq. Una manera sencilla de lograrlo es sumar los fragmentos que caigan en la región promotora o en el ORF del gen en cuestión, aunque también es posible integrar en un worflow de `Signac` la herramienta [Cicero](https://cole-trapnell-lab.github.io/cicero-release/), desarrollada por el autor de `Monocle3` (otro paquete integrable en workflows de `Seurat`), Cole Trapnell.
 
-Para generar una matriz de actividad génica extraemos las coordenadas de los genes, las extendemos 2kb aguas arriba (para incluir al promotor) y a continuación contamos para cada célula el nº de lecturas que mapean en dichas regiones usando la función `FeatureMatrix()`. Estos pasos se realizan automáticamente al invocar al comando `GeneActivity()`. El objetivo de esta actividad es inferir una matriz de conteos capaz de poder ser usada como input para un nuevo ensayo, como si hubiésemos secuenciado el ARN de estas células:
+Para generar una matriz de actividad génica extraemos las coordenadas de los genes, las extendemos 2kb aguas arriba (para incluir al promotor) y a continuación contamos para cada célula el nº de lecturas que mapean en dichas regiones usando la función `FeatureMatrix()`. Estos pasos se realizan automáticamente al invocar al comando `GeneActivity()`. El objetivo de esta actividad es inferir una matriz de conteos capaz de poder ser usada como input para un nuevo ensayo, como si hubiésemos secuenciado el transcriptoma de estas células:
 
 ```{r}
 # Generamos la matriz de actividad génica
@@ -410,7 +409,7 @@ FeaturePlot(object = MB_Signac,
 
 Para ayudarnos más aún con la intepretación de los clusters de scATAC-seq, podemos clasificar las células basándonos en un experimento real de scRNA-seq del mismo tipo de tejido. Para combinar datos de ATAC-seq y RNA-seq, `Signac` (y `Seurat`) usa los métodos de integración multiómicos y transferencia de etiquetas descritos en este [paper](https://doi.org/10.1016/j.cell.2019.05.031). El objetivo es identificar patrones de correlación compartidos entre la matriz de actividad génica generada en el apartado anterior y un dataset anotado de scRNA-seq para descubrir tipos celulares compatidos entre ambas ómicas. Este procedimiento se realiza mediante un CCA (procedimiento descrito en otros workflows de `Seurat` y en la traducción de Seurat 2 a Seurat 3, [3ª práctica](https://github.com/gloknar/R/blob/master/Traduccion%20Seurat%20V2%20V3/Informe%20practica%203.Rmd)), y devuelve una puntuación de clasificación para cada célula de los clusters anotados en el experimento real de scRNA-seq.
 
-Para el experimento real de scRNA-seq, puedes descargar los [datos crudos](http://celltypes.brain-map.org/api/v2/well_known_file_download/694413985) en la página del Allen Institute y preprocesarlos con `Seurat`, o bien [descargar](https://www.dropbox.com/s/kqsy9tvsklbu7c4/allen_brain.rds?dl=0) el objeto `seurat` ya preprocesado. Para preprocesar los datos, se usó este [script](https://github.com/satijalab/Integration2019/blob/master/preprocessing_scripts/allen_brain.R). Para este ensayo se secuenciaron cerebros de varios ratones con distintos genotipos.
+Para el experimento real de scRNA-seq, puedes descargar los [datos crudos](http://celltypes.brain-map.org/api/v2/well_known_file_download/694413985) en la página del Allen Institute y preprocesarlos con `Seurat`, o bien [descargar](https://www.dropbox.com/s/kqsy9tvsklbu7c4/allen_brain.rds?dl=0) el objeto `seurat` ya preprocesado. Para preprocesar los datos, se usó este [script](https://github.com/satijalab/Integration2019/blob/master/preprocessing_scripts/allen_brain.R). Para este ensayo se secuenciaron cerebros de varios ratones con distintos genotipos (concretamente la corteza visual primaria).
 
 ```{r}
 # Cargamos el ensayo de scRNA-seq (objeto tipo `seurat`) del Instituto Allen
@@ -469,66 +468,76 @@ Se aprecia que aunque las visualizaciones de scRNA-seq y scATAC-seq no son exact
 
 <br>
 
-# Find differentially accessible peaks between clusters
+# Detección de biomarcadores de clusters (regiones cromosómicas diferencialmente accesibles)
 
 
+Si en estudios de transcriptómica analizamos los genes diferencialmente transcribidos, es lógico estudiar en ATAC-seq aquellas regiones del genoma que son diferencialmente accesibles a la transposasa Tn5. Para estudiar la apertura diferencial de la cromatina se usan regresiones logísticas, tal como recomienda [Ntranos _et al._ 2018](https://www.biorxiv.org/content/10.1101/258566v2), y se añade el nº total de lecturas en forma de variable latente para mitigar el efecto negativo en los resultados de tener librerías/muestras con distintas profundidades de secuenciado. 
 
-[PH]
+Para datos dispersos como es scATAC-seq, es necesario ajustar el parámetro `min.pct` del comando `FindMarkers()` con valores más bajos, ya que el valor que usa por defecto (0.1) está pensado para datos de scRNA-seq. En nuestro caso detectaremos regiones diferencialmente accesibles entre las neuronas intratelencefálicas de capas corticales 2/3 y las neuronas de capas 4-6 (siendo todas ellas neuronas excitatorias):
 
+```{r}
+# Volvemos a trabajar con picos en vez de actividad génica
+DefaultAssay(MB_Signac) <- "peaks"
 
-```{r, eval = F}
-#switch back to working with peaks instead of gene activities
-DefaultAssay(MB_Signac) <- 'peaks'
-
+# `L5 IT` está en tipos celulares predichos
+Idents(MB_Signac) <- MB_Signac$predicted.id
 da_peaks <- FindMarkers(
   object = MB_Signac,
   ident.1 = c("L2/3 IT"), 
-  ident.2 = c("L4", "L5 IT", "L6 IT"),
-  min.pct = 0.05,
-  test.use = 'LR',
-  latent.vars = 'peak_region_fragments'
+  ident.2 = c("L4", "L5 IT", "L6 IT"), # IT = IntraTelencefálico; L = Layer
+  min.pct = 0.05,  # 0.1 para scRNA-seq; 0.05 para scATAC-seq
+  test.use = "LR",
+  latent.vars = "peak_region_fragments"
 )
 
 head(da_peaks)
 ```
 
 
+<br>
 
+Visualizamos los resultados del test de accesibilidad diferencial en un violinplot y sobre la proyección del UMAP:
 
-```{r, eval = F}
-plot1 <- VlnPlot(
-  object = MB_Signac,
-  features = rownames(da_peaks)[1],
-  pt.size = 0.1,
-  idents = c("L4","L5 IT","L2/3 IT")
-)
-plot2 <- FeaturePlot(
-  object = MB_Signac,
-  features = rownames(da_peaks)[1],
-  pt.size = 0.1,
-  max.cutoff = 'q95'
-)
+```{r}
+plot1 <- VlnPlot(object = MB_Signac, features = rownames(da_peaks)[1], 
+                 pt.size = 0.1, idents = c("L4","L5 IT","L2/3 IT", "L6 IT")) + 
+         ylab("Insertion/Aperture level") + NoLegend()
+
+plot2 <- FeaturePlot(object = MB_Signac, features = rownames(da_peaks)[1], 
+                     pt.size = 0.1, max.cutoff = "q95")
+
 plot1 | plot2
 ```
 
+<br>
+
+En vista de los resultados podemos ver que la región del cromosoma 4 comprendida entre las bases 86.523.678-86.525.285 está diferencialmente abierta (i.e. expresada) en las neuronas corticales piramidales de capas 2/3 respecto de las de capas 4-6. Dicha región abarca el gen Fam154a/Saxo1:
+
+```{r}
+CoveragePlot(object = MB_Signac, region = "chr4-86523678-86525285",
+             extend.upstream = 1000, extend.downstream = 1000,
+             ncol = 1, idents = c("L2/3 IT", "L4", "L5 IT", "L6 IT"))
+```
 
 
+<br>
 
+Peak coordinates can be difficult to interpret alone. We can find the closest gene to each of these peaks using the ClosestFeature() function. If you explore the gene lists, you will see that peaks open in Naive T cells are close to genes such as BCL11B and GATA3 (key regulators of T cell differentiation ), while peaks open in monocytes are close to genes such as CEBPB (a key regulator of monocyte differentiation). We could follow up this result further by doing gene ontology enrichment analysis on the gene sets returned by ClosestFeature(), and there are many R packages that can do this (see the GOstats package for example, o GprofileR).
 
-```{r, eval = F}
+Con el comando `ClosestFeature()` podemos buscar el gen más cercano al pico detectado. Se aprecia que, como decíamos antes, el gen más cercano a la región chr4-86523678-86525285 es Fam154a/Saxo1:
+
+```{r}
 open_l23 <- rownames(da_peaks[da_peaks$avg_log2FC > 0.25, ])
 open_l456 <- rownames(da_peaks[da_peaks$avg_log2FC < -0.25, ])
 closest_l23 <- ClosestFeature(MB_Signac, open_l23)
 closest_l456 <- ClosestFeature(MB_Signac, open_l456)
 head(closest_l23)
-```
-
-
-
-
-```{r, eval = F}
 head(closest_l456)
 ```
+
+
+
+
 
 
 ***
@@ -545,6 +554,18 @@ placeholder
 ```{r, eval = F}
 # set plotting order
 levels(MB_Signac) <- c("L2/3 IT","L4","L5 IT","L5 PT","L6 CT", "L6 IT","NP","Sst","Pvalb","Vip","Lamp5","Meis2","Oligo","Astro","Endo","VLMC","Macrophage")
+
+CoveragePlot(
+  object = MB_Signac,
+  region = "chr4-86523678-86525285",
+  extend.upstream = 1000,
+  extend.downstream = 1000,
+  ncol = 1
+)
+
+
+
+
 
 CoveragePlot(
   object = MB_Signac,
