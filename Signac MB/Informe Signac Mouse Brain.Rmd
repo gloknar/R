@@ -30,8 +30,8 @@ options("future.seed" = T)
 # Establecemos el límite de tamaño que puede usar `future` en 2 GBs dado que de
 # lo contrario superamos el límite por defecto de 500 MBs/hilo al trabajar con
 # objetos tan grandes
-options(future.globals.maxSize = 2 * 1024^3)
 plan(strategy = "multisession", workers = 4)
+options(future.globals.maxSize = 4 * 512^3)
 ```
 
 
@@ -180,10 +180,10 @@ granges(MB_Signac)
 
 También podemos añadir al objeto `MB_Signac` las anotaciones del genoma murino para que ciertos comandos puedan hacer uso de dicha información. 
 
-```{r}
+```{r, warning = F}
 # Descargamos las anotaciones del genoma murino mm10 desde la base de datos
 # Ensembl
-annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Mmusculus.v79)
+annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Mmusculus.v79, verbose = F)
 
 # Las anotaciones están en formato NCBI. Vamos a cambiarlas al formato UCSC y
 # especificaremos que estamos trabajando con el genoma mm10
@@ -333,8 +333,13 @@ La primera componente del LSI suele capturar la profundidad del secuenciado (var
 DepthCor(MB_Signac)
 ```
 
-Se aprecia que la primera componente del LSI está inversamente muy correlacionada (R ≈ -1) con el nº total de lecturas en células, por lo que omitiremos esta componente en los próximos análisis.
+<br>
 
+Se aprecia que la primera componente del LSI está inversamente muy correlacionada (R ≈ -1) con el nº total de lecturas en células, por lo que omitiremos esta componente en los próximos análisis. Por último, graficamos el LSI, omitiendo la primera componente. El output del mismo recuerda al de un PCA en el sentido de que parece ser una reducción de dimensionalidad lineal:
+
+```{r}
+DimPlot(object = MB_Signac, label = TRUE, reduction = "lsi", dims = c(2,3)) + NoLegend()
+```
 
 
 ***
@@ -365,9 +370,9 @@ DimPlot(MB_Signac, reduction = "umap", label = TRUE) + NoLegend()
 
 En el UMAP apreciamos la presencia de hasta 21 clusters, los cuales se corresponden con estirpes celulares presentes en el cerebro de ratones adultos. Por desgracia, anotar estos clusters no es tan fácil en ATAC-seq dado que a diferencia de RNA-seq (que se centra en genes), a día de hoy se sabe poco sobre el rol de las regiones genómicas no codificantes.
 
-No obstante, podemos tratar de cuantificar la actividad de cada gen en el genoma a través de la accesibilidad de la cromatina asociada a dichos ORFs y crear así un nuevo ensayo para nuestro objeto `seurat` derivado del experimento de scATAC-seq. Una manera sencilla de lograrlo es sumar los fragmentos que caigan en la región promotora o en el ORF del gen en cuestión, aunque también es posible integrar en un worflow de `Signac` la herramienta [Cicero](https://cole-trapnell-lab.github.io/cicero-release/), desarrollada por el autor de `Monocle3` (otro paquete integrable en workflows de `Seurat`), Cole Trapnell.
+No obstante, podemos inferir la actividad de cada gen en el genoma a través de la accesibilidad de la cromatina asociada a dichos ORFs y crear así un nuevo ensayo para nuestro objeto `seurat` derivado del experimento de scATAC-seq. Una manera sencilla de lograrlo es sumar los fragmentos que caigan en la región promotora o en el ORF del gen en cuestión, aunque también es posible integrar en un worflow de `Signac` la herramienta [Cicero](https://cole-trapnell-lab.github.io/cicero-release/), desarrollada por el autor de `Monocle3` (otro paquete integrable en workflows de `Seurat`), Cole Trapnell.
 
-Para generar una matriz de actividad génica extraemos las coordenadas de los genes, las extendemos 2kb aguas arriba (para incluir al promotor) y a continuación contamos para cada célula el nº de lecturas que mapean en dichas regiones usando la función `FeatureMatrix()`. Estos pasos se realizan automáticamente al invocar al comando `GeneActivity()`:
+Para generar una matriz de actividad génica extraemos las coordenadas de los genes, las extendemos 2kb aguas arriba (para incluir al promotor) y a continuación contamos para cada célula el nº de lecturas que mapean en dichas regiones usando la función `FeatureMatrix()`. Estos pasos se realizan automáticamente al invocar al comando `GeneActivity()`. El objetivo de esta actividad es inferir una matriz de conteos capaz de poder ser usada como input para un nuevo ensayo, como si hubiésemos secuenciado el ARN de estas células:
 
 ```{r}
 # Generamos la matriz de actividad génica
@@ -411,54 +416,53 @@ Para el experimento real de scRNA-seq, puedes descargar los [datos crudos](http:
 # Cargamos el ensayo de scRNA-seq (objeto tipo `seurat`) del Instituto Allen
 allen_rna <- readRDS("./archivos_accesorios/allen_brain.rds")
 
-# Detectamos genes diferencialmente expresados
+# Ampliamos el nº de genes diferencialmente expresados a 5000
 allen_rna <- FindVariableFeatures(object = allen_rna, nfeatures = 5000)
 
-# Detectamos células ancla en nuestros datasets mediante un CCA
+# Detectamos células ancla en nuestros datasets mediante un CCA/RCPA
 transfer.anchors <- FindTransferAnchors(reference = allen_rna, query = MB_Signac, 
-                                        reduction = "cca", dims = 1:40) # Nota: ya que usamos datasets pesados, no divergentes (mirar UMAP) y de la misma especie, es computacionalmente más eficiente usar `reduction = "rpca"`
+                                        reduction = "rpca", dims = 1:40) 
+# Nota: ya que usamos datasets pesados, no divergentes (mirar UMAP) y de la
+# misma especie, es computacionalmente más eficiente usar un RCPA en vez de un
+# CCA
 
-# Integramos los datasets de scATAC-seq y scRNA-seq
+# Predecimos los tipos celulares presentes en el ensayo de scATAC-seq usando
+# como input las células ancla y el dataset del Instituto Allen como referencia
 predicted.labels <- TransferData(
   anchorset = transfer.anchors, 
   refdata = allen_rna$subclass, 
-  weight.reduction = MB_Signac[["lsi"]], 
+  weight.reduction = MB_Signac[["lsi"]], # reducción de dim. del objeto `seurat` original
   dims = 2:30)
 
-# Añadimos la clasificación de los clusters a nuestro objeto `seurat` principal
+# Añadimos a los metadatos del objeto principal `MB_Signac` las predicciones
+# sobre los tipos celulares y sustituimos las etiquetas antiguas por estas
+# nuevas
 MB_Signac <- AddMetaData(object = MB_Signac, metadata = predicted.labels)
+
+for(i in levels(MB_Signac)) {
+  cells_to_relabel <- WhichCells(MB_Signac, idents = i)
+  newid <- names(sort(table(MB_Signac$predicted.id[cells_to_relabel]),decreasing=TRUE))[1]
+  Idents(MB_Signac, cells = cells_to_relabel) <- newid
+}
 ```
 
 
 
 ```{r}
-plot1 <- DimPlot(allen_rna, group.by = "subclass", label = TRUE, repel = TRUE) + NoLegend() + ggtitle("scRNA-seq (Allen Inst.)")
-plot2 <- DimPlot(MB_Signac, group.by = "predicted.id", label = TRUE, repel = TRUE) + NoLegend() + ggtitle("scATAC-seq")
-plot1 + plot2
+plot1 <- DimPlot(allen_rna, group.by = "subclass", label = TRUE) + NoLegend() + ggtitle("scRNA-seq (Allen Inst., anotado)")
+plot2 <- DimPlot(MB_Signac, group.by = "predicted.id", label = TRUE) + NoLegend() + ggtitle("scATAC-seq (predicción)")
+plot3 <- DimPlot(MB_Signac, label = T, group.by = "ident") + NoLegend() + ggtitle("scATAC-seq (anot. Allen)")
+plot1 + plot2 + plot3
 ```
-
 
 
 <br>
 
-<details> <summary> __Why did we change default parameters?__</summary>
-
-PH
-
-</details>
+Se aprecia que aunque las visualizaciones de scRNA-seq y scATAC-seq no son exactamente iguales, la agrupación de los clusters es consistente entre ambos ensayos (por ejemplo, las neuronas productoras de somatostatina `Sst` y las interneuronas productoras de parvalbúmina `Pvalb` forman clusters adyacentes en ambos experimentos).
 
 
-You can see that the RNA-based classifications are entirely consistent with the UMAP visualization, computed only on the ATAC-seq data. We can now easily annotate our scATAC-seq derived clusters (alternately, we could use the RNA classifications themselves). We note three small clusters (13, 20, 21) which represent subdivisions of the scRNA-seq labels. Try transferring the cluster label (which shows finer distinctions) from the allen scRNA-seq dataset, to annotate them!
 
 
-```{r}
-# replace each label with its most likely prediction
-for(i in levels(MB_Signac)) {
-  cells_to_reid <- WhichCells(MB_Signac, idents = i)
-  newid <- names(sort(table(MB_Signac$predicted.id[cells_to_reid]),decreasing=TRUE))[1]
-  Idents(MB_Signac, cells = cells_to_reid) <- newid
-}
-```
 
 
 ***
@@ -472,7 +476,7 @@ for(i in levels(MB_Signac)) {
 [PH]
 
 
-```{r}
+```{r, eval = F}
 #switch back to working with peaks instead of gene activities
 DefaultAssay(MB_Signac) <- 'peaks'
 
@@ -491,7 +495,7 @@ head(da_peaks)
 
 
 
-```{r}
+```{r, eval = F}
 plot1 <- VlnPlot(
   object = MB_Signac,
   features = rownames(da_peaks)[1],
@@ -511,7 +515,7 @@ plot1 | plot2
 
 
 
-```{r}
+```{r, eval = F}
 open_l23 <- rownames(da_peaks[da_peaks$avg_log2FC > 0.25, ])
 open_l456 <- rownames(da_peaks[da_peaks$avg_log2FC < -0.25, ])
 closest_l23 <- ClosestFeature(MB_Signac, open_l23)
@@ -522,7 +526,7 @@ head(closest_l23)
 
 
 
-```{r}
+```{r, eval = F}
 head(closest_l456)
 ```
 
@@ -538,7 +542,7 @@ placeholder
 
 
 
-```{r}
+```{r, eval = F}
 # set plotting order
 levels(MB_Signac) <- c("L2/3 IT","L4","L5 IT","L5 PT","L6 CT", "L6 IT","NP","Sst","Pvalb","Vip","Lamp5","Meis2","Oligo","Astro","Endo","VLMC","Macrophage")
 
