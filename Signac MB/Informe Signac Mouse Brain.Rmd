@@ -57,7 +57,7 @@ install.packages("Signac")
 `Signac` (Stuart _et al._, 2020) es una extensión del famoso paquete `Seurat` para explorar, analizar e interpretar datasets de scATAC-seq. ATAC-seq (y su variante de célula única) es, por decirlo de alguna manera, la sucesora espiritural de técnicas de secuenciación como ChIP-seq y RRBS-Seq (un tipo de secuenciación por bisulfito). Si en dichas técnicas se estudia el estado epigenético de las células/tejidos de interés, cierto es que se debe tener un conocimiento previo de cómo funcionan los mecanismos epigenéticos del organismo en cuestión para poder sacarles el mayor rendimiento. __ATAC-seq__, por otro lado, evade dicha imposición al estudiar directamente la __accesibilidad de la cromatina__ a la transposasa hiperactiva Tn5 de manera "agnóstica" (sin necesidad de conocer _a priori_ los mecanismos epigenéticos subyacentes).
 
 
-En este informe vamos a presentar `Signac` mediante el análisis de un dataset compuesto por 5000 células provenientes de un cerebro de ratón adulto. Para ello debemos descargar primero los siguientes archivos, disponibles en la página web de [10X Genomics](https://support.10xgenomics.com/single-cell-atac/software/pipelines/latest/output/matrices): 
+En este informe vamos a presentar `Signac` mediante el análisis de un dataset compuesto por 5000 células provenientes de la corteza visual primaria de cerebros de ratones adultos. Para ello debemos descargar primero los siguientes archivos, disponibles en la página web de [10X Genomics](https://support.10xgenomics.com/single-cell-atac/software/pipelines/latest/output/matrices): 
 
 ```{r, eval = F}
 # El archivo con los datos crudos del ATAC-seq
@@ -107,7 +107,7 @@ library("patchwork")
 
 # Preprocesado
 
-`Signac` requiere dos archivos generados por el software _CellRanger_ para poder preprocesar datos de ATAC-Seq:
+`Signac` requiere dos archivos generados por el software _CellRanger_ para poder preprocesar datos de ATAC-Seq (aunque al final del informe se muestra cómo actuar si los archivos de secuenciado se generaron con un software distinto):
 
 * __Peak/Cell matrix o matriz de picos/célula__. La matriz de picos/célula es similar a la matriz de expresión génica de dimensiones _genes_ x _células_ usada en scRNA-Seq. En ATAC-Seq la matriz es de _regiones cromosómicas_ x _células_. Cada valor de la matriz es el nº de sitios de integración de Tn5 en cada célula que mapean en dichas regiones o _peaks_. A mayor nº de sitios de integración mapeados en un locus, más abierta está la cromatina en dicha región.
 
@@ -511,7 +511,7 @@ plot1 | plot2
 
 <br>
 
-En vista de los resultados podemos ver que la región del cromosoma 4 comprendida entre las bases 86.523.678-86.525.285 está diferencialmente abierta (i.e. expresada) en las neuronas corticales piramidales de capas 2/3 respecto de las de capas 4-6. Dicha región abarca el gen Fam154a/Saxo1:
+En vista de los resultados podemos ver que la región del cromosoma 4 comprendida entre las bases 86.523.678-86.525.285 está diferencialmente abierta (i.e. expresada) en las neuronas piramidales de capas corticales 2/3 respecto de las de capas 4-6. Dicha región abarca el gen Fam154a/Saxo1:
 
 ```{r}
 CoveragePlot(object = MB_Signac, region = "chr4-86523678-86525285",
@@ -522,13 +522,15 @@ CoveragePlot(object = MB_Signac, region = "chr4-86523678-86525285",
 
 <br>
 
-Peak coordinates can be difficult to interpret alone. We can find the closest gene to each of these peaks using the ClosestFeature() function. If you explore the gene lists, you will see that peaks open in Naive T cells are close to genes such as BCL11B and GATA3 (key regulators of T cell differentiation ), while peaks open in monocytes are close to genes such as CEBPB (a key regulator of monocyte differentiation). We could follow up this result further by doing gene ontology enrichment analysis on the gene sets returned by ClosestFeature(), and there are many R packages that can do this (see the GOstats package for example, o GprofileR).
-
-Con el comando `ClosestFeature()` podemos buscar el gen más cercano al pico detectado. Se aprecia que, como decíamos antes, el gen más cercano a la región chr4-86523678-86525285 es Fam154a/Saxo1:
+Puede ser difícil interpretar las coordenadas de los picos de integración de transposones (al fin y al cabo, no es común saberse de memoria las bases exactas que ocupa un gen). Por suerte, `Signac` cuenta con una utilidad para descubrir genes cercanos a (o que mapeen en) las regiones cromosómicas que le indiquemos. Esta utilidad es el comando `ClosestFeature()`. Con dicho comando podemos comprobar que, efectivamente, el gen más cercano a la región chr4-86523678-86525285 es Fam154a/Saxo1:
 
 ```{r}
+# Regiones cromosómicas abiertas con un log2FC > |0.25| en neuronas de capas
+# L2/3 y L4-5
 open_l23 <- rownames(da_peaks[da_peaks$avg_log2FC > 0.25, ])
 open_l456 <- rownames(da_peaks[da_peaks$avg_log2FC < -0.25, ])
+
+# Genes que mapean en dichas regiones
 closest_l23 <- ClosestFeature(MB_Signac, open_l23)
 closest_l456 <- ClosestFeature(MB_Signac, open_l456)
 head(closest_l23)
@@ -544,51 +546,58 @@ head(closest_l456)
 
 <br>
 
-# Plotting genomic regions
+# Visualizar regiones cromosómicas
 
 
-placeholder
+Tal como veíamos 2 párrafos antes, podemos visualizar el nº de integraciones de la Tn5 en el genoma mediante la función `CoveragePlot()`. Esta función acepta loci tanto en formato coordenadas cromosómicas (_i.e._ chr4-86523678-86525285) como en formato nombre del gen (_i.e._ Neurod6). Cada tipo celular presente en el gráfico resultante muestra el nº medio de sitios de integración en todas las células del tipo en cuestión. También podemos graficar clusters o cualquier otro metadato, en lugar de los tipos celulares:
 
+```{r}
+# Establecemos el orden en el gráfico de las células a mostrar:
+levels(MB_Signac) <- c("L2/3 IT", "L4", "L5 IT", "L5 PT", "L6b", "L6 CT", "L6 IT", "NP", "Sst" ,"Pvalb" ,"Vip" ,"Lamp5" , "Oligo", "Astro", "Endo", "VLMC", "Macrophage", "Sncg", "Peri")
 
-
-```{r, eval = F}
-# set plotting order
-levels(MB_Signac) <- c("L2/3 IT","L4","L5 IT","L5 PT","L6 CT", "L6 IT","NP","Sst","Pvalb","Vip","Lamp5","Meis2","Oligo","Astro","Endo","VLMC","Macrophage")
-
+# Coordenadas cromosómicas
 CoveragePlot(
   object = MB_Signac,
   region = "chr4-86523678-86525285",
   extend.upstream = 1000,
   extend.downstream = 1000,
-  ncol = 1
-)
+  ncol = 1)
 
-
-
-
-
+# Nombres de genes
 CoveragePlot(
   object = MB_Signac,
   region = c("Neurod6", "Gad2"),
   extend.upstream = 1000,
   extend.downstream = 1000,
-  ncol = 1
-)
-```
+  ncol = 1,
+  idents = levels(MB_Signac)[1:5])
 
-
-
-
-```{r, eval = F}
-cov_plot <- CoveragePlot(
+# Apertura media en todas las células, se aprecia la caja TATA del gen Sst
+CoveragePlot(
   object = MB_Signac,
-  region = "chr2-87011729-87035519",
-  annotation = FALSE,
-  peaks = FALSE
-)
-
-cov_plot
+  region = "Sst",
+  extend.upstream = 1000,
+  extend.downstream = 1000,
+  ncol = 1,
+  group.by = "orig.ident")
 ```
+
+
+<br>
+
+También se puede generar mediante la función `CoverageBrowser()` una versión interactiva de estos gráficos en la cual se puede explorar el genoma y ajustar al vuelo los parámetros de graficado. El botón “_Save plot_” guarda el gráfico en un objeto `ggplot` y se carga en el ambiente al cerrar la página interactiva.
+
+
+
+
+
+***
+
+<br>
+
+# _Addendum_: Qué hacer si el dataset no se generó con CellRanger
+
+PH
 
 
 
