@@ -266,19 +266,14 @@ TSSPlot(MB_Signac, group.by = "high.tss") + NoLegend()
 
 Habiendo calculado ya el _TSS enrichment score_ y el _nucleosome signal_, procedemos a calcular el ratio de lecturas que mapean en picos y el ratio de lecturas que caen en regiones prohibidas y mostramos todas estas métricas de calidad en gráficos de violín para analizar la calidad de nuestro experimento:
 
-```{r, out.width =  "120%"}
+```{r, fig.width =  12}
 MB_Signac$pct_reads_in_peaks <- MB_Signac$peak_region_fragments / MB_Signac$passed_filters * 100
 MB_Signac$blacklist_ratio <- MB_Signac$blacklist_region_fragments / MB_Signac$peak_region_fragments
 
 
 VlnPlot(object = MB_Signac,
         features = c("pct_reads_in_peaks", "peak_region_fragments",
-                     "TSS.enrichment"),
-        pt.size = 0.1,
-        ncol = 5)
-
-VlnPlot(object = MB_Signac,
-        features = c("blacklist_ratio", "nucleosome_signal"),
+        "TSS.enrichment","blacklist_ratio", "nucleosome_signal"),
         pt.size = 0.1,
         ncol = 5)
 ```
@@ -398,7 +393,7 @@ MB_Signac <- NormalizeData(object = MB_Signac, assay = "RNA",
 
 Ahora somos capaces de visualizar la actividad de biomarcadores canónicos para guiar nuestra interpretación de los clusters de scATAC-seq, si bien este nuevo experimento putativo de "scRNA-seq" derivado de scATAC-seq será más ruidoso que uno canónico de scRNA-seq, pero nos servirá. Dicho ruido se debe a que al generar la matriz de actividad génica asumimos una correlación perfecta entre accesibilidad del promotor/ORF y expresión génica, lo cual a veces no es así.
 
-```{r,fig.width = 8, fig.height= 9.5}
+```{r,fig.width = 10}
 DefaultAssay(MB_Signac) <- "RNA"
 
 FeaturePlot(object = MB_Signac,
@@ -569,7 +564,9 @@ CoveragePlot(
   extend.upstream = 1000,
   extend.downstream = 1000,
   ncol = 1)
+```
 
+```{r, fig.height =  10}
 # Nombres de genes
 CoveragePlot(
   object = MB_Signac,
@@ -578,7 +575,9 @@ CoveragePlot(
   extend.downstream = 1000,
   ncol = 1,
   idents = levels(MB_Signac)[1:5])
+```
 
+```{r}
 # Apertura media en todas las células, se aprecia la caja TATA del gen Sst
 CoveragePlot(
   object = MB_Signac,
