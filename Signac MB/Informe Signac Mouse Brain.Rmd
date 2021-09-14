@@ -163,13 +163,15 @@ MB_Signac[["peaks"]]
 
 Los datos de la secuenciación ATAC se guardan en un objeto de tipo `ChromatinAssay`, el cual se caracteriza por presentar bolsillos para almacenar información adicional sobre motifs, anotaciones de los genes e información del genoma. A partir de dicho objeto creamos el principal objeto `seurat` donde realizaremos los análisis.  
 
-Podemos usar la función `granges()` en un objeto de tipo `seurat` que tenga como experimento activo uno de tipo `ChromatinAssay` para observar las regiones cromosómicas (provenientes del archivo de fragmentos) asociadas a cada feature (gen?) del objeto. Para más información sobre la clase `ChromatinAssay`, consulte la [viñeta de interacción con objetos](https://satijalab.org/signac/articles/data_structures.html).
+Podemos usar la función `granges()` en un objeto de tipo `seurat` que tenga como experimento activo uno de tipo `ChromatinAssay` para observar las regiones cromosómicas (provenientes del archivo de fragmentos) asociadas a cada gen del objeto. Para más información sobre la clase `ChromatinAssay`, consulte la [viñeta de interacción con objetos](https://satijalab.org/signac/articles/data_structures.html).
 
 
 ```{r}
 # Exploración del ensayo/experimento de ATAC-Seq
 ensayo_ATAC_Seq[1:5, 1:5]
-dim(ensayo_ATAC_Seq) # Las columnas son las células secuenciadas y las filas son regiones cromosómicas... 5337 células y 157.203 regiones cromosómicas estudiadas
+# Las columnas son las células secuenciadas y las filas son regiones
+# cromosómicas... 5337 células y 157.203 regiones cromosómicas estudiadas
+dim(ensayo_ATAC_Seq) 
 granges(MB_Signac)
 ```
 
@@ -264,14 +266,19 @@ TSSPlot(MB_Signac, group.by = "high.tss") + NoLegend()
 
 Habiendo calculado ya el _TSS enrichment score_ y el _nucleosome signal_, procedemos a calcular el ratio de lecturas que mapean en picos y el ratio de lecturas que caen en regiones prohibidas y mostramos todas estas métricas de calidad en gráficos de violín para analizar la calidad de nuestro experimento:
 
-```{r}
+```{r, out.width =  "120%"}
 MB_Signac$pct_reads_in_peaks <- MB_Signac$peak_region_fragments / MB_Signac$passed_filters * 100
 MB_Signac$blacklist_ratio <- MB_Signac$blacklist_region_fragments / MB_Signac$peak_region_fragments
 
 
 VlnPlot(object = MB_Signac,
         features = c("pct_reads_in_peaks", "peak_region_fragments",
-                   "TSS.enrichment", "blacklist_ratio", "nucleosome_signal"),
+                     "TSS.enrichment"),
+        pt.size = 0.1,
+        ncol = 5)
+
+VlnPlot(object = MB_Signac,
+        features = c("blacklist_ratio", "nucleosome_signal"),
         pt.size = 0.1,
         ncol = 5)
 ```
@@ -391,7 +398,7 @@ MB_Signac <- NormalizeData(object = MB_Signac, assay = "RNA",
 
 Ahora somos capaces de visualizar la actividad de biomarcadores canónicos para guiar nuestra interpretación de los clusters de scATAC-seq, si bien este nuevo experimento putativo de "scRNA-seq" derivado de scATAC-seq será más ruidoso que uno canónico de scRNA-seq, pero nos servirá. Dicho ruido se debe a que al generar la matriz de actividad génica asumimos una correlación perfecta entre accesibilidad del promotor/ORF y expresión génica, lo cual a veces no es así.
 
-```{r}
+```{r,fig.width = 8, fig.height= 9.5}
 DefaultAssay(MB_Signac) <- "RNA"
 
 FeaturePlot(object = MB_Signac,
@@ -447,7 +454,7 @@ for(i in levels(MB_Signac)) {
 
 
 
-```{r}
+```{r, fig.width = 14}
 plot1 <- DimPlot(allen_rna, group.by = "subclass", label = TRUE) + NoLegend() + ggtitle("scRNA-seq (Allen Inst., anotado)")
 plot2 <- DimPlot(MB_Signac, group.by = "predicted.id", label = TRUE) + NoLegend() + ggtitle("scATAC-seq (predicción)")
 plot3 <- DimPlot(MB_Signac, label = T, group.by = "ident") + NoLegend() + ggtitle("scATAC-seq (anot. Allen)")
@@ -498,7 +505,7 @@ head(da_peaks)
 
 Visualizamos los resultados del test de accesibilidad diferencial en un violinplot y sobre la proyección del UMAP:
 
-```{r}
+```{r,fig.width = 8}
 plot1 <- VlnPlot(object = MB_Signac, features = rownames(da_peaks)[1], 
                  pt.size = 0.1, idents = c("L4","L5 IT","L2/3 IT", "L6 IT")) + 
          ylab("Insertion/Aperture level") + NoLegend()
@@ -597,7 +604,69 @@ También se puede generar mediante la función `CoverageBrowser()` una versión 
 
 # _Addendum_: Qué hacer si el dataset no se generó con CellRanger
 
-PH
+
+The CellRanger software from 10x Genomics generates several useful QC metrics per-cell, as well as a peak/cell matrix and an indexed fragments file. In the above vignette, we utilize the CellRanger outputs, but provide alternative functions in Signac for many of the same purposes here.
+
+
+## Generating a peak/cell or bin/cell matrix
+
+The FeatureMatrix function can be used to generate a count matrix containing any set of genomic ranges in its rows. These regions could be a set of peaks, or bins that span the entire genome.
+
+```{r, eval = F}
+# not run
+# peak_ranges should be a set of genomic ranges spanning the set of peaks to be quantified per cell
+peak_matrix <- FeatureMatrix(
+  fragments = Fragments(pbmc),
+  features = peak_ranges
+)
+```
+
+
+For convenience, we also include a GenomeBinMatrix() function that will generate a set of genomic ranges spanning the entire genome for you, and run FeatureMatrix() internally to produce a genome bin/cell matrix.
+
+```{r, eval = F}
+# not run
+bin_matrix <- GenomeBinMatrix(
+  fragments = Fragments(pbmc),
+  genome = seqlengths(pbmc),
+  binsize = 5000
+)
+```
+
+
+## Counting fraction of reads in peaks
+
+The function FRiP() will count the fraction of reads in peaks for each cell, given a peak/cell assay and a bin/cell assay. Note that this can be run on a subset of the genome, so that a bin/cell assay does not need to be computed for the whole genome. This will return a Seurat object will metadata added corresponding to the fraction of reads in peaks for each cell.
+
+```{r, eval = F}
+# not run
+total_fragments <- CountFragments("'/home/stuartt/github/chrom/vignette_data/atac_v1_pbmc_10k_fragments.tsv.gz'")
+pbmc$fragments <- total_fragments[colnames(pbmc), "frequency_count"]
+
+pbmc <- FRiP(
+  object = pbmc,
+  assay = 'peaks',
+  total.fragments = 'fragments'
+)
+```
+
+
+
+## Counting fragments in genome blacklist regions
+
+The ratio of reads in genomic blacklist regions, that are known to artifactually accumulate reads in genome sequencing assays, can be diagnostic of low-quality cells. We provide blacklist region coordinates for several genomes (hg19, hg38, mm9, mm10, ce10, ce11, dm3, dm6) in the Signac package for convenience. These regions were provided by the ENCODE consortium, and we encourage users to cite their paper if you use the regions in your analysis. The FractionCountsInRegion() function can be used to calculate the fraction of all counts within a given set of regions per cell. We can use this function and the blacklist regions to find the fraction of blacklist counts per cell.
+
+```{r, eval = F}
+# not run
+pbmc$blacklist_fraction <- FractionCountsInRegion(
+  object = pbmc, 
+  assay = 'peaks',
+  regions = blacklist_hg19
+)
+```
+
+
+
 
 
 
@@ -609,12 +678,17 @@ PH
 
 * Stuart _et al._ Multimodal single-cell chromatin analysis with Signac. bioRxiv (2020).
 
-* [PH]
+* ENCODE portal (PMID: 29126249; PMCID: PMC5753278)
 
-* [PH]
+* Srivatsan, Sanjay & McFaline-Figueroa, José & Ramani, Vijay & Saunders, Lauren & Cao, Junyue & Packer, Jonathan & Pliner, Hannah & Jackson, Dana & Daza, Riza & Christiansen, Lena & Zhang, Fan & Steemers, Frank & Shendure, Jay & Trapnell, Cole. (2019). Massively multiplex chemical transcriptomics at single cell resolution. Science. 367. eaax6234. 10.1126/science.aax6234.
 
-* [PH]
+* Hannah A. Pliner, Jonathan S. Packer, José L. McFaline-Figueroa, Darren A. Cusanovich, Riza M. Daza, Sanjay Srivatsan, Xiaojie Qiu, Dana Jackson, Anna Minkina, Andrew C. Adey, Frank J. Steemers, Jay Shendure, Cole Trapnell. Molecular Cell 71, 1–14 2018
 
+* Stuart T, Butler A, Hoffman P, Hafemeister C, Papalexi E, Mauck WM 3rd, Hao Y, Stoeckius M, Smibert P, Satija R. Comprehensive Integration of Single-Cell Data. Cell. 2019 Jun 13;177(7):1888-1902.e21. doi: 10.1016/j.cell.2019.05.031. Epub 2019 Jun 6. PMID: 31178118; PMCID: PMC6687398.
+
+* Billeh YN, Cai B, Gratiy SL, Dai K, Iyer R, Gouwens NW, Abbasi-Asl R, Jia X, Siegle JH, Olsen SR, Koch C, Mihalas S, Arkhipov A. Systematic Integration of Structural and Functional Data into Multi-scale Models of Mouse Primary Visual Cortex. Neuron. 2020 May 6;106(3):388-403.e18. doi: 10.1016/j.neuron.2020.01.040. Epub 2020 Mar 5. PMID: 32142648.
+
+* Ntranos, V., Yi, L., Melsted, P. et al. A discriminative learning approach to differential expression analysis for single-cell RNA-seq. Nat Methods 16, 163–166 (2019). https://doi.org/10.1038/s41592-018-0303-9
 
 
 
