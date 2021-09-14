@@ -111,7 +111,7 @@ library("patchwork")
 
 * __Peak/Cell matrix o matriz de picos/célula__. La matriz de picos/célula es similar a la matriz de expresión génica de dimensiones _genes_ x _células_ usada en scRNA-Seq. En ATAC-Seq la matriz es de _regiones cromosómicas_ x _células_. Cada valor de la matriz es el nº de sitios de integración de Tn5 en cada célula que mapean en dichas regiones o _peaks_. A mayor nº de sitios de integración mapeados en un locus, más abierta está la cromatina en dicha región.
 
-* __Fragment file o archivo de fragmentos__. Representa la lista completa de fragmentos únicos (= lecturas) detectados en todas las células y es por tanto un archivo MUY pesado. Al ser tan pesado, se guarda en el disco duro en lugar de la RAM y a consecuencia manipularlo es un proceso lento. Su ventaja es que contiene todos los sitios de integración de Tn5 en cada célula.
+* __Fragment file o archivo de fragmentos__. Representa la lista completa de fragmentos únicos (= lecturas) detectados en todas las células y es por tanto un archivo MUY pesado. Al ser tan pesado, se guarda en el disco duro en lugar de la RAM y a consecuencia manipularlo es un proceso lento. Su ventaja es que contiene todos los sitios de integración de la Tn5 en cada célula.
 
 
 Ya que `Signac` es una extensión de `Seurat`, vamos a trabajar con un objeto `seurat` generado a partir de la __matriz de picos/célula__, sus __metadatos__ creados en `cellranger-atac` y el __archivo de fragmentos__:
@@ -603,69 +603,63 @@ También se puede generar mediante la función `CoverageBrowser()` una versión 
 
 # _Addendum_: Qué hacer si el dataset no se generó con CellRanger
 
+Como ya se comentó al principio del informe, el programa CellRanger de 10X Genomics genera varias métricas de control de calidad por célula, así como también crea la matriz de picos/célula y el archivo del índice de los fragmentos/lecturas. El dataset empleado para este informe se generó con dicho software y se pudo emplear tal cual, pero en caso de generar el dataset con otro software, `Signac` cuenta con las herramientas necesarias para generar esos archivos.
 
-The CellRanger software from 10x Genomics generates several useful QC metrics per-cell, as well as a peak/cell matrix and an indexed fragments file. In the above vignette, we utilize the CellRanger outputs, but provide alternative functions in Signac for many of the same purposes here.
 
+<br>
 
-## Generating a peak/cell or bin/cell matrix
+## Generar la matriz de picos/célula
 
-The FeatureMatrix function can be used to generate a count matrix containing any set of genomic ranges in its rows. These regions could be a set of peaks, or bins that span the entire genome.
+Para generar la matriz de picos/célula se puede usar la función `FeatureMatrix()`, la cual devuelve como es de esperar una matriz de conteos de picos (filas) en celulas (columnas):
 
 ```{r, eval = F}
-# not run
-# peak_ranges should be a set of genomic ranges spanning the set of peaks to be quantified per cell
+# peak_ranges debe ser un objeto de tipo `GRanges`, o sea un conjunto de
+# coordenadas cromosómicas que abarque el conjunto de picos a cuantificar por
+# célula
 peak_matrix <- FeatureMatrix(
-  fragments = Fragments(pbmc),
-  features = peak_ranges
-)
+  fragments = Fragments(objeto_seurat),
+  features = peak_ranges)
 ```
 
 
-For convenience, we also include a GenomeBinMatrix() function that will generate a set of genomic ranges spanning the entire genome for you, and run FeatureMatrix() internally to produce a genome bin/cell matrix.
+
+<br>
+
+## Calcular el ratio de lecturas que mapean en picos
+
+Dado un archivo de fragmentos, la función `FRiP()` es capaz de computar el porcentaje de lecturas que caen en picos por cada célula y la almacena en el hueco de metadatos del objeto de tipo `seurat` empleado como input:
 
 ```{r, eval = F}
-# not run
-bin_matrix <- GenomeBinMatrix(
-  fragments = Fragments(pbmc),
-  genome = seqlengths(pbmc),
-  binsize = 5000
-)
+# Contamos los fragmentos totales en nuestro ensayo
+total_fragments <- CountFragments(
+  fragments = "E:/Git/R/Signac MB/archivos_accesorios/atac_v1_adult_brain_fresh_5k_fragments.tsv.gz")
+
+objeto_seurat$fragments <- total_fragments[colnames(objeto_seurat), "frequency_count"]
+
+objeto_seurat <- FRiP(
+  object = objeto_seurat,
+  assay = "peaks",
+  total.fragments = "fragments")
 ```
 
 
-## Counting fraction of reads in peaks
 
-The function FRiP() will count the fraction of reads in peaks for each cell, given a peak/cell assay and a bin/cell assay. Note that this can be run on a subset of the genome, so that a bin/cell assay does not need to be computed for the whole genome. This will return a Seurat object will metadata added corresponding to the fraction of reads in peaks for each cell.
+<br>
+
+## Calcular el porcentaje de lecturas que mapean en regiones ruidosas (_blacklists_)
+
+El paquete `Signac` incluye para conveniencia del usuario las coordenadas cromosómicas de regiones ruidosas para varios genomas (a fecha de redacción incluye las versiones del genoma humano hg19 y hg38, genoma murino versiones mm9 y mm10, genoma de 
+_Caenorhabditis elegans_ versiones ce10 y ce11 y genoma de _Drosophila melanogaster_ versiones dm3 y dm6). Puedes emplear la función `FractionCountsInRegion()` y una _blacklist_ para calcular el porcentaje de lecturas que caen en estas regiones problemáticas.
 
 ```{r, eval = F}
-# not run
-total_fragments <- CountFragments("'/home/stuartt/github/chrom/vignette_data/atac_v1_pbmc_10k_fragments.tsv.gz'")
-pbmc$fragments <- total_fragments[colnames(pbmc), "frequency_count"]
-
-pbmc <- FRiP(
-  object = pbmc,
-  assay = 'peaks',
-  total.fragments = 'fragments'
-)
+objeto_seurat$blacklist_fraction <- FractionCountsInRegion(
+  object = objeto_seurat, 
+  assay = "peaks",
+  regions = blacklist_mm10) # blacklist_hg19 para datasets humanos
 ```
 
 
-
-## Counting fragments in genome blacklist regions
-
-The ratio of reads in genomic blacklist regions, that are known to artifactually accumulate reads in genome sequencing assays, can be diagnostic of low-quality cells. We provide blacklist region coordinates for several genomes (hg19, hg38, mm9, mm10, ce10, ce11, dm3, dm6) in the Signac package for convenience. These regions were provided by the ENCODE consortium, and we encourage users to cite their paper if you use the regions in your analysis. The FractionCountsInRegion() function can be used to calculate the fraction of all counts within a given set of regions per cell. We can use this function and the blacklist regions to find the fraction of blacklist counts per cell.
-
-```{r, eval = F}
-# not run
-pbmc$blacklist_fraction <- FractionCountsInRegion(
-  object = pbmc, 
-  assay = 'peaks',
-  regions = blacklist_hg19
-)
-```
-
-
-
+Estas _blacklists_ fueron provistas por el consorcio ENCODE, por lo que si las empleas, es recomendable citar el [artículo](https://www.nature.com/articles/s41598-019-45839-z) correspondiente.
 
 
 
@@ -678,6 +672,8 @@ pbmc$blacklist_fraction <- FractionCountsInRegion(
 * Stuart _et al._ Multimodal single-cell chromatin analysis with Signac. bioRxiv (2020).
 
 * ENCODE portal (PMID: 29126249; PMCID: PMC5753278)
+
+* Amemiya, H.M., Kundaje, A. & Boyle, A.P. The ENCODE Blacklist: Identification of Problematic Regions of the Genome. Sci Rep 9, 9354 (2019). https://doi.org/10.1038/s41598-019-45839-z
 
 * Srivatsan, Sanjay & McFaline-Figueroa, José & Ramani, Vijay & Saunders, Lauren & Cao, Junyue & Packer, Jonathan & Pliner, Hannah & Jackson, Dana & Daza, Riza & Christiansen, Lena & Zhang, Fan & Steemers, Frank & Shendure, Jay & Trapnell, Cole. (2019). Massively multiplex chemical transcriptomics at single cell resolution. Science. 367. eaax6234. 10.1126/science.aax6234.
 

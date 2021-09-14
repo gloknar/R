@@ -385,7 +385,7 @@ div.tocify {
 <p><code>Signac</code> requiere dos archivos generados por el software <em>CellRanger</em> para poder preprocesar datos de ATAC-Seq (aunque al final del informe se muestra cómo actuar si los archivos de secuenciado se generaron con un software distinto):</p>
 <ul>
 <li><p><strong>Peak/Cell matrix o matriz de picos/célula</strong>. La matriz de picos/célula es similar a la matriz de expresión génica de dimensiones <em>genes</em> x <em>células</em> usada en scRNA-Seq. En ATAC-Seq la matriz es de <em>regiones cromosómicas</em> x <em>células</em>. Cada valor de la matriz es el nº de sitios de integración de Tn5 en cada célula que mapean en dichas regiones o <em>peaks</em>. A mayor nº de sitios de integración mapeados en un locus, más abierta está la cromatina en dicha región.</p></li>
-<li><p><strong>Fragment file o archivo de fragmentos</strong>. Representa la lista completa de fragmentos únicos (= lecturas) detectados en todas las células y es por tanto un archivo MUY pesado. Al ser tan pesado, se guarda en el disco duro en lugar de la RAM y a consecuencia manipularlo es un proceso lento. Su ventaja es que contiene todos los sitios de integración de Tn5 en cada célula.</p></li>
+<li><p><strong>Fragment file o archivo de fragmentos</strong>. Representa la lista completa de fragmentos únicos (= lecturas) detectados en todas las células y es por tanto un archivo MUY pesado. Al ser tan pesado, se guarda en el disco duro en lugar de la RAM y a consecuencia manipularlo es un proceso lento. Su ventaja es que contiene todos los sitios de integración de la Tn5 en cada célula.</p></li>
 </ul>
 <p>Ya que <code>Signac</code> es una extensión de <code>Seurat</code>, vamos a trabajar con un objeto <code>seurat</code> generado a partir de la <strong>matriz de picos/célula</strong>, sus <strong>metadatos</strong> creados en <code>cellranger-atac</code> y el <strong>archivo de fragmentos</strong>:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Cargamos y visualizamos las 6 primeras filas de la matriz de ATAC_Seq en el</span></span>
@@ -842,46 +842,42 @@ div.tocify {
 </div>
 <div id="addendum-qué-hacer-si-el-dataset-no-se-generó-con-cellranger" class="section level1" number="10">
 <h1 number="10"><span class="header-section-number">10</span> <em>Addendum</em>: Qué hacer si el dataset no se generó con CellRanger</h1>
-<p>The CellRanger software from 10x Genomics generates several useful QC metrics per-cell, as well as a peak/cell matrix and an indexed fragments file. In the above vignette, we utilize the CellRanger outputs, but provide alternative functions in Signac for many of the same purposes here.</p>
-<div id="generating-a-peakcell-or-bincell-matrix" class="section level2" number="10.1">
-<h2 number="10.1"><span class="header-section-number">10.1</span> Generating a peak/cell or bin/cell matrix</h2>
-<p>The FeatureMatrix function can be used to generate a count matrix containing any set of genomic ranges in its rows. These regions could be a set of peaks, or bins that span the entire genome.</p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># not run</span></span>
-<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="co"># peak_ranges should be a set of genomic ranges spanning the set of peaks to be quantified per cell</span></span>
-<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>peak_matrix <span class="ot">&lt;-</span> <span class="fu">FeatureMatrix</span>(</span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">fragments =</span> <span class="fu">Fragments</span>(pbmc),</span>
-<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">features =</span> peak_ranges</span>
-<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
-<p>For convenience, we also include a GenomeBinMatrix() function that will generate a set of genomic ranges spanning the entire genome for you, and run FeatureMatrix() internally to produce a genome bin/cell matrix.</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># not run</span></span>
-<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>bin_matrix <span class="ot">&lt;-</span> <span class="fu">GenomeBinMatrix</span>(</span>
-<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">fragments =</span> <span class="fu">Fragments</span>(pbmc),</span>
-<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">genome =</span> <span class="fu">seqlengths</span>(pbmc),</span>
-<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">binsize =</span> <span class="dv">5000</span></span>
-<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>Como ya se comentó al principio del informe, el programa CellRanger de 10X Genomics genera varias métricas de control de calidad por célula, así como también crea la matriz de picos/célula y el archivo del índice de los fragmentos/lecturas. El dataset empleado para este informe se generó con dicho software y se pudo emplear tal cual, pero en caso de generar el dataset con otro software, <code>Signac</code> cuenta con las herramientas necesarias para generar esos archivos.</p>
+<p><br></p>
+<div id="generar-la-matriz-de-picoscélula" class="section level2" number="10.1">
+<h2 number="10.1"><span class="header-section-number">10.1</span> Generar la matriz de picos/célula</h2>
+<p>Para generar la matriz de picos/célula se puede usar la función <code>FeatureMatrix()</code>, la cual devuelve como es de esperar una matriz de conteos de picos (filas) en celulas (columnas):</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># peak_ranges debe ser un objeto de tipo `GRanges`, o sea un conjunto de</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="co"># coordenadas cromosómicas que abarque el conjunto de picos a cuantificar por</span></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="co"># célula</span></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>peak_matrix <span class="ot">&lt;-</span> <span class="fu">FeatureMatrix</span>(</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">fragments =</span> <span class="fu">Fragments</span>(objeto_seurat),</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">features =</span> peak_ranges)</span></code></pre></div>
+<p><br></p>
 </div>
-<div id="counting-fraction-of-reads-in-peaks" class="section level2" number="10.2">
-<h2 number="10.2"><span class="header-section-number">10.2</span> Counting fraction of reads in peaks</h2>
-<p>The function FRiP() will count the fraction of reads in peaks for each cell, given a peak/cell assay and a bin/cell assay. Note that this can be run on a subset of the genome, so that a bin/cell assay does not need to be computed for the whole genome. This will return a Seurat object will metadata added corresponding to the fraction of reads in peaks for each cell.</p>
-<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># not run</span></span>
-<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>total_fragments <span class="ot">&lt;-</span> <span class="fu">CountFragments</span>(<span class="st">&quot;&#39;/home/stuartt/github/chrom/vignette_data/atac_v1_pbmc_10k_fragments.tsv.gz&#39;&quot;</span>)</span>
-<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>pbmc<span class="sc">$</span>fragments <span class="ot">&lt;-</span> total_fragments[<span class="fu">colnames</span>(pbmc), <span class="st">&quot;frequency_count&quot;</span>]</span>
-<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FRiP</span>(</span>
-<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> pbmc,</span>
-<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">assay =</span> <span class="st">&#39;peaks&#39;</span>,</span>
-<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">total.fragments =</span> <span class="st">&#39;fragments&#39;</span></span>
-<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<div id="calcular-el-ratio-de-lecturas-que-mapean-en-picos" class="section level2" number="10.2">
+<h2 number="10.2"><span class="header-section-number">10.2</span> Calcular el ratio de lecturas que mapean en picos</h2>
+<p>Dado un archivo de fragmentos, la función <code>FRiP()</code> es capaz de computar el porcentaje de lecturas que caen en picos por cada célula y la almacena en el hueco de metadatos del objeto de tipo <code>seurat</code> empleado como input:</p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Contamos los fragmentos totales en nuestro ensayo</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>total_fragments <span class="ot">&lt;-</span> <span class="fu">CountFragments</span>(</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">fragments =</span> <span class="st">&quot;E:/Git/R/Signac MB/archivos_accesorios/atac_v1_adult_brain_fresh_5k_fragments.tsv.gz&quot;</span>)</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>objeto_seurat<span class="sc">$</span>fragments <span class="ot">&lt;-</span> total_fragments[<span class="fu">colnames</span>(objeto_seurat), <span class="st">&quot;frequency_count&quot;</span>]</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>objeto_seurat <span class="ot">&lt;-</span> <span class="fu">FRiP</span>(</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> objeto_seurat,</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">assay =</span> <span class="st">&quot;peaks&quot;</span>,</span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">total.fragments =</span> <span class="st">&quot;fragments&quot;</span>)</span></code></pre></div>
+<p><br></p>
 </div>
-<div id="counting-fragments-in-genome-blacklist-regions" class="section level2" number="10.3">
-<h2 number="10.3"><span class="header-section-number">10.3</span> Counting fragments in genome blacklist regions</h2>
-<p>The ratio of reads in genomic blacklist regions, that are known to artifactually accumulate reads in genome sequencing assays, can be diagnostic of low-quality cells. We provide blacklist region coordinates for several genomes (hg19, hg38, mm9, mm10, ce10, ce11, dm3, dm6) in the Signac package for convenience. These regions were provided by the ENCODE consortium, and we encourage users to cite their paper if you use the regions in your analysis. The FractionCountsInRegion() function can be used to calculate the fraction of all counts within a given set of regions per cell. We can use this function and the blacklist regions to find the fraction of blacklist counts per cell.</p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># not run</span></span>
-<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>pbmc<span class="sc">$</span>blacklist_fraction <span class="ot">&lt;-</span> <span class="fu">FractionCountsInRegion</span>(</span>
-<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> pbmc, </span>
-<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">assay =</span> <span class="st">&#39;peaks&#39;</span>,</span>
-<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">regions =</span> blacklist_hg19</span>
-<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<div id="calcular-el-porcentaje-de-lecturas-que-mapean-en-regiones-ruidosas-blacklists" class="section level2" number="10.3">
+<h2 number="10.3"><span class="header-section-number">10.3</span> Calcular el porcentaje de lecturas que mapean en regiones ruidosas (<em>blacklists</em>)</h2>
+<p>El paquete <code>Signac</code> incluye para conveniencia del usuario las coordenadas cromosómicas de regiones ruidosas para varios genomas (a fecha de redacción incluye las versiones del genoma humano hg19 y hg38, genoma murino versiones mm9 y mm10, genoma de <em>Caenorhabditis elegans</em> versiones ce10 y ce11 y genoma de <em>Drosophila melanogaster</em> versiones dm3 y dm6). Puedes emplear la función <code>FractionCountsInRegion()</code> y una <em>blacklist</em> para calcular el porcentaje de lecturas que caen en estas regiones problemáticas.</p>
+<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>objeto_seurat<span class="sc">$</span>blacklist_fraction <span class="ot">&lt;-</span> <span class="fu">FractionCountsInRegion</span>(</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> objeto_seurat, </span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">assay =</span> <span class="st">&quot;peaks&quot;</span>,</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">regions =</span> blacklist_mm10) <span class="co"># blacklist_hg19 para datasets humanos</span></span></code></pre></div>
+<p>Estas <em>blacklists</em> fueron provistas por el consorcio ENCODE, por lo que si las empleas, es recomendable citar el <a href="https://www.nature.com/articles/s41598-019-45839-z">artículo</a> correspondiente.</p>
 <hr />
 <p><br></p>
 </div>
@@ -891,6 +887,7 @@ div.tocify {
 <ul>
 <li><p>Stuart <em>et al.</em> Multimodal single-cell chromatin analysis with Signac. bioRxiv (2020).</p></li>
 <li><p>ENCODE portal (PMID: 29126249; PMCID: PMC5753278)</p></li>
+<li><p>Amemiya, H.M., Kundaje, A. &amp; Boyle, A.P. The ENCODE Blacklist: Identification of Problematic Regions of the Genome. Sci Rep 9, 9354 (2019). <a href="https://doi.org/10.1038/s41598-019-45839-z" class="uri">https://doi.org/10.1038/s41598-019-45839-z</a></p></li>
 <li><p>Srivatsan, Sanjay &amp; McFaline-Figueroa, José &amp; Ramani, Vijay &amp; Saunders, Lauren &amp; Cao, Junyue &amp; Packer, Jonathan &amp; Pliner, Hannah &amp; Jackson, Dana &amp; Daza, Riza &amp; Christiansen, Lena &amp; Zhang, Fan &amp; Steemers, Frank &amp; Shendure, Jay &amp; Trapnell, Cole. (2019). Massively multiplex chemical transcriptomics at single cell resolution. Science. 367. eaax6234. 10.1126/science.aax6234.</p></li>
 <li><p>Hannah A. Pliner, Jonathan S. Packer, José L. McFaline-Figueroa, Darren A. Cusanovich, Riza M. Daza, Sanjay Srivatsan, Xiaojie Qiu, Dana Jackson, Anna Minkina, Andrew C. Adey, Frank J. Steemers, Jay Shendure, Cole Trapnell. Molecular Cell 71, 1–14 2018</p></li>
 <li><p>Stuart T, Butler A, Hoffman P, Hafemeister C, Papalexi E, Mauck WM 3rd, Hao Y, Stoeckius M, Smibert P, Satija R. Comprehensive Integration of Single-Cell Data. Cell. 2019 Jun 13;177(7):1888-1902.e21. doi: 10.1016/j.cell.2019.05.031. Epub 2019 Jun 6. PMID: 31178118; PMCID: PMC6687398.</p></li>
