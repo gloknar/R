@@ -1,0 +1,261 @@
+---
+title: "Análisis de microarrays _Clariom D Human_ en `edgeR`"
+author: "Adam Casas"
+date: 'Compilado: `r format(Sys.Date(), "%d de %B del %Y")`'
+output: 
+  html_document:
+    df_print: paged
+    highlight: kate
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+---
+
+```{r configuracion inicial, include=FALSE}
+##################################################
+#######        Encoded in UTF-8        ###########
+##################################################
+
+# Establecemos la configuración de los chunks
+knitr::opts_chunk$set(echo = T,
+                      message = F,
+                      warning = F,
+                      tidy = F)
+set.seed(1)
+```
+
+***
+
+# Introducción
+
+Este documento es una continuación del protocolo `limma` en el paquete `edgeR` y por tanto podemos omitir el control de calidad de las muestras. El raciocinio detrás de este informe es analizar nuestros microarrays de ARNm en varios paquetes para posteriormente cruzar los resultados mediante diagramas de Venn.
+
+De acuerdo a sus [creadores](http://www.bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf), `edgeR` es un paquete diseñado para el análisis DEG de muestras de tanto RNA-Seq como ChIP-Seq, Hi-C Seq, secuenciación por bisulfito, SAGE-Seq y _screens_ genéticos con CRISPR-Cas9.
+
+NOTA: `edgeR` trabaja con matrices de conteos de lecturas (obtienes secuencias y las mapeas a un genoma de referencia. Y SON VALORES ENTEROS), no con matrices de intensidades normalizadas (nuestro caso, tenemos VALORES EN COMA FLOTANTE)...
+
+
+https://gist.github.com/jdblischak/11384914
+
+<br>
+
+***
+
+# Carga de librerías y datos
+
+```{r eval = F, echo = F}
+# Si usas R 3.6, necesitas instalar oligo 1.50 y sus dependencias ff versión 2.2.0 y RSQLite versión 2.1.4:
+# remove.packages("ff")
+install.packages(
+  "https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-0.tar.gz", 
+  repos=NULL, 
+  type = "source")
+
+install.packages(
+  "https://cran.r-project.org/src/contrib/Archive/RSQLite/RSQLite_2.1.4.tar.gz",
+   repos=NULL, 
+   type = "source")
+```
+
+
+
+<br>
+
+Comenzamos cargando `oligo`, `edgeR` y paquetes accesorios:
+
+```{r carga librerias, message = F}
+library("oligo") # Data import, pre-processing, and QC 
+library("edgeR") # DEG Analysis
+library("ggplot2") # Plots
+library("rgl") # 3D plots
+library("dplyr")  # Data wrangling
+library("FactoMineR") # PCA
+library("Rtsne") # t-SNE
+library("uwot") # UMAP
+```
+
+
+<br>
+
+Acto seguido definimos el directorio de trabajo en la carpeta donde se encuentran los archivos de secuenciado.
+
+```{r}
+directorio_trabajo <- "../Archivos secuenciado/"
+```
+
+
+<br>
+
+Cargamos los archivos de secuenciado en el objeto `datos_crudos_microarrays`.
+
+```{r}
+# Obtenemos la ruta completa de los archivos con el argumento `full.names = T`
+ruta_completa_archivos_secuenciado <- list.files(path = directorio_trabajo, pattern = "*.CEL", full.names = T)
+
+# Cargamos datos
+datos_crudos_microarrays <- read.celfiles(filenames = ruta_completa_archivos_secuenciado)
+```
+
+
+
+<br>
+
+Arreglamos los metadatos del objeto `datos_crudos_microarrays`, situados en el bolsillo `phenodata`:
+
+```{r}
+# Renombramos la columna "index" a "muestra"
+colnames(pData(datos_crudos_microarrays)) <- "muestra"
+
+# Añadimos el factor "Condición" a los metadatos de nuestro estudio
+pData(datos_crudos_microarrays)$condicion <- as.factor(rep(c("Control", "Genisteina"), times = 4))
+
+# Ponemos nombres más claros a las muestras
+sampleNames(datos_crudos_microarrays) <- c("Control_1", "Genisteina_1",
+                                           "Control_2", "Genisteina_2",
+                                           "Control_3", "Genisteina_3",
+                                           "Control_4", "Genisteina_4")
+
+# Visualizamos los metadatos limpios
+pData(datos_crudos_microarrays)
+```
+
+
+
+
+<br>
+
+Finalmente obtenemos la matriz procesada de intensidades, pues contiene los nombres de los _transcription clusters_:
+
+```{r}
+intensidades <- exprs(datos_crudos_microarrays)
+eSet_normalizado <- rma(datos_crudos_microarrays)
+intensidades_normalizadas <- exprs(eSet_normalizado)
+```
+
+
+
+
+<br>
+
+***
+
+# Creación `DGEList`
+
+`edgeR` gestiona la información génica mediante objetos de tipo `DGEList`, los cuales se caracterizan por contener los siguientes bolsillos:
+
+* Un bolsillo `counts` con la matriz de expresión génica de dimensiones `gen x muestra`
+
+* Un bolsillo `samples` con información sobre las muestras, y debe contener obligatoriamente una columna `group` con el tratamiento de cada muestra
+
+* Un bolsillo `genes` con anotaciones sobre los genes o elementos genómicos analizados (puede contener los nombres de los genes, por ejemplo)
+
+
+<br>
+
+Primero creamos el objeto `DGEList`:
+
+```{r}
+y <- DGEList(counts = intensidades_normalizadas, 
+             group = pData(datos_crudos_microarrays)$condicion)
+y$genes <- data.frame(Transcription.Cluster = rownames(intensidades_normalizadas))
+
+show(y)
+```
+
+
+
+# Filtrado
+
+En este protocolo se deben filtrar los genes con expresión nula o escasa bajo el razonamiento de los autores de que "genes con pocas lecturas a lo largo de todas las muestras ofrecen una escasa evidencia para la expresión diferencial, dado que a nivel biológico, un gen debe expresarse a un nivel mínimo antes de que sea traducido o sea biológicamente relevante". Los autores usan como umbral 10 lecturas (`min.count = 10`), y en nuestro caso conservaremos aquellos genes que tengan >=10 lecturas como mínimo en 4 muestras.
+
+```{r}
+keep <- filterByExpr(y)
+y <- y[keep, , keep.lib.sizes = F]
+```
+
+
+# Normalizado
+
+No es necesario normalizar los datos en `edgeR` dado que sus desarrolladores asumen que sólo nos interesan los cambios de expresión relativos entre condiciones. Por tanto el normalizado es sólo necesario cuando hayan factores técnicos que afecten exclusivamente a ciertas muestras. Nótese que `edgeR` tiene en cuenta automáticamente las diferentes profundidades de secuenciado de cada muestra, por lo que el usuario no necesita realizar ninguna acción al respecto.
+
+
+<br>
+
+***
+
+# QUICK START
+
+```{r, eval = F}
+# edgeR quickstart
+y <- DGEList(counts = intensidades_normalizadas, 
+             group = pData(datos_crudos_microarrays)$condicion)
+y$genes <- data.frame(Symbol = rownames(intensidades_normalizadas))
+keep <- filterByExpr(y)
+y <- y[keep,,keep.lib.sizes=FALSE]
+
+
+y <- calcNormFactors(y)
+design <- model.matrix(~pData(datos_crudos_microarrays)$condicion)
+y <- estimateDisp(y,design)
+```
+
+Nota: El manual de edgeR habla de librerías para referise a las muestras.
+
+```{r, eval = F}
+# Quasi-likelihood F test, recomendado para bulk RNA-Seq
+fit <- glmQLFit(y,design)
+qlf <- glmQLFTest(fit,coef=2)
+tabla <- topTags(qlf)
+
+View(tabla$table)
+sort(tabla$table$PValue, decreasing = F)
+which(tabla$table$PValue < .05)
+
+```
+
+
+
+
+
+<br>
+
+***
+
+# Bibliografía
+
+* Robinson MD, McCarthy DJ and Smyth GK (2010). edgeR: a Bioconductor package for differential expression analysis of digital gene
+  expression data. Bioinformatics 26, 139-140
+
+* McCarthy DJ, Chen Y and Smyth GK (2012). Differential expression analysis of multifactor RNA-Seq experiments with respect to biological
+  variation. Nucleic Acids Research 40, 4288-4297
+
+* https://www.thermofisher.com/es/es/home/life-science/microarray-analysis/microarray-data-analysis.html
+
+* https://www.affymetrix.com/support/help/exon_glossary/index.jsp#clusteroverview
+
+* https://www.affymetrix.com/analysis/netaffx
+
+* http://bioconductor.org/packages/release/bioc/vignettes/oligo/inst/doc/oug.pdf
+
+* R. M. Flight, A. M. Eteleeb and E. C. Rouchka, "Affymetrix® Mismatch (MM) Probes: Useful after All," 2012 ASE/IEEE International Conference on BioMedical Computing (BioMedCom), 2012, pp. 6-13, doi: 10.1109/BioMedCom.2012.8.
+
+
+
+
+
+
+
+
+<br>
+
+***
+
+# sessionInfo()
+
+```{r, echo = F}
+sessionInfo()
+```
+
+
+
