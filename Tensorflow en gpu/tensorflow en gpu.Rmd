@@ -30,7 +30,7 @@ Yo gasto la versión de TensorFlow V`tensorflow::tf_version()`
 
 # Al lío
 
-Vamos a entrenar una red para que nos clasifique imágenes a color. El dataset a usar es cifar10 (el 10 ace referencia a que hay 10 tipos de imágenes: camión, coche, moto... etc)
+Vamos a entrenar una red para que nos clasifique imágenes a color. El dataset a usar es cifar10 (el 10 hace referencia a que hay 10 tipos de imágenes: camión, coche, moto... etc)
 
 ```{r}
 ############################
