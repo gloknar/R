@@ -451,6 +451,8 @@ Los clusters con sus respectivas células se guardan en `pbmc@active.ident`, `pb
 ```{r}
 pbmc <- FindNeighbors(pbmc, dims = 1:12)
 pbmc <- FindClusters(pbmc, resolution = 0.5, algorithm = 1) 
+# Para usar el algoritmo 4 (Leiden), instala leidenalg mediante el paquete reticulate
+# reticulate::py_install("leidenalg")
 
 # Observamos las IDs de los clusters a los que pertenecen las 5 primeras células.
 head(Idents(pbmc), 5)
