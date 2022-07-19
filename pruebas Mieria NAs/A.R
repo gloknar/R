@@ -4,4 +4,5 @@
 
 
 library("naniar")
+naniar::riskfactors
 vis_miss(airquality)
