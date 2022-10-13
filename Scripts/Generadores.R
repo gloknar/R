@@ -7,10 +7,18 @@
 library(coro)
 
 
-# La funcion generator() del paquete coro crea un generador, cosa muy usada en
-# DL. Es una funcion iteradora que puedes pausar con la funcion yield() y
-# reanudar posteriormente. Para mas info, consulta la vinneta:
+# La funcion generator() del paquete coro crea una fábrica de generadores
+# (generator factory), cosa muy usada en DL. La idea de los generadores es
+# usarlos para pasarle a la red neuronal instancias de una en una en lugar de
+# cargar todo el dataset en RAM de una sentada
+
+
+# De acuerdo a la documentación de la funcion generator(), un generador es una
+# función iterativa que puede pausar su ejecucion con el comando yield() y
+# continuar por donde lo dejo
 vignette("generator")
+
+
 
 
 # Los generadores se pueden usar sobre bucles for. En este ejemplo vamos a
@@ -36,7 +44,7 @@ abc()
 
 
 abc()
-# > Generador exhausto
+# Cuando un generador se agota, devuelve ".__exhausted__."
 
 
 
@@ -55,5 +63,7 @@ devolver_Dataset <- function() {
 }
 
 devolver_Dataset()
+
+
 
 
