@@ -1,8 +1,21 @@
 # Primero cargamos keras
+# keras::install_keras()
 library(keras)
+
+# Añadir lo de añadir al path del sistema la ruta de CUDA/extra/lib64 y lo de el chart de compatibilidad de TF
+
+install.packages("tensorflow")
+tensorflow::install_tensorflow(version = "gpu")
+
+tensorflow::tf_version()
+
+library(tensorflow)
+tf$config$list_physical_devices("GPU")
 
 #Cargamos ahora el dataset MNIST
 dataset_guapo <- dataset_mnist()
+
+
 
 
 # Pasamos las fotos a un vector de dos dimensiones (nº foto, índice píxel) con array_reshape():
@@ -46,8 +59,19 @@ dataset_guapo$test$x <- dataset_guapo$test$x/255
 
 modelo <- keras_model_sequential()
 
-modelo %>% layer_dense(input_shape = 784, units = 80, activation = "sigmoid") %>% 
-           layer_dense(units = 10, activation = "softmax")
+
+
+modelo %>%
+  # Start with hidden 2D CNN layer 
+  layer_dense(input_shape = 784, units = 80, activation = "sigmoid") %>%
+  layer_dropout(0.25) %>%
+  # and feed into dense layer
+  layer_dense(100) %>%
+  layer_activation("relu") %>%
+  layer_dropout(0.5) %>%
+  # Outputs from dense layer are projected onto 10 unit output layer
+  layer_dense(10) %>%
+  layer_activation("softmax")
 
 
 
@@ -64,7 +88,7 @@ modelo %>% compile(loss = "categorical_crossentropy", optimizer = "SGD", metrics
 
 red_neuronal_entrenada <- modelo %>% fit(x = dataset_guapo$train$x, y = dataset_guapo$train$y,
                epochs = 20, validation_data= dataset_guapo$test, verbose = 2,
-               batch_size = 128)
+               batch_size = 784)
 
 plot(red_neuronal_entrenada)
 
@@ -153,7 +177,24 @@ modelo %>%
   # Flatten max filtered output into feature vector
   layer_flatten() %>%
   # and feed into dense layer
-  layer_dense(512) %>%
+  layer_dense(100) %>%
+  layer_activation("relu") %>%
+  layer_dropout(0.5) %>%
+  # Outputs from dense layer are projected onto 10 unit output layer
+  layer_dense(10) %>%
+  layer_activation("softmax")
+
+
+
+
+modelo %>%
+  # Start with hidden 2D CNN layer 
+  layer_conv_2d( filters = 3, kernel_size = c(3,3), padding = "same", input_shape = c(32, 32, 3) ) %>%
+  layer_activation("relu") %>%
+  # Flatten max filtered output into feature vector
+  layer_flatten() %>%
+  # and feed into dense layer
+  layer_dense(5) %>%
   layer_activation("relu") %>%
   layer_dropout(0.5) %>%
   # Outputs from dense layer are projected onto 10 unit output layer
@@ -164,12 +205,11 @@ modelo %>%
 
 
 
-
 # Compilamos el modelo con compile(). Aquí definimos la loss function, optimizer y métricas:
 
 modelo %>% compile(
   loss = "categorical_crossentropy",
-  optimizer = optimizer_rmsprop(lr = 0.0001, decay = 1e-6),
+  optimizer = optimizer_rmsprop(learning_rate = 0.0001),
   metrics = "accuracy" )
 
 summary(modelo)
@@ -185,7 +225,7 @@ start.time = Sys.time()
 
 historial_entrenamiento_red_neuronal <- modelo %>% fit(
   x = dataset_guapo$train$x, y = dataset_guapo$train$y,
-  batch_size = 32,
+  batch_size = 5,
   epochs = 60,
   validation_data = list(dataset_guapo$test$x, dataset_guapo$test$y),
   shuffle = TRUE )
